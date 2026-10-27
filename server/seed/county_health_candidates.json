@@ -1,0 +1,240 @@
+{
+  "_note": "Candidate county health pages found by web search on 2026-10-27. NOT reviewed by a named person. The app shows them as 'found by search, not yet verified'. A verified page recorded in Admin (county sources) always replaces these. A county with url null means no suitable official page was found.",
+  "searchedOn": "2026-10-27",
+  "counties": [
+    {
+      "county": "Adams",
+      "agency": "",
+      "url": null,
+      "note": "No suitable official page found in the search."
+    },
+    {
+      "county": "Asotin",
+      "agency": "",
+      "url": null,
+      "note": "No suitable official page found in the search."
+    },
+    {
+      "county": "Benton",
+      "agency": "Benton-Franklin Health District",
+      "url": "https://www.bfhd.wa.gov/programs_services/food_safety/food_safety_inspections",
+      "note": "Food safety program page. It covers Benton and Franklin counties."
+    },
+    {
+      "county": "Chelan",
+      "agency": "",
+      "url": null,
+      "note": "No suitable official page found in the search."
+    },
+    {
+      "county": "Clallam",
+      "agency": "Clallam County Environmental Health",
+      "url": "https://clallamcountywa.gov/341/Food-Service-Establishments",
+      "note": ""
+    },
+    {
+      "county": "Clark",
+      "agency": "Clark County Public Health",
+      "url": "https://clark.wa.gov/public-health/food-service-permitting-information",
+      "note": ""
+    },
+    {
+      "county": "Columbia",
+      "agency": "",
+      "url": null,
+      "note": "No suitable official page found in the search."
+    },
+    {
+      "county": "Cowlitz",
+      "agency": "Cowlitz County Health & Human Services",
+      "url": "https://www.co.cowlitz.wa.us/1063/Plan-Review",
+      "note": "Plan review page. Plan review comes before the food permit."
+    },
+    {
+      "county": "Douglas",
+      "agency": "",
+      "url": null,
+      "note": "No suitable official page found in the search."
+    },
+    {
+      "county": "Ferry",
+      "agency": "",
+      "url": null,
+      "note": "No suitable official page found in the search."
+    },
+    {
+      "county": "Franklin",
+      "agency": "Benton-Franklin Health District",
+      "url": "https://www.bfhd.wa.gov/programs_services/food_safety/food_safety_inspections",
+      "note": "Food safety program page. It covers Benton and Franklin counties."
+    },
+    {
+      "county": "Garfield",
+      "agency": "Garfield County Public Health",
+      "url": "https://garfieldcopublichealthwa.gov/healthy-places/food-safety/",
+      "note": ""
+    },
+    {
+      "county": "Grant",
+      "agency": "Grant County Health District",
+      "url": "https://granthealth.org/255/Food-Establishment-Applications",
+      "note": ""
+    },
+    {
+      "county": "Grays Harbor",
+      "agency": "Grays Harbor County Environmental Health",
+      "url": "https://www.graysharbor.gov/departments/environmental-health/food-water-safety/",
+      "note": ""
+    },
+    {
+      "county": "Island",
+      "agency": "Island County Public Health",
+      "url": "https://islandcountywa.gov/370/Food-Permits",
+      "note": ""
+    },
+    {
+      "county": "Jefferson",
+      "agency": "Jefferson County Public Health",
+      "url": "https://www.jeffersoncountypublichealth.org/615/Food-Service-Info-Applications",
+      "note": ""
+    },
+    {
+      "county": "King",
+      "agency": "Public Health, Seattle & King County",
+      "url": "https://kingcounty.gov/en/dept/dph/certificates-permits-licenses/food-business-permits/permanent-food-business-permit",
+      "note": "Permanent food service business permit page."
+    },
+    {
+      "county": "Kitsap",
+      "agency": "Kitsap Public Health District",
+      "url": "https://kitsappublichealth.org/FoodSafety/food_establishments.php",
+      "note": ""
+    },
+    {
+      "county": "Kittitas",
+      "agency": "Kittitas County Public Health",
+      "url": "https://co.kittitas.wa.us/health/food-establishments.aspx",
+      "note": ""
+    },
+    {
+      "county": "Klickitat",
+      "agency": "",
+      "url": null,
+      "note": "No suitable official page found in the search."
+    },
+    {
+      "county": "Lewis",
+      "agency": "Lewis County Public Health",
+      "url": "https://lewiscountywa.gov/departments/environmental-health/food-safety-program/food-program-forms/",
+      "note": "Food program forms page."
+    },
+    {
+      "county": "Lincoln",
+      "agency": "",
+      "url": null,
+      "note": "No suitable official page found in the search."
+    },
+    {
+      "county": "Mason",
+      "agency": "Mason County Public Health",
+      "url": "https://www.masoncountywa.gov/departments/public_health/environmental_health/food_safety/permits.php",
+      "note": ""
+    },
+    {
+      "county": "Okanogan",
+      "agency": "Okanogan County Public Health",
+      "url": "https://www.okanogancounty.gov/505/Safe-Food",
+      "note": ""
+    },
+    {
+      "county": "Pacific",
+      "agency": "",
+      "url": null,
+      "note": "No suitable official page found in the search."
+    },
+    {
+      "county": "Pend Oreille",
+      "agency": "",
+      "url": null,
+      "note": "No suitable official page found in the search."
+    },
+    {
+      "county": "Pierce",
+      "agency": "Tacoma-Pierce County Health Department",
+      "url": "https://tpchd.org/info/fees-permits/",
+      "note": "General fees and permits page. Look for the food permit section."
+    },
+    {
+      "county": "San Juan",
+      "agency": "",
+      "url": null,
+      "note": "No suitable official page found in the search."
+    },
+    {
+      "county": "Skagit",
+      "agency": "",
+      "url": null,
+      "note": "No suitable official page found in the search."
+    },
+    {
+      "county": "Skamania",
+      "agency": "",
+      "url": null,
+      "note": "No suitable official page found in the search."
+    },
+    {
+      "county": "Snohomish",
+      "agency": "Snohomish County Health Department",
+      "url": "https://www.snohd.org/230/Starting-a-Food-Business",
+      "note": ""
+    },
+    {
+      "county": "Spokane",
+      "agency": "Spokane Regional Health District",
+      "url": "https://srhd.org/programs-and-services/food-establishment-permits/new-or-remodeled-food-establishment-permits",
+      "note": ""
+    },
+    {
+      "county": "Stevens",
+      "agency": "",
+      "url": null,
+      "note": "No suitable official page found in the search."
+    },
+    {
+      "county": "Thurston",
+      "agency": "Thurston County Public Health",
+      "url": "https://www.thurstoncountywa.gov/departments/public-health-and-social-services/environmental-health/food-safety/fixed-establishments",
+      "note": ""
+    },
+    {
+      "county": "Wahkiakum",
+      "agency": "",
+      "url": null,
+      "note": "No suitable official page found in the search."
+    },
+    {
+      "county": "Walla Walla",
+      "agency": "",
+      "url": null,
+      "note": "No suitable official page found in the search."
+    },
+    {
+      "county": "Whatcom",
+      "agency": "Whatcom County Health Department",
+      "url": "https://www.whatcomcounty.us/3236/Food-Related-Permits",
+      "note": ""
+    },
+    {
+      "county": "Whitman",
+      "agency": "",
+      "url": null,
+      "note": "No suitable official page found in the search."
+    },
+    {
+      "county": "Yakima",
+      "agency": "Yakima Health District",
+      "url": "https://www.yakimacounty.us/330/New-Food-and-Beverage-Establishments",
+      "note": ""
+    }
+  ]
+}

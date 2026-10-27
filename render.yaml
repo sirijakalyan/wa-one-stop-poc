@@ -1,0 +1,38 @@
+# Render Blueprint for the WA One-Stop checklist app (free plan).
+# Create it from the dashboard: New > Blueprint > pick this repo.
+# Secrets are never stored here. Enter DATABASE_URL and ADMIN_KEY in the Render dashboard.
+services:
+  - type: web
+    name: wa-onestop-api
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false          # Neon connection string for the NEW database (not the event-discovery one)
+      - key: ADMIN_KEY
+        sync: false          # long random string; locks the Admin screen
+      - key: CORS_ORIGINS
+        sync: false          # the static site URL, e.g. https://wa-onestop-ui.onrender.com
+      - key: OLLAMA_BASE_URL
+        value: ""            # leave empty on the free plan: chat answers from the rules only
+
+  - type: web
+    name: wa-onestop-ui
+    runtime: static
+    rootDir: client
+    # Vite lives in devDependencies; include them so the free static build can compile.
+    buildCommand: npm install --include=dev && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        sync: false          # the API URL, e.g. https://wa-onestop-api.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

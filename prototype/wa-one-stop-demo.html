@@ -1,0 +1,840 @@
+<title>WA One-Stop Checklist Demo</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a calm civic form flow. Amber demo bar on top, one working column below, cards only for samples and checklist items. */
+:root {
+  --bg: #f1f5f3;
+  --surface: #ffffff;
+  --ink: #14231d;
+  --muted: #4a5d55;
+  --line: #cbd7d1;
+  --brand: #1b5e4b;
+  --brand-ink: #ffffff;
+  --brand-soft: #dff0e8;
+  --bar-bg: #ffe08a;
+  --bar-fg: #3a2e00;
+  --applies-bg: #dcf0e4;
+  --applies-fg: #124a2b;
+  --maybe-bg: #fde9c0;
+  --maybe-fg: #5a3800;
+  --info-bg: #e3ebf6;
+  --info-fg: #1c3a68;
+  --danger: #a3261b;
+  --focus: #b86e00;
+  --font-display: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --font-body: 'Public Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1512;
+    --surface: #15201b;
+    --ink: #e8f0ec;
+    --muted: #a3b5ad;
+    --line: #2d3e37;
+    --brand: #5fc0a0;
+    --brand-ink: #08201a;
+    --brand-soft: #1b3a30;
+    --bar-bg: #4a3a08;
+    --bar-fg: #ffe9a8;
+    --applies-bg: #17382a;
+    --applies-fg: #a9e6c4;
+    --maybe-bg: #43330c;
+    --maybe-fg: #ffd98a;
+    --info-bg: #1b2d4a;
+    --info-fg: #b5cdf2;
+    --danger: #ff8c80;
+    --focus: #ffbf47;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1512;
+  --surface: #15201b;
+  --ink: #e8f0ec;
+  --muted: #a3b5ad;
+  --line: #2d3e37;
+  --brand: #5fc0a0;
+  --brand-ink: #08201a;
+  --brand-soft: #1b3a30;
+  --bar-bg: #4a3a08;
+  --bar-fg: #ffe9a8;
+  --applies-bg: #17382a;
+  --applies-fg: #a9e6c4;
+  --maybe-bg: #43330c;
+  --maybe-fg: #ffd98a;
+  --info-bg: #1b2d4a;
+  --info-fg: #b5cdf2;
+  --danger: #ff8c80;
+  --focus: #ffbf47;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.55;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0 0 auto;
+  height: env(safe-area-inset-top, 0px);
+  background: var(--bar-bg);
+  z-index: 30;
+}
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.2; margin: 0 0 .6rem; text-wrap: balance; }
+h1 { font-size: clamp(1.8rem, 5vw, 2.6rem); font-weight: 700; }
+h2 { font-size: clamp(1.3rem, 3.2vw, 1.7rem); font-weight: 700; }
+h3 { font-size: 1.12rem; font-weight: 700; }
+p { margin: 0 0 1rem; }
+a { color: var(--brand); }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+[tabindex="-1"]:focus { outline: none; }
+
+.wrap {
+  width: 100%;
+  max-width: 62rem;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+
+/* Demo bar: always visible */
+.demo-bar {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 40;
+  background: var(--bar-bg);
+  color: var(--bar-fg);
+  border-bottom: 2px solid var(--bar-fg);
+}
+.demo-bar .wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .15rem .9rem;
+  align-items: baseline;
+  padding-block: .5rem;
+  font-size: .92rem;
+}
+.demo-bar strong { font-size: 1rem; letter-spacing: .01em; }
+
+.site-head { background: var(--surface); border-bottom: 1px solid var(--line); }
+.site-head .wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem 1.5rem;
+  padding-block: .75rem;
+}
+.brand { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; margin: 0; }
+.brand small { font-family: var(--font-mono); font-size: .72rem; font-weight: 400; color: var(--muted); margin-left: .4rem; letter-spacing: .04em; }
+nav ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .25rem; }
+nav button {
+  font: inherit; font-weight: 500;
+  background: transparent; color: var(--ink);
+  border: 0; border-radius: 6px;
+  padding: .5rem .8rem; cursor: pointer;
+}
+nav button:hover { background: var(--brand-soft); }
+nav button[aria-current="page"] { background: var(--brand); color: var(--brand-ink); }
+
+main { padding-block: 1.75rem 3rem; }
+main:focus { outline: none; }
+.view[hidden] { display: none; }
+
+.btn {
+  display: inline-block;
+  font: inherit; font-weight: 600; text-decoration: none; text-align: center;
+  padding: .7rem 1.15rem;
+  border-radius: 6px;
+  border: 2px solid var(--brand);
+  background: var(--surface); color: var(--brand);
+  cursor: pointer;
+}
+.btn:hover { background: var(--brand-soft); }
+.btn-primary { background: var(--brand); color: var(--brand-ink); }
+.btn-primary:hover { background: var(--brand); filter: brightness(1.1); }
+.btn-quiet { border-color: var(--line); color: var(--ink); }
+.btn-sm { padding: .4rem .75rem; font-size: .9rem; }
+.row { display: flex; flex-wrap: wrap; gap: .6rem; }
+
+/* Home */
+.hero { max-width: 44rem; padding-block: .5rem 1.5rem; }
+.lead { font-size: 1.2rem; color: var(--ink); }
+.facts { list-style: none; margin: 1.25rem 0 0; padding: 0; display: grid; gap: .75rem; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); }
+.facts li { border-top: 3px solid var(--brand); padding-top: .6rem; color: var(--muted); font-size: .95rem; }
+.facts strong { display: block; color: var(--ink); font-size: 1rem; }
+
+.samples { list-style: none; margin: 1rem 0 0; padding: 0; display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); }
+.sample { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1.1rem; display: flex; flex-direction: column; gap: .6rem; min-width: 0; }
+.sample p { margin: 0; color: var(--muted); }
+.sample .row { margin-top: auto; padding-top: .5rem; }
+.chips { display: flex; flex-wrap: wrap; gap: .35rem; margin: 0; padding: 0; list-style: none; }
+.chip { font-size: .8rem; padding: .15rem .55rem; border-radius: 999px; background: var(--brand-soft); color: var(--ink); border: 1px solid var(--line); }
+
+/* Questionnaire */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: clamp(1rem, 3vw, 1.75rem); max-width: 44rem; }
+.meter { height: 8px; background: var(--brand-soft); border-radius: 99px; overflow: hidden; margin: .4rem 0 1.25rem; }
+.meter > span { display: block; height: 100%; background: var(--brand); transition: width .2s ease; }
+.step-label { font-family: var(--font-mono); font-size: .82rem; color: var(--muted); margin: 0; }
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+legend { font-family: var(--font-display); font-weight: 700; font-size: 1.3rem; line-height: 1.25; padding: 0; margin-bottom: .4rem; }
+.hint { color: var(--muted); font-size: .95rem; }
+.opts { display: grid; gap: .5rem; margin-top: .75rem; }
+.opt { display: flex; gap: .7rem; align-items: flex-start; padding: .7rem .85rem; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; background: var(--bg); }
+.opt:hover { border-color: var(--brand); }
+.opt:has(input:checked) { border-color: var(--brand); background: var(--brand-soft); }
+.opt input { margin-top: .25rem; accent-color: var(--brand); width: 1.1rem; height: 1.1rem; flex: none; }
+.opt span { min-width: 0; }
+.opt small { display: block; color: var(--muted); }
+textarea, input[type="text"] {
+  width: 100%; font: inherit; color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 8px; padding: .65rem .8rem; margin-top: .6rem;
+}
+textarea { min-height: 6rem; resize: vertical; }
+.err { color: var(--danger); font-weight: 600; margin: .75rem 0 0; min-height: 1.4rem; }
+.nav-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .6rem; margin-top: 1.25rem; }
+.note { background: var(--info-bg); color: var(--info-fg); border-radius: 8px; padding: .65rem .85rem; font-size: .92rem; margin-top: .75rem; }
+.summary { margin: .5rem 0 0; display: grid; gap: 0; }
+.summary > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .5rem; padding: .6rem 0; border-bottom: 1px solid var(--line); align-items: start; }
+.summary dt { color: var(--muted); font-size: .88rem; }
+.summary dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+
+/* Checklist */
+.cl-head { display: grid; gap: .75rem; margin-bottom: 1.25rem; }
+.progress { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: .9rem 1.1rem; }
+.progress p { margin: 0 0 .4rem; font-weight: 600; }
+.phase { margin-top: 1.75rem; }
+.phase > h2 { font-size: 1.15rem; margin-bottom: .6rem; padding-bottom: .35rem; border-bottom: 2px solid var(--line); }
+.items { list-style: none; margin: 0; padding: 0; display: grid; gap: .75rem; }
+.item { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.1rem; min-width: 0; }
+.item.done { opacity: .78; }
+.item.done h3 { text-decoration: line-through; text-decoration-thickness: 1px; }
+.item-top { display: flex; flex-wrap: wrap; gap: .4rem .6rem; align-items: center; margin-bottom: .4rem; }
+.pill { font-size: .78rem; font-weight: 600; padding: .12rem .55rem; border-radius: 999px; white-space: nowrap; }
+.pill.applies { background: var(--applies-bg); color: var(--applies-fg); }
+.pill.maybe { background: var(--maybe-bg); color: var(--maybe-fg); }
+.pill.agency { background: var(--info-bg); color: var(--info-fg); }
+.item h3 { margin: 0 0 .4rem; }
+.item p { margin: 0 0 .6rem; }
+.item .why { color: var(--muted); }
+.meta { font-family: var(--font-mono); font-size: .8rem; color: var(--muted); display: grid; gap: .2rem; margin: .4rem 0 .8rem; overflow-wrap: anywhere; }
+.verify-ok::before { content: "Source checked"; }
+.item-actions { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+.mark { display: inline-flex; align-items: center; gap: .5rem; cursor: pointer; font-weight: 500; margin-left: auto; }
+.mark input { width: 1.15rem; height: 1.15rem; accent-color: var(--brand); }
+details { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: .8rem 1.1rem; margin-top: 1.75rem; }
+summary { cursor: pointer; font-weight: 600; }
+details ul { margin: .75rem 0 0; padding-left: 1.2rem; color: var(--muted); }
+details li { margin-bottom: .4rem; }
+.empty { max-width: 40rem; }
+
+/* Sources */
+.table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; min-width: 36rem; font-size: .95rem; }
+th, td { text-align: left; padding: .65rem .8rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+tr:last-child td { border-bottom: 0; }
+.two-col { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); margin-top: 1.5rem; }
+.two-col > div { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.1rem; min-width: 0; }
+.two-col ul { margin: .4rem 0 0; padding-left: 1.2rem; }
+.two-col li { margin-bottom: .35rem; }
+
+footer { border-top: 1px solid var(--line); color: var(--muted); font-size: .9rem; padding-block: 1.25rem; }
+footer p { margin: 0; }
+
+@media (max-width: 36rem) {
+  .mark { margin-left: 0; width: 100%; }
+  .nav-row .btn { flex: 1 1 8rem; }
+}
+@media (prefers-reduced-motion: reduce) { .meter > span { transition: none; } }
+</style>
+
+<div class="demo-bar" role="region" aria-label="Demo disclaimer">
+  <div class="wrap">
+    <strong>Demo only, not official guidance</strong>
+    <span>Not legal advice. Confirm every requirement with each agency. Not a live product.</span>
+  </div>
+</div>
+
+<header class="site-head">
+  <div class="wrap">
+    <p class="brand">WA Business One-Stop-Shop <small>DEMO</small></p>
+    <nav aria-label="Main">
+      <ul>
+        <li><button type="button" data-go="home">Home</button></li>
+        <li><button type="button" data-go="questionnaire">Questionnaire</button></li>
+        <li><button type="button" data-go="checklist">My checklist</button></li>
+        <li><button type="button" data-go="sources">Sources</button></li>
+      </ul>
+    </nav>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+  <div class="wrap">
+    <p class="sr" id="live" role="status" aria-live="polite" style="position:absolute;left:-9999px"></p>
+    <section class="view" id="view-home"></section>
+    <section class="view" id="view-questionnaire" hidden></section>
+    <section class="view" id="view-checklist" hidden></section>
+    <section class="view" id="view-sources" hidden></section>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Demo only, not official guidance. This prototype files nothing and connects to no state system. Your answers stay in this page and are not saved.</p>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var CHECKED_ON = 'October 26, 2026';
+  var URLS = {
+    dor: 'https://dor.wa.gov/open-business/apply-business-license',
+    wizard: 'https://secure.dor.wa.gov/gteunauth/?Link=wiz',
+    sos: 'https://www.sos.wa.gov/corps/',
+    lni: 'https://lni.wa.gov/',
+    lniIc: 'https://lni.wa.gov/insurance/insurance-requirements/independent-contractors/',
+    esd: 'https://esd.wa.gov/employer-taxes',
+    dshs: 'https://www.dshs.wa.gov/esa/division-child-support/new-hire-reporting',
+    bizChecklist: 'https://www.business.wa.gov/Portals/_business/VersionedDocuments/Business_Publications/NewBusinessRequiredLicenses.pdf',
+    bizSite: 'https://www.business.wa.gov/'
+  };
+
+  var STRUCTURES = [
+    { v: 'sole', t: 'Sole proprietor', d: 'You own the business yourself and have not formed a separate entity.' },
+    { v: 'llc', t: 'Limited liability company (LLC)', d: '' },
+    { v: 'corp', t: 'Corporation', d: '' },
+    { v: 'partnership', t: 'Partnership or LLP', d: '' },
+    { v: 'unsure', t: 'Not sure yet', d: 'We will show the Secretary of State step as "may apply".' }
+  ];
+  var STRUCT_LABEL = { sole: 'Sole proprietor', llc: 'LLC', corp: 'Corporation', partnership: 'Partnership or LLP', unsure: 'Structure not sure yet' };
+  var CATS = [
+    { v: 'food', t: 'Food service', d: 'Restaurant, cafe, catering, food truck' },
+    { v: 'construction', t: 'Construction contracting', d: 'Building, remodeling, roofing, trade work' },
+    { v: 'other', t: 'Other service or retail', d: 'Anything else' }
+  ];
+  var CAT_LABEL = { food: 'Food service', construction: 'Construction contracting', other: 'Other service or retail' };
+  var YN = [
+    { v: 'yes', t: 'Yes' },
+    { v: 'no', t: 'No' },
+    { v: 'unsure', t: 'Not sure' }
+  ];
+  var YN_LABEL = { yes: 'Yes', no: 'No', unsure: 'Not sure' };
+
+  var QUESTIONS = {
+    structure: { title: 'How will your business be set up?', hint: 'This decides whether the Secretary of State comes first.' },
+    desc: { title: 'What will your business do?', hint: 'Optional. A sentence or two in your own words.' },
+    cats: { title: 'Confirm what kind of business this is', hint: 'We suggest a type from your words. You choose. Nothing is applied without your OK.' },
+    city: { title: 'Which city will you work in?', hint: 'Optional. The demo has no city rules. It only reminds you to check locally.' },
+    hiring: { title: 'Will you hire employees within the next 90 days?', hint: 'Hiring is one of the triggers for a state business license.' },
+    subs: { title: 'Will you use subcontractors or independent contractors?', hint: '' },
+    salestax: { title: 'Will you sell products or services that require collecting sales tax?', hint: 'Not sure is a fine answer. The checklist will say "may apply".' },
+    income: { title: 'Do you expect gross income of $12,000 a year or more?', hint: 'This is one of the registration triggers listed by the Department of Revenue.' },
+    tradename: { title: 'Will you do business under a name other than your full legal name?', hint: '' },
+    review: { title: 'Review your answers', hint: 'Change anything, then build the checklist.' }
+  };
+
+  var SAMPLES = [
+    {
+      id: 'home', title: 'Home-based service business', blurb: 'A sole proprietor with no employees. Shows that the Secretary of State step is left out.',
+      answers: { structure: 'sole', desc: 'Home cleaning and organizing services run from my house', cats: ['other'], city: '', hiring: 'no', subs: 'no', salestax: 'no', income: 'no', tradename: 'yes' }
+    },
+    {
+      id: 'restaurant', title: 'Restaurant', blurb: 'An LLC with employees. Shows ordering, hiring steps and a county health reminder.',
+      answers: { structure: 'llc', desc: 'Neighborhood restaurant serving lunch and dinner', cats: ['food'], city: '', hiring: 'yes', subs: 'no', salestax: 'yes', income: 'yes', tradename: 'yes' }
+    },
+    {
+      id: 'contractor', title: 'Construction contractor', blurb: 'A sole proprietor with employees and subcontractors. Shows a credential the business license does not cover.',
+      answers: { structure: 'sole', desc: 'Residential remodeling and framing', cats: ['construction'], city: '', hiring: 'yes', subs: 'yes', salestax: 'unsure', income: 'yes', tradename: 'yes' }
+    }
+  ];
+
+  /* ---------- Rules engine: plain code, no AI. Each rule tests the answers and returns a result. ---------- */
+  function triggerState(a, keys) {
+    var hit = [], unsure = [];
+    keys.forEach(function (k) {
+      if (a[k] === 'yes') hit.push(k);
+      else if (a[k] === 'unsure' || a[k] === '') unsure.push(k);
+    });
+    return { hit: hit, unsure: unsure };
+  }
+  var TRIG_TEXT = {
+    hiring: 'you plan to hire within 90 days',
+    salestax: 'you sell something that requires collecting sales tax',
+    income: 'you expect gross income of $12,000 a year or more',
+    tradename: 'you use a name other than your full legal name'
+  };
+  var TRIG_Q = {
+    hiring: 'hiring', salestax: 'sales tax', income: 'income', tradename: 'business name'
+  };
+  function joinList(arr) {
+    if (arr.length <= 1) return arr.join('');
+    return arr.slice(0, -1).join(', ') + ' and ' + arr[arr.length - 1];
+  }
+
+  var RULES = [
+    {
+      id: 'sos', phase: 1, title: 'File your business entity with the Secretary of State',
+      agency: 'Secretary of State', ver: 'checked',
+      test: function (a) {
+        if (a.structure === 'llc' || a.structure === 'corp' || a.structure === 'partnership') {
+          return { status: 'applies', reason: 'You chose ' + STRUCT_LABEL[a.structure] + '. Washington corporations, partnerships, LLCs and LLPs file with the Secretary of State before the Business License Application.' };
+        }
+        if (a.structure === 'unsure') {
+          return { status: 'maybe', reason: 'You are not sure of your structure. If you form an LLC, corporation, partnership or LLP, this step comes before the business license.' };
+        }
+        return { status: 'no', reason: 'Not shown: sole proprietors start with the Department of Revenue, not the Secretary of State.' };
+      },
+      detail: 'This applies to Washington (domestic) entities. If your entity is formed in another state, the steps differ. Ask the Secretary of State.',
+      source: { label: 'Dept. of Revenue, Apply for a business license', url: URLS.dor },
+      apply: { label: 'Go to Secretary of State filing', url: URLS.sos }
+    },
+    {
+      id: 'dor', phase: 2, title: 'Apply for your Washington business license',
+      agency: 'Dept. of Revenue (BLS)', ver: 'checked',
+      test: function (a) {
+        var t = triggerState(a, ['hiring', 'salestax', 'income', 'tradename']);
+        if (t.hit.length) {
+          return { status: 'applies', reason: 'You need to register with the Department of Revenue if any one trigger is true. For you: ' + joinList(t.hit.map(function (k) { return TRIG_TEXT[k]; })) + '.' };
+        }
+        if (t.unsure.length) {
+          return { status: 'maybe', reason: 'You were not sure about: ' + joinList(t.unsure.map(function (k) { return TRIG_Q[k]; })) + '. Any one of these being true means you need the license.' };
+        }
+        return { status: 'no', reason: 'Not shown: none of the registration triggers we ask about is true for you. Other triggers exist, so run the official Business Licensing Wizard to be sure.' };
+      },
+      detail: 'Processing: about 10 business days online. Add 2 to 3 weeks if you have city or state endorsements. Mailed applications can take up to six weeks. The application fee varies, with an extra fee for each endorsement. See the DOR page for the fee.',
+      after: 'sos',
+      source: { label: 'Dept. of Revenue, Apply for a business license', url: URLS.dor },
+      apply: { label: 'Apply with the Dept. of Revenue', url: URLS.dor }
+    },
+    {
+      id: 'wizard', phase: 2, title: 'Confirm your list with the official Business Licensing Wizard',
+      agency: 'Dept. of Revenue (BLS)', ver: 'checked',
+      test: function () {
+        return { status: 'applies', reason: 'This demo is a sketch. The state wizard returns the agencies to contact and any endorsements for your business, so use it to check this list.' };
+      },
+      detail: '',
+      source: { label: 'Dept. of Revenue, Apply for a business license', url: URLS.dor },
+      apply: { label: 'Open the Business Licensing Wizard', url: URLS.wizard }
+    },
+    {
+      id: 'lni-contractor', phase: 3, title: 'Register as a contractor with Labor & Industries',
+      agency: 'Labor & Industries', ver: 'pending',
+      test: function (a) {
+        if (a.cats.indexOf('construction') > -1) {
+          return { status: 'applies', reason: 'You chose construction contracting. State pages say contractors register directly with L&I. The business license does not cover this.' };
+        }
+        return { status: 'no', reason: 'Not shown: you did not choose construction contracting.' };
+      },
+      detail: 'Open the L&I site and look for contractor registration. Requirements and fees are set by L&I and are not shown in this demo.',
+      source: { label: 'Business.wa.gov start-a-business slides (contractor registration)', url: URLS.bizSite },
+      apply: { label: 'Go to L&I', url: URLS.lni }
+    },
+    {
+      id: 'health', phase: 3, title: 'Check for a county health department permit',
+      agency: 'County health department', ver: 'pending',
+      test: function (a) {
+        if (a.cats.indexOf('food') > -1) {
+          return { status: 'applies', reason: 'You chose food service. State guidance lists county health department permits among the other licenses and permits a business may need.' };
+        }
+        return { status: 'no', reason: 'Not shown: you did not choose food service.' };
+      },
+      detail: 'Confirm with your county health department. The demo does not know which county rules apply.',
+      source: { label: 'Business.wa.gov start-a-business slides (county health permits)', url: URLS.bizSite },
+      apply: null
+    },
+    {
+      id: 'lni-wc', phase: 4, title: 'Set up workers’ compensation insurance',
+      agency: 'Labor & Industries', ver: 'pending',
+      test: function (a) {
+        if (a.hiring === 'yes') return { status: 'applies', reason: 'You plan to hire. The state new-business checklist lists L&I insurance for employers.' };
+        if (a.hiring === 'unsure' || a.hiring === '') return { status: 'maybe', reason: 'You were not sure about hiring. If you hire, the state checklist lists L&I insurance for employers.' };
+        return { status: 'no', reason: 'Not shown: you do not plan to hire within 90 days.' };
+      },
+      detail: 'Open the L&I site and look for workers’ compensation. Rates and rules are set by L&I and are not shown in this demo.',
+      source: { label: 'Business.wa.gov, New Business Required License Checklist', url: URLS.bizChecklist },
+      apply: { label: 'Go to L&I', url: URLS.lni }
+    },
+    {
+      id: 'esd', phase: 4, title: 'Register for employer taxes with Employment Security',
+      agency: 'Employment Security Dept.', ver: 'pending',
+      test: function (a) {
+        if (a.hiring === 'yes') return { status: 'applies', reason: 'You plan to hire. The state new-business checklist links employers to ESD employer taxes.' };
+        if (a.hiring === 'unsure' || a.hiring === '') return { status: 'maybe', reason: 'You were not sure about hiring. If you hire, the state checklist links employers to ESD employer taxes.' };
+        return { status: 'no', reason: 'Not shown: you do not plan to hire within 90 days.' };
+      },
+      detail: '',
+      source: { label: 'Business.wa.gov, New Business Required License Checklist', url: URLS.bizChecklist },
+      apply: { label: 'Go to ESD employer taxes', url: URLS.esd }
+    },
+    {
+      id: 'dshs', phase: 4, title: 'Report new hires to DSHS',
+      agency: 'DSHS', ver: 'pending',
+      test: function (a) {
+        if (a.hiring === 'yes') return { status: 'applies', reason: 'You plan to hire. The state new-business checklist includes new-hire reporting to DSHS.' };
+        if (a.hiring === 'unsure' || a.hiring === '') return { status: 'maybe', reason: 'You were not sure about hiring. If you hire, the state checklist includes new-hire reporting to DSHS.' };
+        return { status: 'no', reason: 'Not shown: you do not plan to hire within 90 days.' };
+      },
+      detail: 'Team research notes a 20-day reporting window after a hire. That figure is not yet confirmed against the DSHS page, so check the deadline there.',
+      source: { label: 'Business.wa.gov, New Business Required License Checklist', url: URLS.bizChecklist },
+      apply: { label: 'Go to DSHS new-hire reporting', url: URLS.dshs }
+    },
+    {
+      id: 'ic', phase: 4, title: 'Review rules for independent contractors',
+      agency: 'Labor & Industries', ver: 'pending',
+      test: function (a) {
+        if (a.subs === 'yes') return { status: 'applies', reason: 'You plan to use subcontractors or independent contractors. State slides point owners to L&I guidance on independent contractors.' };
+        if (a.subs === 'unsure' || a.subs === '') return { status: 'maybe', reason: 'You were not sure about subcontractors. State slides point owners to L&I guidance on independent contractors.' };
+        return { status: 'no', reason: 'Not shown: you do not plan to use subcontractors.' };
+      },
+      detail: '',
+      source: { label: 'Business.wa.gov start-a-business slides (independent contractors)', url: URLS.bizSite },
+      apply: { label: 'Read the L&I guidance', url: URLS.lniIc }
+    },
+    {
+      id: 'local', phase: 5, title: 'Check city and county requirements',
+      agency: 'Your city and county', ver: 'pending',
+      test: function (a) {
+        var place = a.city.trim() ? a.city.trim() : 'your city';
+        return { status: 'applies', reason: 'Zoning, city licenses and county rules are set locally and fall outside the state license. This demo has no local rules for ' + place + '.' };
+      },
+      detail: 'Some cities let you add a city license to the state application. If your city is not listed there, contact the city directly. Confirm with your city planning office.',
+      source: { label: 'Dept. of Revenue application help and the state business checklist', url: URLS.dor },
+      apply: { label: 'See the DOR application page', url: URLS.dor }
+    }
+  ];
+  var PHASES = {
+    1: 'Form your business',
+    2: 'License your business',
+    3: 'Industry credentials and permits',
+    4: 'If you hire or use contractors',
+    5: 'Local requirements'
+  };
+
+  function evaluate(a) {
+    var items = [], skipped = [];
+    RULES.forEach(function (r) {
+      var res = r.test(a);
+      if (res.status === 'no') skipped.push({ title: r.title, reason: res.reason });
+      else items.push({ rule: r, status: res.status, reason: res.reason });
+    });
+    return { items: items, skipped: skipped };
+  }
+
+  /* Simulated activity suggestion: simple keyword match, not AI. */
+  function suggest(text) {
+    var t = text.toLowerCase(), out = [];
+    if (/restaurant|cafe|coffee|food|catering|bakery|kitchen|bar\b|truck|diner/.test(t)) out.push('food');
+    if (/construct|contractor|remodel|roof|plumb|electric|carpent|framing|build|paint|concrete/.test(t)) out.push('construction');
+    if (!out.length) out.push('other');
+    return out;
+  }
+
+  /* ---------- State ---------- */
+  function blank() {
+    return { structure: '', desc: '', cats: [], city: '', hiring: '', subs: '', salestax: '', income: '', tradename: '' };
+  }
+  var S = { view: 'home', step: 0, a: blank(), built: false, label: '', catsAuto: false, done: {}, err: '' };
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function steps() {
+    var list = ['structure', 'desc'];
+    if (S.a.desc.trim()) list.push('cats');
+    return list.concat(['city', 'hiring', 'subs', 'salestax', 'income', 'tradename', 'review']);
+  }
+  function copyAnswers(src) {
+    var o = blank();
+    Object.keys(o).forEach(function (k) { o[k] = Array.isArray(src[k]) ? src[k].slice() : src[k]; });
+    return o;
+  }
+
+  /* ---------- Views ---------- */
+  function renderHome() {
+    var cards = SAMPLES.map(function (s) {
+      var a = s.answers;
+      var chips = [STRUCT_LABEL[a.structure], a.hiring === 'yes' ? 'Hiring' : 'No hiring planned']
+        .concat(a.cats.map(function (c) { return CAT_LABEL[c]; }));
+      return '<li class="sample"><h3>' + esc(s.title) + '</h3><p>' + esc(s.blurb) + '</p>' +
+        '<ul class="chips">' + chips.map(function (c) { return '<li class="chip">' + esc(c) + '</li>'; }).join('') + '</ul>' +
+        '<div class="row"><button type="button" class="btn btn-primary btn-sm" data-sample="' + s.id + '" data-mode="checklist">See this checklist</button>' +
+        '<button type="button" class="btn btn-quiet btn-sm" data-sample="' + s.id + '" data-mode="questions">Walk through the questions</button></div></li>';
+    }).join('');
+    return '<div class="hero"><h1 tabindex="-1" data-focus>Start your Washington business</h1>' +
+      '<p class="lead">Answer a few plain-language questions. Get one checklist of the licenses, permits and registrations that may apply to you, with links to apply.</p>' +
+      '<div class="row"><button type="button" class="btn btn-primary" data-act="start">Start the questionnaire</button>' +
+      '<button type="button" class="btn" data-go="sources">How this demo works</button></div>' +
+      '<ul class="facts"><li><strong>Written rules decide</strong>No AI picks your requirements. A keyword suggestion only helps you describe your business, and you confirm it.</li>' +
+      '<li><strong>Every item shows its source</strong>Each step links to the official page it came from and says whether the source has been checked.</li>' +
+      '<li><strong>Connects, does not replace</strong>We send you to the Business Licensing Service and the Secretary of State to apply.</li></ul></div>' +
+      '<h2>Or try a sample business</h2><p class="hint">Each sample fills in the answers for you. You can change any of them afterward.</p><ul class="samples">' + cards + '</ul>';
+  }
+
+  function ynOptions(name, cur) {
+    return YN.map(function (o) {
+      return '<label class="opt"><input type="radio" name="' + name + '" value="' + o.v + '"' + (cur === o.v ? ' checked' : '') + '><span>' + o.t + '</span></label>';
+    }).join('');
+  }
+
+  function renderQuestionnaire() {
+    var list = steps();
+    if (S.step >= list.length) S.step = list.length - 1;
+    var id = list[S.step], q = QUESTIONS[id], a = S.a;
+    var pct = Math.round((S.step / (list.length - 1)) * 100);
+    var body = '';
+    if (id === 'structure') {
+      body = '<div class="opts">' + STRUCTURES.map(function (o) {
+        return '<label class="opt"><input type="radio" name="structure" value="' + o.v + '"' + (a.structure === o.v ? ' checked' : '') + '><span>' + o.t + (o.d ? '<small>' + o.d + '</small>' : '') + '</span></label>';
+      }).join('') + '</div>';
+    } else if (id === 'desc') {
+      body = '<label for="f-desc" class="hint">Describe your business</label><textarea id="f-desc" placeholder="Example: Mobile dog grooming from a van">' + esc(a.desc) + '</textarea>';
+    } else if (id === 'cats') {
+      body = '<div class="opts">' + CATS.map(function (o) {
+        return '<label class="opt"><input type="checkbox" name="cats" value="' + o.v + '"' + (a.cats.indexOf(o.v) > -1 ? ' checked' : '') + '><span>' + o.t + '<small>' + o.d + '</small></span></label>';
+      }).join('') + '</div><p class="note">Suggested by a simple keyword match on your words (simulated, no AI). Change it if it is wrong.</p>';
+    } else if (id === 'city') {
+      body = '<label for="f-city" class="hint">City</label><input type="text" id="f-city" autocomplete="off" value="' + esc(a.city) + '" placeholder="Example: Spokane">';
+    } else if (id === 'review') {
+      var rows = [
+        ['Structure', 'structure', STRUCT_LABEL[a.structure] || 'Not answered'],
+        ['Business description', 'desc', a.desc.trim() || 'Not provided'],
+        ['Type', a.desc.trim() ? 'cats' : 'desc', a.cats.length ? a.cats.map(function (c) { return CAT_LABEL[c]; }).join(', ') : 'None selected'],
+        ['City', 'city', a.city.trim() || 'Not provided'],
+        ['Hiring within 90 days', 'hiring', YN_LABEL[a.hiring] || 'Not answered'],
+        ['Subcontractors', 'subs', YN_LABEL[a.subs] || 'Not answered'],
+        ['Collects sales tax', 'salestax', YN_LABEL[a.salestax] || 'Not answered'],
+        ['Income $12,000 a year or more', 'income', YN_LABEL[a.income] || 'Not answered'],
+        ['Uses a business name', 'tradename', YN_LABEL[a.tradename] || 'Not answered']
+      ];
+      body = '<dl class="summary">' + rows.map(function (r) {
+        return '<div><div><dt>' + r[0] + '</dt><dd>' + esc(r[2]) + '</dd></div><button type="button" class="btn btn-quiet btn-sm" data-edit="' + r[1] + '">Change</button></div>';
+      }).join('') + '</dl>';
+    } else {
+      body = '<div class="opts">' + ynOptions(id, a[id]) + '</div>';
+    }
+    var skipNote = (id === 'desc' && !a.desc.trim()) ? '<p class="hint">If you leave this blank, the next confirmation question is skipped.</p>' : '';
+    var nextLabel = id === 'review' ? 'Build my checklist' : 'Next';
+    return '<div class="panel"><p class="step-label">Question ' + (S.step + 1) + ' of ' + list.length + '</p>' +
+      '<div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '" aria-label="Questionnaire progress"><span style="width:' + Math.max(pct, 4) + '%"></span></div>' +
+      '<fieldset><legend tabindex="-1" data-focus>' + q.title + '</legend>' + (q.hint ? '<p class="hint">' + q.hint + '</p>' : '') + body + skipNote + '</fieldset>' +
+      '<p class="err" role="alert" id="err">' + esc(S.err) + '</p>' +
+      '<div class="nav-row"><button type="button" class="btn btn-quiet" data-act="back"' + (S.step === 0 ? ' disabled' : '') + '>Back</button>' +
+      '<button type="button" class="btn btn-primary" data-act="next">' + nextLabel + '</button></div></div>';
+  }
+
+  function renderChecklist() {
+    if (!S.built) {
+      return '<div class="empty"><h1 tabindex="-1" data-focus>Your personalized checklist</h1>' +
+        '<p>You have not built a checklist yet. Answer the questions, or load a sample business.</p>' +
+        '<div class="row"><button type="button" class="btn btn-primary" data-act="start">Start the questionnaire</button>' +
+        '<button type="button" class="btn" data-go="home">Pick a sample</button></div></div>';
+    }
+    var res = evaluate(S.a), total = res.items.length, done = 0;
+    res.items.forEach(function (it) { if (S.done[it.rule.id]) done++; });
+    var pct = total ? Math.round(done / total * 100) : 0;
+    var a = S.a;
+    var summary = [STRUCT_LABEL[a.structure] || 'Structure not answered']
+      .concat(a.cats.map(function (c) { return CAT_LABEL[c]; }))
+      .concat(['Hiring: ' + (YN_LABEL[a.hiring] || 'not answered'), 'Sales tax: ' + (YN_LABEL[a.salestax] || 'not answered'), 'Income $12,000 or more: ' + (YN_LABEL[a.income] || 'not answered'), 'Business name: ' + (YN_LABEL[a.tradename] || 'not answered')]);
+    var phaseHtml = [1, 2, 3, 4, 5].map(function (p) {
+      var inPhase = res.items.filter(function (it) { return it.rule.phase === p; });
+      if (!inPhase.length) return '';
+      return '<section class="phase" aria-labelledby="ph' + p + '"><h2 id="ph' + p + '">' + PHASES[p] + '</h2><ul class="items">' +
+        inPhase.map(itemHtml).join('') + '</ul></section>';
+    }).join('');
+    var skipHtml = res.skipped.length
+      ? '<details><summary>Left out of your checklist (' + res.skipped.length + ')</summary><ul>' + res.skipped.map(function (s) {
+          return '<li><strong>' + esc(s.title) + '.</strong> ' + esc(s.reason.replace(/^Not shown: /, 'Left out because ')) + '</li>';
+        }).join('') + '</ul></details>'
+      : '';
+    return '<div class="cl-head"><div><h1 tabindex="-1" data-focus>' + (S.label ? 'Sample checklist: ' + esc(S.label) : 'Your personalized checklist') + '</h1>' +
+      '<p class="hint">Built by written rules from your answers. Demo only, not official guidance.</p>' +
+      '<ul class="chips">' + summary.map(function (c) { return '<li class="chip">' + esc(c) + '</li>'; }).join('') + '</ul></div>' +
+      '<div class="row"><button type="button" class="btn btn-quiet btn-sm" data-act="edit-answers">Edit answers</button>' +
+      '<button type="button" class="btn btn-quiet btn-sm" data-act="reset">Start over</button></div>' +
+      '<div class="progress"><p id="prog-text">' + done + ' of ' + total + ' steps marked done</p><div class="meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '" aria-labelledby="prog-text" style="margin:0"><span style="width:' + pct + '%"></span></div></div></div>' +
+      phaseHtml + skipHtml;
+  }
+
+  function itemHtml(it) {
+    var r = it.rule, id = r.id;
+    var badge = it.status === 'applies' ? '<span class="pill applies">Applies to you</span>' : '<span class="pill maybe">May apply, confirm</span>';
+    var after = r.after && res_has(r.after) ? '<span>Comes after: ' + esc(titleOf(r.after)) + '</span>' : '';
+    var ver = r.ver === 'checked'
+      ? '<span>Source checked ' + CHECKED_ON + ' on the official page</span>'
+      : '<span>Source named by an official page. Second-person check pending</span>';
+    return '<li class="item' + (S.done[id] ? ' done' : '') + '"><div class="item-top">' + badge + '<span class="pill agency">' + esc(r.agency) + '</span></div>' +
+      '<h3>' + esc(r.title) + '</h3><p class="why">' + esc(it.reason) + '</p>' +
+      (r.detail ? '<p>' + esc(r.detail) + '</p>' : '') +
+      '<div class="meta">' + after + ver + '<span>Source: <a href="' + r.source.url + '" target="_blank" rel="noopener noreferrer">' + esc(r.source.label) + '</a></span></div>' +
+      '<div class="item-actions">' + (r.apply ? '<a class="btn btn-sm" href="' + r.apply.url + '" target="_blank" rel="noopener noreferrer">' + esc(r.apply.label) + '</a>' : '<span class="hint">No link. Contact your local office.</span>') +
+      '<label class="mark"><input type="checkbox" data-done="' + id + '"' + (S.done[id] ? ' checked' : '') + '> Mark as done</label></div></li>';
+  }
+  function res_has(id) {
+    return evaluate(S.a).items.some(function (it) { return it.rule.id === id; });
+  }
+  function titleOf(id) {
+    for (var i = 0; i < RULES.length; i++) if (RULES[i].id === id) return RULES[i].title;
+    return id;
+  }
+
+  function renderSources() {
+    var rows = [
+      ['Dept. of Revenue, Apply for a business license', URLS.dor, 'Registration triggers, Secretary of State first for entities, processing times, fee notes, wizard', 'Checked ' + CHECKED_ON],
+      ['Business.wa.gov, New Business Required License Checklist', URLS.bizChecklist, 'Hiring steps and other state registrations (L&I, ESD, DSHS)', 'Named, second check pending'],
+      ['Business.wa.gov, start-a-business slides', URLS.bizSite, 'Contractor registration, county health permits, independent contractors', 'Named, second check pending'],
+      ['Dept. of Revenue, Business Licensing Wizard', URLS.wizard, 'Official tool to confirm your list', 'Linked only. Logic not copied']
+    ];
+    return '<h1 tabindex="-1" data-focus>Sources and how this demo works</h1>' +
+      '<p class="lead">Every requirement here points to an official page. Anything not tied to an official source is left out.</p>' +
+      '<div class="table-scroll"><table><thead><tr><th scope="col">Source</th><th scope="col">Used for</th><th scope="col">Status</th></tr></thead><tbody>' +
+      rows.map(function (r) {
+        return '<tr><td><a href="' + r[1] + '" target="_blank" rel="noopener noreferrer">' + esc(r[0]) + '</a></td><td>' + esc(r[2]) + '</td><td>' + esc(r[3]) + '</td></tr>';
+      }).join('') + '</tbody></table></div>' +
+      '<div class="two-col"><div><h2>What is simulated</h2><ul>' +
+      '<li>The business-type suggestion is a keyword match, not an AI model.</li>' +
+      '<li>Status tracking is a checkbox you tick yourself. No agency feed is connected.</li>' +
+      '<li>Nothing is saved. Reloading clears your answers.</li>' +
+      '<li>There are no local city rules and no fee amounts.</li></ul></div>' +
+      '<div><h2>What this demo will not do</h2><ul>' +
+      '<li>File an application for you.</li>' +
+      '<li>Give legal or tax advice.</li>' +
+      '<li>Replace the Business Licensing Service or the Secretary of State.</li>' +
+      '<li>Show a rule that has no official source.</li></ul></div></div>';
+  }
+
+  /* ---------- Rendering and events ---------- */
+  var VIEWS = ['home', 'questionnaire', 'checklist', 'sources'];
+  var PAGE_TITLES = { home: 'Home', questionnaire: 'Questionnaire', checklist: 'My checklist', sources: 'Sources' };
+
+  function render(focus) {
+    VIEWS.forEach(function (v) { document.getElementById('view-' + v).hidden = v !== S.view; });
+    var el = document.getElementById('view-' + S.view);
+    if (S.view === 'home') el.innerHTML = renderHome();
+    else if (S.view === 'questionnaire') el.innerHTML = renderQuestionnaire();
+    else if (S.view === 'checklist') el.innerHTML = renderChecklist();
+    else el.innerHTML = renderSources();
+    Array.prototype.forEach.call(document.querySelectorAll('nav button'), function (b) {
+      if (b.getAttribute('data-go') === S.view) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+    });
+    if (focus) {
+      var t = el.querySelector('[data-focus]');
+      if (t) { try { t.focus({ preventScroll: true }); } catch (e) { t.focus(); } }
+      window.scrollTo(0, 0);
+      document.getElementById('live').textContent = PAGE_TITLES[S.view] + ' screen';
+    }
+  }
+  function go(view, focus) { S.view = view; S.err = ''; render(focus !== false); }
+
+  function readStep() {
+    var id = steps()[S.step], a = S.a;
+    if (id === 'structure') {
+      var s = document.querySelector('input[name="structure"]:checked');
+      if (s) a.structure = s.value;
+    } else if (id === 'desc') {
+      var d = document.getElementById('f-desc');
+      if (d) a.desc = d.value;
+    } else if (id === 'cats') {
+      a.cats = Array.prototype.map.call(document.querySelectorAll('input[name="cats"]:checked'), function (i) { return i.value; });
+      S.catsAuto = false;
+    } else if (id === 'city') {
+      var c = document.getElementById('f-city');
+      if (c) a.city = c.value;
+    } else if (id !== 'review') {
+      var y = document.querySelector('input[name="' + id + '"]:checked');
+      if (y) a[id] = y.value;
+    }
+  }
+
+  function next() {
+    readStep();
+    var list = steps(), id = list[S.step], a = S.a;
+    if (id === 'structure' && !a.structure) { S.err = 'Choose one option to continue.'; return render(false), focusErr(); }
+    if (['hiring', 'subs', 'salestax', 'income', 'tradename'].indexOf(id) > -1 && !a[id]) { S.err = 'Choose Yes, No or Not sure to continue.'; return render(false), focusErr(); }
+    if (id === 'desc') {
+      if (a.desc.trim() && (!a.cats.length || S.catsAuto)) { a.cats = suggest(a.desc); S.catsAuto = true; }
+      if (!a.desc.trim()) { a.cats = []; S.catsAuto = false; }
+    }
+    S.err = '';
+    if (id === 'review') {
+      S.built = true; S.label = ''; S.done = {};
+      return go('checklist');
+    }
+    S.step++;
+    render(true);
+  }
+  function focusErr() {
+    var e = document.getElementById('err');
+    if (e) e.scrollIntoView({ block: 'nearest' });
+  }
+  function back() {
+    readStep();
+    S.err = '';
+    if (S.step > 0) S.step--;
+    render(true);
+  }
+
+  function loadSample(id, mode) {
+    var s = SAMPLES.filter(function (x) { return x.id === id; })[0];
+    S.a = copyAnswers(s.answers); S.catsAuto = false; S.done = {}; S.label = s.title;
+    if (mode === 'questions') { S.built = false; S.step = 0; go('questionnaire'); }
+    else { S.built = true; go('checklist'); }
+  }
+
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('button');
+    if (!t) return;
+    if (t.hasAttribute('data-go')) {
+      var v = t.getAttribute('data-go');
+      if (v === 'questionnaire') S.step = Math.min(S.step, steps().length - 1);
+      return go(v);
+    }
+    if (t.hasAttribute('data-sample')) return loadSample(t.getAttribute('data-sample'), t.getAttribute('data-mode'));
+    if (t.hasAttribute('data-edit')) {
+      var target = t.getAttribute('data-edit'), idx = steps().indexOf(target);
+      if (idx > -1) { S.step = idx; render(true); }
+      return;
+    }
+    var act = t.getAttribute('data-act');
+    if (act === 'start') { S.step = 0; return go('questionnaire'); }
+    if (act === 'next') return next();
+    if (act === 'back') return back();
+    if (act === 'edit-answers') { S.step = steps().length - 1; S.built = true; return go('questionnaire'); }
+    if (act === 'reset') { S.a = blank(); S.built = false; S.label = ''; S.done = {}; S.step = 0; S.catsAuto = false; return go('home'); }
+  });
+  document.addEventListener('change', function (e) {
+    var c = e.target;
+    if (c.matches && c.matches('input[data-done]')) {
+      S.done[c.getAttribute('data-done')] = c.checked;
+      var y = window.scrollY;
+      render(false);
+      window.scrollTo(0, y);
+      var again = document.querySelector('input[data-done="' + c.getAttribute('data-done') + '"]');
+      if (again) again.focus({ preventScroll: true });
+    }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && S.view === 'questionnaire' && e.target.matches && e.target.matches('input[type="text"]')) {
+      e.preventDefault(); next();
+    }
+  });
+
+  render(false);
+})();
+</script>

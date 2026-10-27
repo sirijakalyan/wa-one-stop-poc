@@ -1,0 +1,6 @@
+{
+  "_note": "Sandbox user for the demo only. No real credentials or personal data. Sign-in with WA.gov accounts is an open question for the design partner.",
+  "users": [
+    { "id": "demo-owner", "name": "Demo owner (sandbox)", "emailOptIn": false }
+  ]
+}

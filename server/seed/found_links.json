@@ -1,0 +1,37 @@
+{
+  "_note": "Extra official pages found by web search. NOT reviewed by a named person. The app shows each next to the rule's own link, labelled 'found by search, not yet checked by a person'. They never change a rule's text or its Pending status. An entry with a 'city' field is shown only when the visitor's city matches.",
+  "searchedOn": "2026-10-27",
+  "links": [
+    {
+      "ruleId": "esd",
+      "label": "ESD employer registration steps",
+      "url": "https://www.esd.wa.gov/employer-taxes/register-your-business",
+      "agency": "Employment Security Department",
+      "note": "ESD says employers with employees in Washington must register, and lists the steps."
+    },
+    {
+      "ruleId": "local",
+      "city": "Bellevue",
+      "label": "Bellevue business licenses",
+      "url": "https://bellevuewa.gov/city-government/departments/finance/business-taxes/business-licenses",
+      "agency": "City of Bellevue Finance",
+      "note": "Bellevue says a city business license is separate from the state license and is applied for through the city's FileLocal system."
+    },
+    {
+      "ruleId": "local",
+      "city": "Bellevue",
+      "label": "Bellevue home occupation rules",
+      "url": "https://bellevuewa.gov/city-government/departments/development/zoning-and-land-use/zoning-requirements/home-occupations",
+      "agency": "City of Bellevue Development Services",
+      "note": "Only relevant if you work from your home. Bellevue says a home occupation permit is generally required, with some exceptions."
+    },
+    {
+      "ruleId": "local",
+      "city": "Bellevue",
+      "label": "Bellevue permits: getting started",
+      "url": "https://bellevuewa.gov/city-government/departments/development/permits/getting-started",
+      "agency": "City of Bellevue Development Services",
+      "note": "For building and other development permits."
+    }
+  ]
+}

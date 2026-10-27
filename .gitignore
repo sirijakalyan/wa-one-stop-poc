@@ -1,0 +1,12 @@
+node_modules/
+.env
+.env.*
+!.env.example
+server/data/
+client/dist/
+client/dist-preview/
+*.log
+# Older nested extract kept locally; deploy from the repo root only.
+wa-one-stop-poc/
+
+.deploy-admin-key.tmp

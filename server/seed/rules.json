@@ -1,0 +1,860 @@
+{
+  "_note": "Seed rule records. Each rule is data, tested by the deterministic engine in src/engine.js. No AI is involved. verification.status is 'checked' only where the official page was opened and read on the stated date. Everything else is 'pending' a second-person check. No fee amounts and no local city rules are included on purpose.",
+  "phases": {
+    "1": "Form your business",
+    "2": "License your business",
+    "3": "Industry credentials and permits",
+    "4": "If you hire or use contractors",
+    "5": "Local requirements"
+  },
+  "rules": [
+    {
+      "id": "sos",
+      "order": 10,
+      "phase": 1,
+      "title": "File your business entity with the Secretary of State",
+      "agency": "Secretary of State",
+      "applies": {
+        "field": "structure",
+        "in": [
+          "llc",
+          "corp",
+          "partnership"
+        ]
+      },
+      "reason": {
+        "applies": "You chose {structure}. Washington corporations, partnerships, LLCs and LLPs file with the Secretary of State before the Business License Application.",
+        "maybe": "You are not sure of your structure. If you form an LLC, corporation, partnership or LLP, this step comes before the business license.",
+        "no": "Left out because sole proprietors start with the Department of Revenue, not the Secretary of State."
+      },
+      "detail": "This applies to Washington (domestic) entities. If your entity is formed in another state, the steps differ. Ask the Secretary of State.",
+      "after": null,
+      "source": {
+        "label": "DOR, Choose an ownership structure",
+        "url": "https://dor.wa.gov/open-business/choose-ownership-structure"
+      },
+      "apply": {
+        "label": "Start or register a Washington business",
+        "url": "https://www.sos.wa.gov/corporations-charities/business-entities/start-or-register-business/start-domestic-wa-business"
+      },
+      "verification": {
+        "status": "checked",
+        "note": "DOR page text read on 2026-10-26 and supports the entity-filing rule."
+      },
+      "owner": "[NEEDS HUMAN INPUT: content owner]",
+      "reviewer": null,
+      "lastVerified": "2026-10-26",
+      "version": 1,
+      "status": "published",
+      "draft": null,
+      "fallback": "If the page does not open, search for \"Start a Domestic (WA) Business\" on sos.wa.gov.",
+      "noLink": "",
+      "supports": "DOR says filing with the Secretary of State is required for LLCs, corporations and certain partnerships before the Business License Application. It lists sole proprietorships separately with no such filing. The SOS page is the filing hub only.",
+      "limits": "Not required for a sole proprietorship. Banks are excepted for corporations. Other structures may differ.",
+      "guide": {
+        "meaning": "A Washington LLC, corporation or certain partnership is formed by filing with the Secretary of State. DOR requires this filing before you submit the Business License Application.",
+        "who": [
+          "LLCs, corporations and domestic partnerships and limited liability partnerships, as DOR lists them."
+        ],
+        "conditions": [
+          "A sole proprietorship is listed by DOR without this filing, so this step is left out for sole proprietors.",
+          "DOR says filing is required for corporations except banks."
+        ],
+        "prepare": [],
+        "prepareNote": "No document list for this filing was reviewed. The Secretary of State site has the details.",
+        "steps": [
+          {
+            "text": "Decide your business structure."
+          },
+          {
+            "text": "Open the Secretary of State's page for starting a Washington business, choose your entity type, and follow its instructions. The filing itself is made in the Secretary of State's online filing system, which requires a user account.",
+            "external": true
+          },
+          {
+            "text": "Then apply for your Washington business license with DOR. That is the next step in this checklist."
+          }
+        ],
+        "facts": [],
+        "whyExternal": "Entity filings are made in the Secretary of State's filing system, which needs its own account. The button opens the Secretary of State's start page, where you choose your entity type. This demo cannot file for you."
+      }
+    },
+    {
+      "id": "dor",
+      "order": 20,
+      "phase": 2,
+      "title": "Apply for your Washington business license",
+      "agency": "Dept. of Revenue (BLS)",
+      "applies": {
+        "any": [
+          {
+            "field": "hiring",
+            "is": "yes",
+            "label": "you plan to hire within 90 days",
+            "ask": "hiring"
+          },
+          {
+            "field": "salestax",
+            "is": "yes",
+            "label": "you sell something that requires collecting sales tax",
+            "ask": "sales tax"
+          },
+          {
+            "field": "income",
+            "is": "yes",
+            "label": "you expect gross income of $12,000 a year or more",
+            "ask": "income"
+          },
+          {
+            "field": "tradename",
+            "is": "yes",
+            "label": "you use a name other than your full legal name",
+            "ask": "business name"
+          }
+        ]
+      },
+      "reason": {
+        "applies": "You need to register with the Department of Revenue if any one trigger is true. For you: {hits}.",
+        "maybe": "You were not sure about: {unsure}. Any one of these being true means you need the license.",
+        "no": "Left out because none of the registration triggers we ask about is true for you. Other triggers exist, so run the official Business Licensing Wizard to be sure."
+      },
+      "detail": "DOR gives estimates, not guaranteed dates. Estimates for online applications, applications with city or state endorsements, and mailed applications are listed under Amounts and timing in the guide. The fee varies and each endorsement has its own fee.",
+      "after": "sos",
+      "source": {
+        "label": "DOR, Apply for a business license",
+        "url": "https://dor.wa.gov/open-business/apply-business-license"
+      },
+      "apply": {
+        "label": "Sign in to My DOR to apply (SAW account needed)",
+        "url": "https://secure.dor.wa.gov/home/Login"
+      },
+      "verification": {
+        "status": "checked",
+        "note": "DOR page text re-read on 2026-10-26 and the timing statements compared with the page. The mail-with-endorsements time is not stated and is marked Needs verification."
+      },
+      "owner": "[NEEDS HUMAN INPUT: content owner]",
+      "reviewer": null,
+      "lastVerified": "2026-10-26",
+      "version": 1,
+      "status": "published",
+      "draft": null,
+      "fallback": "If the sign-in page does not open, start at the DOR Open a business page (dor.wa.gov/open-business).",
+      "noLink": "",
+      "supports": "DOR lists when you must register and get a business license, including hiring within 90 days, sales tax, $12,000 gross income, and using a name other than your legal name. It also says to use the Business Licensing Wizard to apply.",
+      "limits": "DOR lists other triggers this demo does not ask about, such as nexus thresholds. Processing estimates are DOR's own and are not guaranteed dates. No fee amount is shown because DOR says it varies.",
+      "guide": {
+        "meaning": "A Washington business license registers your business with the Department of Revenue. You are assigned a Unified Business Identifier (UBI) number that you use when you file taxes or change your business.",
+        "who": [
+          "Any business that meets at least one DOR registration trigger."
+        ],
+        "conditions": [
+          "DOR lists these triggers: your business needs city, county or state endorsements; you use a name other than your full legal name; you plan to hire within 90 days; you sell something that requires collecting sales tax; your gross income is $12,000 a year or more; you must pay taxes or fees to DOR; you buy or process specialty wood products; you meet nexus threshold reporting requirements.",
+          "This demo asks about only some triggers. Run the Business Licensing Wizard to be sure.",
+          "If your structure is an LLC, corporation or partnership, DOR says to file with the Secretary of State first."
+        ],
+        "prepare": [],
+        "prepareNote": "DOR gives the forms and endorsements for your case after you run the Business Licensing Wizard.",
+        "steps": [
+          {
+            "text": "Check which registration triggers are true for you."
+          },
+          {
+            "text": "Run the Business Licensing Wizard. It gives a list of agencies to contact and any endorsements."
+          },
+          {
+            "text": "Apply online in DOR's secure My DOR system. You sign in with a Secure Access Washington (SAW) user ID, and the sign-in page has a sign-up link for new users. Or apply by mail with the Business License Application and payment.",
+            "external": true
+          },
+          {
+            "text": "Keep your UBI number. You need it for taxes and changes."
+          }
+        ],
+        "facts": [
+          {
+            "label": "Online application",
+            "text": "DOR says online applications take approximately 10 business days to process.",
+            "asOf": "2026-10-26",
+            "source": {
+              "label": "DOR, Apply for a business license",
+              "url": "https://dor.wa.gov/open-business/apply-business-license"
+            },
+            "status": "verified"
+          },
+          {
+            "label": "Online application with city or state endorsements",
+            "text": "DOR says it may take an additional 2 to 3 weeks to receive your business license because of approval time. The page does not state a time for county endorsements.",
+            "asOf": "2026-10-26",
+            "source": {
+              "label": "DOR, Apply for a business license",
+              "url": "https://dor.wa.gov/open-business/apply-business-license"
+            },
+            "status": "verified"
+          },
+          {
+            "label": "Application by mail",
+            "text": "DOR says mailed applications can take up to six weeks to process.",
+            "asOf": "2026-10-26",
+            "source": {
+              "label": "DOR, Apply for a business license",
+              "url": "https://dor.wa.gov/open-business/apply-business-license"
+            },
+            "status": "verified"
+          },
+          {
+            "label": "Mail with endorsements",
+            "text": "The DOR page gives no separate time for a mailed application that has endorsements. Needs verification with DOR.",
+            "asOf": "2026-10-26",
+            "source": {
+              "label": "DOR, Apply for a business license",
+              "url": "https://dor.wa.gov/open-business/apply-business-license"
+            },
+            "status": "needs-verification"
+          },
+          {
+            "label": "Fee",
+            "text": "DOR says the application fee varies and each additional endorsement has its own fee. DOR explains how to work out the fee. No amount is shown here.",
+            "asOf": "2026-10-26",
+            "source": {
+              "label": "DOR, Apply for a business license",
+              "url": "https://dor.wa.gov/open-business/apply-business-license"
+            },
+            "status": "verified"
+          }
+        ],
+        "whyExternal": "Applications are submitted in DOR's secure My DOR account system, which is also used to file taxes. The button opens the My DOR sign-in page. This demo never asks for your sign-in details and cannot submit the application."
+      }
+    },
+    {
+      "id": "wizard",
+      "order": 30,
+      "phase": 2,
+      "title": "Confirm your list with the official Business Licensing Wizard",
+      "agency": "Dept. of Revenue (BLS)",
+      "applies": {
+        "always": true
+      },
+      "reason": {
+        "applies": "This demo is a sketch. The state wizard returns the agencies to contact and any endorsements for your business, so use it to check this list.",
+        "maybe": "",
+        "no": ""
+      },
+      "detail": "Use the official wizard to confirm your actual requirements. It returns the city, state and federal licenses your business may need, with contacts and next steps. This demo is a sketch and does not replace it.",
+      "after": null,
+      "source": {
+        "label": "DOR, Open a business",
+        "url": "https://dor.wa.gov/open-business"
+      },
+      "apply": {
+        "label": "Open the Business Licensing Wizard",
+        "url": "https://secure.dor.wa.gov/gteunauth/?Link=wiz"
+      },
+      "verification": {
+        "status": "checked",
+        "note": "DOR page text read on 2026-10-26. The wizard page loads but its questions were not reviewed."
+      },
+      "owner": "[NEEDS HUMAN INPUT: content owner]",
+      "reviewer": null,
+      "lastVerified": "2026-10-26",
+      "version": 1,
+      "status": "published",
+      "draft": null,
+      "fallback": "If the wizard does not load, turn on cookies or start at the DOR Open a business page (dor.wa.gov/open-business).",
+      "noLink": "",
+      "supports": "DOR says the wizard returns a list of city, state and federal licenses your business may need, contact information for each, and next steps for the state business license.",
+      "limits": "The wizard needs cookies. Its questions were not reviewed and its logic is not copied.",
+      "guide": {
+        "meaning": "The Business Licensing Wizard is the Department of Revenue's official tool. It returns the city, state and federal licenses your business may need, with contacts and next steps.",
+        "who": [
+          "Everyone. This demo is a sketch, so every checklist includes this step."
+        ],
+        "conditions": [
+          "The wizard needs cookies turned on.",
+          "Its questions were not reviewed for this demo, and this demo does not copy its logic."
+        ],
+        "prepare": [],
+        "prepareNote": "",
+        "steps": [
+          {
+            "text": "Open the wizard.",
+            "external": true
+          },
+          {
+            "text": "Answer its questions about your business."
+          },
+          {
+            "text": "Compare its list of licenses and contacts with this checklist. Follow the wizard where they differ."
+          }
+        ],
+        "facts": [],
+        "whyExternal": "The wizard is a DOR tool. Only DOR can give you your official list."
+      }
+    },
+    {
+      "id": "lni-contractor",
+      "order": 40,
+      "phase": 3,
+      "title": "Register as a contractor with Labor & Industries",
+      "agency": "Labor & Industries",
+      "applies": {
+        "field": "cats",
+        "includes": "construction"
+      },
+      "reason": {
+        "applies": "You chose construction contracting. L&I requires construction contractors to register with L&I. The business license does not cover this.",
+        "maybe": "",
+        "no": "Left out because you did not choose construction contracting."
+      },
+      "detail": "L&I says construction contractors must register with L&I, and be bonded and insured. Bond amount depends on your classification (general or specialty). Trades such as plumbing, electrical, elevators, mobile home installation, boilers and asbestos have extra education, exam and licensing rules, and some activities have licensing in addition to registration. Fees and amounts L&I states are listed under Amounts and timing in the guide with the date read. They can change, so confirm with L&I.",
+      "after": null,
+      "source": {
+        "label": "L&I, Register as a Contractor",
+        "url": "https://lni.wa.gov/licensing-permits/contractors/register-as-a-contractor/"
+      },
+      "apply": {
+        "label": "Go to L&I contractor registration",
+        "url": "https://lni.wa.gov/licensing-permits/contractors/register-as-a-contractor/"
+      },
+      "verification": {
+        "status": "checked",
+        "note": "L&I page text re-read in full on 2026-10-26 and the fee, bond, insurance and timing figures compared with the page. Processing-time statements that overlap are marked Needs verification."
+      },
+      "owner": "[NEEDS HUMAN INPUT: content owner]",
+      "reviewer": null,
+      "lastVerified": "2026-10-26",
+      "version": 1,
+      "status": "published",
+      "draft": null,
+      "fallback": "If the link does not open, search for \"Register as a contractor\" on lni.wa.gov.",
+      "noLink": "",
+      "supports": "L&I states that all construction contractors must register, be bonded and carry liability insurance. It gives the application fee, the bond amount for each classification, the liability insurance amounts, and mailed-application and registration-card timing. It names trades with additional requirements.",
+      "limits": "Bond amount depends on classification. Trade-specific and activity-specific requirements apply only to those trades and activities. Amounts and times are L&I's statements as read on 2026-10-26 and can change.",
+      "guide": {
+        "meaning": "Washington requires construction contractors to register with Labor & Industries (L&I). Once registered, a contractor can bid, advertise and perform construction work. L&I also says state law requires contractors to be bonded and insured.",
+        "who": [
+          "Construction contractors, including work such as constructing, remodeling, repairing and demolishing buildings, roads and other real property."
+        ],
+        "conditions": [
+          "L&I has two classifications. General contractors can perform most types of construction work and can hire subcontractors in multiple specialties. Specialty contractors can work only in their specialty and cannot hire subcontractors.",
+          "The bond amount depends on classification: one amount for general contractors and another for specialty contractors.",
+          "L&I lists the liability insurance amounts on its page without splitting them by classification. Confirm your own requirements with L&I, because other rules can apply to your trade.",
+          "Plumbing, electrical, elevators, mobile home installation, boilers and asbestos work have additional education, examination and licensing requirements. These apply to those trades only.",
+          "L&I says some activities have licensing requirements in addition to contractor registration, for example lead-based paint work and pesticide application. These apply only to those activities.",
+          "L&I regulates 63 specialties that each require contractor registration."
+        ],
+        "prepare": [
+          "Your business name and business structure, or your DOR business registration and UBI number.",
+          "A continuous contractor surety bond or an assignment of savings.",
+          "A certificate of general liability insurance. L&I must be listed as certificate holder, and the bond and insurance must use your exact business name.",
+          "The completed Application for Contractor Registration (F625-001-000). All signatures must be original and notarized.",
+          "The registration fee."
+        ],
+        "prepareNote": "",
+        "steps": [
+          {
+            "text": "Register your business with the Department of Revenue."
+          },
+          {
+            "text": "Get a surety bond or an assignment of savings."
+          },
+          {
+            "text": "Buy a general liability insurance policy."
+          },
+          {
+            "text": "Complete the Application for Contractor Registration and pay the fee."
+          },
+          {
+            "text": "Submit it at your local L&I office, or mail it to L&I. L&I says it can help complete the application in person.",
+            "external": true
+          }
+        ],
+        "facts": [
+          {
+            "label": "Application fee",
+            "text": "$150.20, as L&I states for registration.",
+            "asOf": "2026-10-26",
+            "source": {
+              "label": "L&I, Register as a Contractor",
+              "url": "https://lni.wa.gov/licensing-permits/contractors/register-as-a-contractor/"
+            },
+            "status": "verified"
+          },
+          {
+            "label": "Bond, general contractors",
+            "text": "$30,000 continuous contractor surety bond, as L&I states. Bond premiums vary by bonding company and are not shown.",
+            "asOf": "2026-10-26",
+            "source": {
+              "label": "L&I, Register as a Contractor",
+              "url": "https://lni.wa.gov/licensing-permits/contractors/register-as-a-contractor/"
+            },
+            "status": "verified"
+          },
+          {
+            "label": "Bond, specialty contractors",
+            "text": "$15,000 continuous contractor surety bond, as L&I states. L&I names an assigned bank account as the alternative to a bond.",
+            "asOf": "2026-10-26",
+            "source": {
+              "label": "L&I, Register as a Contractor",
+              "url": "https://lni.wa.gov/licensing-permits/contractors/register-as-a-contractor/"
+            },
+            "status": "verified"
+          },
+          {
+            "label": "General liability insurance",
+            "text": "$200,000 public liability and $50,000 property damage, or $250,000 combined single limit, as L&I states. L&I must be listed as certificate holder.",
+            "asOf": "2026-10-26",
+            "source": {
+              "label": "L&I, Register as a Contractor",
+              "url": "https://lni.wa.gov/licensing-permits/contractors/register-as-a-contractor/"
+            },
+            "status": "verified"
+          },
+          {
+            "label": "Processing and activation, mailed application",
+            "text": "L&I says completed mailed applications are currently taking 3 to 4 weeks after receipt to process and activate your registration.",
+            "asOf": "2026-10-26",
+            "source": {
+              "label": "L&I, Register as a Contractor",
+              "url": "https://lni.wa.gov/licensing-permits/contractors/register-as-a-contractor/"
+            },
+            "status": "verified"
+          },
+          {
+            "label": "Registration card",
+            "text": "L&I says that once your business is registered you will receive a registration card in about 2 weeks. This is a later stage than processing and activation.",
+            "asOf": "2026-10-26",
+            "source": {
+              "label": "L&I, Register as a Contractor",
+              "url": "https://lni.wa.gov/licensing-permits/contractors/register-as-a-contractor/"
+            },
+            "status": "verified"
+          },
+          {
+            "label": "Other processing times",
+            "text": "L&I also posts a general backlog notice for documents sent to its office. The page does not say how that notice relates to the mailed-application time above, and gives no time for in-person applications, so no estimate is shown. Needs verification with L&I.",
+            "asOf": "2026-10-26",
+            "source": {
+              "label": "L&I, Register as a Contractor",
+              "url": "https://lni.wa.gov/licensing-permits/contractors/register-as-a-contractor/"
+            },
+            "status": "needs-verification"
+          }
+        ],
+        "whyExternal": "Registration is completed with L&I, in person at an L&I office or by mail. This demo cannot register you."
+      }
+    },
+    {
+      "id": "health",
+      "order": 50,
+      "phase": 3,
+      "title": "Check for a county health department permit",
+      "agency": "County health department",
+      "applies": {
+        "field": "cats",
+        "includes": "food"
+      },
+      "reason": {
+        "applies": "You chose food service. Food businesses may need a permit from the county health department. The state business licensing wizard lists agencies to contact for your business.",
+        "maybe": "",
+        "no": "Left out because you did not choose food service."
+      },
+      "detail": "Contact your county health department before you open.",
+      "after": null,
+      "source": {
+        "label": "DOR, Open a business",
+        "url": "https://dor.wa.gov/open-business"
+      },
+      "apply": null,
+      "verification": {
+        "status": "pending",
+        "note": "Pending verification. The county health permit statement came from the state business checklist read earlier in this project. That site returned 502 on 2026-10-26 so it could not be re-read. The exact county source has not been reviewed."
+      },
+      "owner": "[NEEDS HUMAN INPUT: content owner]",
+      "reviewer": null,
+      "lastVerified": null,
+      "version": 1,
+      "status": "published",
+      "draft": null,
+      "fallback": "Search for \"health department food business permit\" together with your county name.",
+      "noLink": "You have not entered a county. This demo has no county health link. Confirm which permits you need with your county health department.",
+      "supports": "The DOR page only supports the wizard as the place to get an agency list. No official county health page has been reviewed for this rule.",
+      "limits": "County requirements differ. The county is unknown in this demo.",
+      "guide": {
+        "meaning": "Food businesses such as restaurants may need a permit from the county health department.",
+        "who": [
+          "Food service businesses. The county depends on where the business is located."
+        ],
+        "conditions": [
+          "No county source has been reviewed. The county you enter only names your county in this step. It does not confirm any county requirement, and county rules differ."
+        ],
+        "prepare": [],
+        "prepareNote": "Not reviewed. Ask your county health department what to prepare.",
+        "steps": [
+          {
+            "text": "Find your county health department. If you entered a county on the questionnaire, it is named in the message on the checklist card."
+          },
+          {
+            "text": "Ask which permits and inspections apply to your food business."
+          }
+        ],
+        "facts": [],
+        "whyExternal": "",
+        "pending": true,
+        "pendingNote": "The exact county source has not been reviewed, so no county link or county requirement is shown."
+      },
+      "noLinkCounty": "You selected {county}. Confirm food permit requirements with the {county} health department. This demo has no verified link for it."
+    },
+    {
+      "id": "lni-wc",
+      "order": 60,
+      "phase": 4,
+      "title": "Set up workers' compensation insurance",
+      "agency": "Labor & Industries",
+      "applies": {
+        "field": "hiring",
+        "is": "yes"
+      },
+      "reason": {
+        "applies": "You plan to hire. L&I says that if you have workers, you might be required to provide workers' compensation.",
+        "maybe": "You were not sure about hiring. L&I says that if you have workers, you might be required to provide workers' compensation.",
+        "no": "Left out because you do not plan to hire within 90 days."
+      },
+      "detail": "L&I says employers buy workers' compensation from L&I unless L&I approves them as self-insured, and that some workers are exempt under strict definitions. Confirm with L&I whether your workers must be covered. Rates are not shown in this demo.",
+      "after": null,
+      "source": {
+        "label": "L&I, Do I Need a Workers' Comp Account?",
+        "url": "https://lni.wa.gov/insurance/insurance-requirements/do-i-need-a-workers-comp-account/"
+      },
+      "apply": {
+        "label": "See how to get a workers' comp account (L&I)",
+        "url": "https://lni.wa.gov/insurance/insurance-requirements/how-to-get-a-workers-compensation-account"
+      },
+      "verification": {
+        "status": "checked",
+        "note": "L&I page text read on 2026-10-26."
+      },
+      "owner": "[NEEDS HUMAN INPUT: content owner]",
+      "reviewer": null,
+      "lastVerified": "2026-10-26",
+      "version": 1,
+      "status": "published",
+      "draft": null,
+      "fallback": "If the link does not open, search for \"How to get a workers' compensation account\" on lni.wa.gov.",
+      "noLink": "",
+      "supports": "L&I says you might be required to provide workers' compensation if you have workers, and that private coverage is not allowed in Washington.",
+      "limits": "The page says 'might'. Exemptions and self-insurance exist. Applies only if you have workers.",
+      "guide": {
+        "meaning": "Workers' compensation insurance gives wage replacement and medical benefits to workers injured on the job. In Washington you buy coverage from L&I, or you are approved as a self-insured employer. Private coverage is not allowed.",
+        "who": [
+          "Businesses that have workers, whether employees or independent contractors. L&I says you might be required to provide coverage."
+        ],
+        "conditions": [
+          "L&I says all workers are entitled to coverage unless they fit strict exemption definitions.",
+          "Use the independent contractor step to check whether a contractor must be covered.",
+          "Employers submit quarterly reports and premium payments based on their industry and workers' hours."
+        ],
+        "prepare": [],
+        "prepareNote": "No document list was reviewed. L&I explains how to get an account on its site.",
+        "steps": [
+          {
+            "text": "Decide whether your workers must be covered."
+          },
+          {
+            "text": "If you are hiring employees, L&I says you get your workers' compensation account by applying for, or updating, your state business license with DOR. If you have no business license, apply for one. If you have one, update your business information to show you are hiring."
+          },
+          {
+            "text": "L&I says an account manager will then contact you to set up your policy. Read L&I's page for what happens next.",
+            "external": true
+          },
+          {
+            "text": "Plan to submit quarterly reports and premium payments."
+          }
+        ],
+        "facts": [],
+        "whyExternal": "L&I says the account is obtained through your DOR business license application, which is done in My DOR. The button opens L&I's page that explains this. This demo cannot open an account for you."
+      }
+    },
+    {
+      "id": "esd",
+      "order": 70,
+      "phase": 4,
+      "title": "Register for employer taxes with Employment Security",
+      "agency": "Employment Security Dept.",
+      "applies": {
+        "field": "hiring",
+        "is": "yes"
+      },
+      "reason": {
+        "applies": "You plan to hire. ESD says every employer in Washington files two tax and wage reports each quarter.",
+        "maybe": "You were not sure about hiring. ESD says every employer in Washington files two tax and wage reports each quarter.",
+        "no": "Left out because you do not plan to hire within 90 days."
+      },
+      "detail": "ESD says employers file quarterly tax and wage reports and pay unemployment taxes. Some employers, such as reimbursable employers, pay differently. Confirm your account setup and duties with ESD. Rates are not shown in this demo.",
+      "after": null,
+      "source": {
+        "label": "ESD, Quarterly reports",
+        "url": "https://esd.wa.gov/employer-requirements/quarterly-reports"
+      },
+      "apply": {
+        "label": "See ESD's guide to employer taxes",
+        "url": "https://esd.wa.gov/employer-requirements/unemployment-taxes/employers-guide-paying-taxes"
+      },
+      "verification": {
+        "status": "pending",
+        "note": "ESD pages read on 2026-10-26: the quarterly reports page and the employers' guide to paying taxes. They describe the steps, but no reviewer has confirmed them yet."
+      },
+      "owner": "[NEEDS HUMAN INPUT: content owner]",
+      "reviewer": null,
+      "lastVerified": null,
+      "version": 1,
+      "status": "published",
+      "draft": null,
+      "fallback": "If the link does not open, search for \"employers' guide to paying taxes\" on esd.wa.gov.",
+      "noLink": "",
+      "supports": "ESD says every Washington employer files two reports each quarter, and its unemployment taxes page covers paying taxes and reimbursable employers.",
+      "limits": "The ESD pages read do not state the account registration step itself.",
+      "guide": {
+        "meaning": "The Employment Security Department (ESD) collects unemployment taxes from employers. ESD says every employer in Washington files two tax and wage reports each quarter.",
+        "who": [
+          "Employers. The demo shows this step when you plan to hire."
+        ],
+        "conditions": [
+          "Reimbursable employers do not pay unemployment taxes. They pay ESD back for benefits paid to their separated employees.",
+          "Pending verification. The ESD pages reviewed did not state the account registration step, so this demo does not describe it."
+        ],
+        "prepare": [],
+        "prepareNote": "Not reviewed.",
+        "steps": [
+          {
+            "text": "If you are a new employer, ESD says you apply for a state business license from DOR before you can file a quarterly tax and wage report. If you are already licensed but hiring for the first time, update your business license application."
+          },
+          {
+            "text": "File your tax and wage report each quarter, even if you have no payroll to report."
+          },
+          {
+            "text": "Pay your taxes online in ESD's Employer Account Management System with Secure Access Washington, or by mail on the forms ESD sends. Read ESD's guide for details.",
+            "external": true
+          }
+        ],
+        "facts": [],
+        "whyExternal": "ESD's employer guide explains these steps, and the account and payments are handled in ESD's own systems. This demo cannot register you or take payments.",
+        "pending": true,
+        "pendingNote": "ESD's employer guide was read on 2026-10-26 and describes these steps, but no reviewer has confirmed them yet, so this requirement stays pending. Confirm with ESD."
+      }
+    },
+    {
+      "id": "dshs",
+      "order": 80,
+      "phase": 4,
+      "title": "Report new hires to DSHS",
+      "agency": "DSHS",
+      "applies": {
+        "field": "hiring",
+        "is": "yes"
+      },
+      "reason": {
+        "applies": "You plan to hire. DSHS says employers must report newly hired or rehired employees.",
+        "maybe": "You were not sure about hiring. If you hire, DSHS says employers must report newly hired or rehired employees.",
+        "no": "Left out because you do not plan to hire within 90 days."
+      },
+      "detail": "DSHS says to report each new or rehired employee within 20 days of hire or rehire, regardless of age or hours worked. A rehire counts after a separation of at least 60 consecutive days. Tribes and tribal-owned or Indian-owned businesses on reservations are exempt, though voluntary reports are welcome.",
+      "after": null,
+      "source": {
+        "label": "DSHS, New Hire Reporting",
+        "url": "https://www.dshs.wa.gov/family-food-and-housing-services/child-support/employer-resources/new-hire-reporting"
+      },
+      "apply": {
+        "label": "Go to DSHS new hire reporting",
+        "url": "https://www.dshs.wa.gov/family-food-and-housing-services/child-support/employer-resources/new-hire-reporting"
+      },
+      "verification": {
+        "status": "checked",
+        "note": "DSHS and ESD page text read on 2026-10-26."
+      },
+      "owner": "[NEEDS HUMAN INPUT: content owner]",
+      "reviewer": null,
+      "lastVerified": "2026-10-26",
+      "version": 1,
+      "status": "published",
+      "draft": null,
+      "fallback": "If the link does not open, search for \"new hire reporting\" on dshs.wa.gov.",
+      "noLink": "",
+      "supports": "DSHS states the 20-day reporting window, the 60-day rehire definition, and the tribal exemption. ESD's page agrees on 20 days.",
+      "limits": "Exemption for tribes and tribal or Indian-owned businesses on reservations.",
+      "guide": {
+        "meaning": "Federal and state law require employers to report each newly hired or rehired employee working in Washington to the Division of Child Support (DSHS). The state matches reports against child support records.",
+        "who": [
+          "Employers, regardless of the employee's age or the number of hours worked."
+        ],
+        "conditions": [
+          "A rehire counts after a separation of at least 60 consecutive days, or when the employee starts under a new Federal Employer Identification Number.",
+          "DSHS says Tribes, Tribal-owned businesses and Indian-owned businesses located on reservations are exempt, though voluntary reports are welcome."
+        ],
+        "prepare": [
+          "Employee: name, address, Social Security number, date of birth and date of hire.",
+          "Business: name, address and Federal Employer Identification Number."
+        ],
+        "prepareNote": "",
+        "steps": [
+          {
+            "text": "Gather the employee and business information."
+          },
+          {
+            "text": "Report within 20 days of the hire or rehire date."
+          },
+          {
+            "text": "DSHS prefers online reporting through Secure Access Washington with the DCS Online service. Fax, mail and phone options are also listed by DSHS.",
+            "external": true
+          }
+        ],
+        "facts": [
+          {
+            "label": "Deadline",
+            "text": "Within 20 days of the start date, as DSHS and ESD both state.",
+            "asOf": "2026-10-26",
+            "source": {
+              "label": "DSHS, New Hire Reporting",
+              "url": "https://www.dshs.wa.gov/family-food-and-housing-services/child-support/employer-resources/new-hire-reporting"
+            },
+            "status": "verified"
+          }
+        ],
+        "whyExternal": "Reports are filed in the DSHS DCS Online service. This demo never collects employee data and cannot file."
+      }
+    },
+    {
+      "id": "ic",
+      "order": 90,
+      "phase": 4,
+      "title": "Review rules for independent contractors",
+      "agency": "Labor & Industries",
+      "applies": {
+        "field": "subs",
+        "is": "yes"
+      },
+      "reason": {
+        "applies": "You plan to use subcontractors or independent contractors. L&I says businesses with workers, employees or independent contractors, may need workers' compensation coverage.",
+        "maybe": "You were not sure about subcontractors. L&I says businesses with workers, employees or independent contractors, may need workers' compensation coverage.",
+        "no": "Left out because you do not plan to use subcontractors."
+      },
+      "detail": "L&I says a 1099 form is not enough and that a UBI or contractor registration alone does not make a worker exempt. Workers must pass L&I's tests, with an extra part for construction. Review the tests with L&I.",
+      "after": null,
+      "source": {
+        "label": "L&I, Independent Contractors",
+        "url": "https://lni.wa.gov/insurance/insurance-requirements/independent-contractors/"
+      },
+      "apply": {
+        "label": "Check L&I independent contractor tests",
+        "url": "https://lni.wa.gov/insurance/insurance-requirements/independent-contractors/"
+      },
+      "verification": {
+        "status": "checked",
+        "note": "L&I page text read on 2026-10-26."
+      },
+      "owner": "[NEEDS HUMAN INPUT: content owner]",
+      "reviewer": null,
+      "lastVerified": "2026-10-26",
+      "version": 1,
+      "status": "published",
+      "draft": null,
+      "fallback": "If the link does not open, search for \"independent contractors\" on lni.wa.gov.",
+      "noLink": "",
+      "supports": "L&I explains the personal labor test and the 6-part test (7 parts for construction) for deciding whether independent contractors need workers' compensation coverage.",
+      "limits": "Outcome depends on each worker. Passing all parts is required for exemption.",
+      "guide": {
+        "meaning": "L&I decides who must be covered for workers' compensation. Hiring someone as an independent contractor does not by itself mean you can skip coverage.",
+        "who": [
+          "Businesses that use subcontractors or independent contractors."
+        ],
+        "conditions": [
+          "A 1099 form has no bearing on coverage, as L&I says.",
+          "Having a UBI number or contractor registration number does not automatically make a worker exempt.",
+          "For construction, a worker must also be properly registered as a contractor or hold a valid electrical contractor license to be exempt.",
+          "If your business has workers who should have been reported, L&I says you are responsible for unpaid premiums with penalties and interest."
+        ],
+        "prepare": [
+          "L&I says to document how each contractor passes each part of each test."
+        ],
+        "prepareNote": "",
+        "steps": [
+          {
+            "text": "Apply the personal labor test. One must be true: the individual brings their own employees and you do not control them, or the individual brings heavy or costly specialized equipment and their expertise to operate it and you do not control them."
+          },
+          {
+            "text": "If the worker does not pass, apply the 6-part test, or the 7-part test for construction. The worker must pass every part to be exempt. The parts cover freedom from your control, where and how the service is performed, an independent trade or business, filing an IRS expense schedule, a DOR account, and separate books and records."
+          },
+          {
+            "text": "If a worker is covered, indicate you have workers on your business license application, report their hours and pay premiums.",
+            "external": true
+          }
+        ],
+        "facts": [],
+        "whyExternal": "L&I holds the accounts. For a decision about a specific worker, call or use L&I's resources."
+      }
+    },
+    {
+      "id": "local",
+      "order": 100,
+      "phase": 5,
+      "title": "Check city and county requirements",
+      "agency": "Your city and county",
+      "applies": {
+        "always": true
+      },
+      "reason": {
+        "applies": "Zoning, city licenses and county rules are set locally and fall outside the state license. This demo has no local rules for {place}.",
+        "maybe": "",
+        "no": ""
+      },
+      "detail": "Zoning, city licenses and county rules are set locally. DOR lists cities whose endorsements you can add to your state application. DOR says to contact a city directly if it is not listed. Bellevue was not on the DOR list when checked on 2026-10-26, so confirm Bellevue requirements with the City of Bellevue. No local source has been reviewed for this demo.",
+      "after": null,
+      "source": {
+        "label": "DOR, City endorsements",
+        "url": "https://dor.wa.gov/manage-business/city-endorsements"
+      },
+      "apply": {
+        "label": "See DOR city endorsements",
+        "url": "https://dor.wa.gov/manage-business/city-endorsements"
+      },
+      "verification": {
+        "status": "pending",
+        "note": "Pending verification. The exact city or county source (for example the City of Bellevue) has not been reviewed. No local requirements or links are asserted."
+      },
+      "owner": "[NEEDS HUMAN INPUT: content owner]",
+      "reviewer": null,
+      "lastVerified": null,
+      "version": 1,
+      "status": "published",
+      "draft": null,
+      "fallback": "Search your city or county website for \"business license\" and \"zoning\".",
+      "noLink": "",
+      "supports": "DOR says you can apply for listed cities' endorsements with your state filing, and to contact any unlisted city directly.",
+      "limits": "Bellevue-specific and county-specific requirements are not included.",
+      "guide": {
+        "meaning": "Cities and counties can have their own business licenses, zoning and rules in addition to state licenses.",
+        "who": [
+          "Businesses located in or traveling to a city or county with local requirements. This demo does not know which apply."
+        ],
+        "conditions": [
+          "DOR says you can apply for listed cities' endorsements at the same time as your state filing, and to contact an unlisted city directly.",
+          "Bellevue was not on the DOR city list when checked on 2026-10-26. Confirm Bellevue requirements with the City of Bellevue.",
+          "Pending verification. No city or county source has been reviewed."
+        ],
+        "prepare": [],
+        "prepareNote": "Not reviewed.",
+        "steps": [
+          {
+            "text": "See whether your city is on the DOR city endorsements list.",
+            "external": true
+          },
+          {
+            "text": "If it is not, contact your city or county directly and ask about business licenses and zoning."
+          }
+        ],
+        "facts": [],
+        "whyExternal": "The DOR list is the only official local source reviewed.",
+        "pending": true,
+        "pendingNote": "No local requirement or link beyond the DOR city list is asserted."
+      }
+    }
+  ],
+  "changes": []
+}
