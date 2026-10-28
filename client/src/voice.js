@@ -35,6 +35,12 @@ export function speakable(text, max = 340, lang = 'en') {
   return (end > 80 ? cut.slice(0, end + 1) : cut.replace(/\s+\S*$/, '') + '.').trim();
 }
 
+// Chrome drops a line spoken right after cancel(), and a cancelled network voice can leave its queue stuck with speaking === true
+// and no sound. So: wait a moment after any cancel, and if a line has not started, reset the queue and try again with the same
+// voice, then with no chosen voice at all (the browser's own default for the language).
+let lastCancelAt = 0;
+let lastStartAt = 0;
+
 // Speak one line. Lines queue up, so a reply and its follow-up question are read in order.
 export function speak(text, { onStart, onEnd, onSilent, lang = 'en-US' } = {}) {
   if (!canSpeak() || !text) return;
@@ -42,6 +48,8 @@ export function speak(text, { onStart, onEnd, onSilent, lang = 'en-US' } = {}) {
   let started = false;
   let timer = null;
   let check = null;
+  let current = null;
+  const synth = () => window.speechSynthesis;
   const finish = () => {
     if (done) return;
     done = true;
@@ -49,29 +57,32 @@ export function speak(text, { onStart, onEnd, onSilent, lang = 'en-US' } = {}) {
     clearTimeout(check);
     onEnd?.();
   };
-  const say = (retry) => {
+  const reset = () => { try { synth().cancel(); } catch { /* ignore */ } lastCancelAt = Date.now(); };
+  const say = (attempt) => {
+    if (done) return;
     const u = new window.SpeechSynthesisUtterance(String(text));
     u.lang = lang;
     u.rate = 1.08;
-    const v = pickVoice(lang);
+    current = u;
+    const v = attempt < 2 ? pickVoice(lang) : null;
     if (v) u.voice = v;
-    u.onstart = () => { started = true; onStart?.(); };
-    u.onend = finish;
-    u.onerror = (e) => { if (e?.error === 'interrupted' || e?.error === 'canceled') finish(); else if (!retry) say(true); else finish(); };
+    u.onstart = () => { if (u !== current) return; started = true; lastStartAt = Date.now(); onStart?.(); };
+    u.onend = () => { if (u === current) finish(); };
+    u.onerror = (e) => { if (u !== current) return; if (e?.error === 'interrupted' || e?.error === 'canceled') finish(); else if (attempt < 2) { reset(); setTimeout(() => say(attempt + 1), 300); } else finish(); };
     // A browser that was left paused will accept a line and never play it.
-    try { if (window.speechSynthesis.paused) window.speechSynthesis.resume(); } catch { /* ignore */ }
-    window.speechSynthesis.speak(u);
-    // If nothing started and nothing is queued, the line was silently dropped: try once more, then say so.
+    try { if (synth().paused) synth().resume(); } catch { /* ignore */ }
+    synth().speak(u);
+    // Not started after a few seconds and nothing else of ours started either: the queue is stuck, whatever speaking says.
     check = setTimeout(() => {
-      const synth = window.speechSynthesis;
-      if (done || started || synth.speaking || synth.pending) return;
-      if (!retry) { try { synth.cancel(); } catch { /* ignore */ } setTimeout(() => say(true), 150); } else { onSilent?.(); finish(); }
-    }, 2500);
+      if (done || started || Date.now() - lastStartAt < 3000) return;
+      if (attempt < 2) { reset(); setTimeout(() => say(attempt + 1), 300); } else { onSilent?.(); finish(); }
+    }, 3000);
   };
   // Some browsers never send the "end" event for a line. Without it the microphone would stay switched off, so a timer
   // closes the line after a generous estimate of how long it takes to say.
-  timer = setTimeout(finish, 6000 + String(text).length * 110);
-  say(false);
+  timer = setTimeout(finish, 9000 + String(text).length * 110);
+  const wait = Math.max(0, 300 - (Date.now() - lastCancelAt));
+  if (wait) setTimeout(() => say(0), wait); else say(0);
 }
 
 // False only when the browser has loaded its voice list and none of them speaks this language. An empty list means not loaded yet.
@@ -84,7 +95,7 @@ export function hasVoice(lang = 'en-US') {
 }
 
 export function stopSpeaking() {
-  if (canSpeak()) window.speechSynthesis.cancel();
+  if (canSpeak()) { window.speechSynthesis.cancel(); lastCancelAt = Date.now(); }
 }
 
 const ERRORS = {

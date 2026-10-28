@@ -23,3 +23,29 @@ describe('speakable ack', () => {
     expect(speakable('Got it. Do you expect gross income of $12,000 a year or more?')).toBe('Do you expect gross income of $12,000 a year or more?');
   });
 });
+
+describe('speak recovers from a stuck speech queue', () => {
+  it('resets and retries, last time without a chosen voice, even while speaking stays true', async () => {
+    vi.useFakeTimers();
+    const { speak } = await import('./voice.js');
+    const uttered = [];
+    window.SpeechSynthesisUtterance = class { constructor(t) { this.text = t; } };
+    window.speechSynthesis = {
+      speaking: true, pending: false, paused: false,
+      getVoices: () => [{ name: 'Microsoft Sabina', lang: 'es-MX', localService: true }],
+      cancel: vi.fn(),
+      speak: vi.fn((u) => { uttered.push(u); if (uttered.length === 3) setTimeout(() => { u.onstart?.(); u.onend?.(); }, 10); }),
+    };
+    const onEnd = vi.fn();
+    const onSilent = vi.fn();
+    speak('Hola', { lang: 'es-US', onEnd, onSilent });
+    await vi.advanceTimersByTimeAsync(20000);
+    expect(uttered.length).toBe(3);
+    expect(uttered[0].voice?.name).toBe('Microsoft Sabina');
+    expect(uttered[2].voice).toBeUndefined();
+    expect(window.speechSynthesis.cancel).toHaveBeenCalled();
+    expect(onSilent).not.toHaveBeenCalled();
+    expect(onEnd).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+});
