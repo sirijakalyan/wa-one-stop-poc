@@ -89,3 +89,32 @@ test('Spanish: an admin edit to the English text is never hidden by the Spanish 
     await app.stop();
   }
 });
+
+test('Spanish: source page titles keep the English title in brackets', async () => {
+  const app = await startApp();
+  try {
+    const es = (await app.call('GET', '/api/rules?lang=es')).body;
+    assert.ok(es.rules.every((r) => /\(.+\)$/.test(r.source.label)), es.rules.map((r) => r.source.label).join(' | '));
+  } finally {
+    await app.stop();
+  }
+});
+
+test('Spanish: the rule records table (Sources page) is in Spanish and the admin list stays English', async () => {
+  const app = await startApp();
+  try {
+    const es = (await app.call('GET', '/api/rules?lang=es')).body;
+    const en = (await app.call('GET', '/api/rules')).body;
+    assert.equal(es.rules.length, en.rules.length);
+    for (const r of es.rules) {
+      for (const text of [r.title, r.supports, r.limits]) assert.doesNotMatch(text, ENGLISH, `${r.id}: ${text}`);
+    }
+    assert.match(en.rules[0].supports, /DOR says/);
+    const checklist = await app.call('POST', '/api/checklist', { answers: restaurant });
+    const note = (await app.call('GET', '/api/checklist?lang=es')).body.items.find((i) => i.id === 'dor').verification.note;
+    assert.match(note, /Texto de la página del DOR/);
+    assert.equal(checklist.status, 200);
+  } finally {
+    await app.stop();
+  }
+});

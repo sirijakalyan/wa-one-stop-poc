@@ -86,7 +86,7 @@ export const api = {
   markRead: (id) => request('POST', `/api/notifications/${id}/read`),
   renewalReminder: () => request('POST', '/api/notifications/renewal-reminder'),
   setEmailOptIn: (emailOptIn, email) => request('PUT', '/api/settings', { emailOptIn, email }),
-  rules: () => request('GET', '/api/rules'),
+  rules: (lang) => request('GET', lang === 'es' ? '/api/rules?lang=es' : '/api/rules'),
   changes: () => request('GET', '/api/changes'),
   saveDraft: (id, fields) => request('PUT', `/api/rules/${id}/draft`, { fields }),
   discardDraft: (id) => request('DELETE', `/api/rules/${id}/draft`),

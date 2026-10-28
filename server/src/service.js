@@ -423,8 +423,8 @@ export function createService(store, options = {}) {
   });
 
   /* ---------- Admin rules management (locked by ADMIN_KEY when configured) ---------- */
-  route('GET', '/api/rules', async () => {
-    const doc = await loadRules();
+  route('GET', '/api/rules', async ({ query }) => {
+    const doc = localizeRules(await loadRules(), langIn(query));
     return { ok: true, phases: doc.phases, rules: doc.rules.map(publicRule) };
   });
 

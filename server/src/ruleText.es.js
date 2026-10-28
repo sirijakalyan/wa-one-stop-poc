@@ -42,6 +42,9 @@ export const AGENCY_ES = {
 export const RULES_ES = {
   sos: {
     version: 1,
+    supports: 'El DOR indica que presentar ante el Secretario de Estado es obligatorio para las LLC, corporaciones y ciertas sociedades antes de la Solicitud de Licencia Comercial. Enumera aparte a los propietarios únicos sin esa presentación. La página del SOS es solo el centro de presentaciones.',
+    limits: 'No es obligatorio para un propietario único. Los bancos están exceptuados en el caso de las corporaciones. Otras estructuras pueden ser distintas.',
+    vnote: 'Texto de la página del DOR leído el 2026-10-26 y respalda la regla de presentación de la entidad.',
     title: 'Presente su entidad comercial ante el Secretario de Estado',
     reason: {
       applies: 'Usted eligió {structure}. Las corporaciones, sociedades, LLC y LLP de Washington se presentan ante el Secretario de Estado antes de la Solicitud de Licencia Comercial.',
@@ -64,6 +67,9 @@ export const RULES_ES = {
   },
   dor: {
     version: 1,
+    supports: 'El DOR enumera cuándo debe registrarse y obtener una licencia comercial, incluidos contratar personal en 90 días, el impuesto sobre las ventas, $12,000 de ingresos brutos y usar un nombre distinto del nombre legal. También indica usar el Asistente de licencias comerciales para solicitar.',
+    limits: 'El DOR enumera otros motivos por los que esta demostración no pregunta, como los umbrales de nexo. Las estimaciones de procesamiento son del propio DOR y no son fechas garantizadas. No se muestra ningún monto de tarifa porque el DOR indica que varía.',
+    vnote: 'Texto de la página del DOR releído el 2026-10-26 y las declaraciones de tiempos comparadas con la página. El tiempo del correo con endosos no se indica y está marcado como Necesita verificación.',
     title: 'Solicite su licencia comercial de Washington',
     reason: {
       applies: 'Debe registrarse ante el Departamento de Ingresos si se cumple cualquiera de los motivos. En su caso: {hits}.',
@@ -101,6 +107,9 @@ export const RULES_ES = {
   },
   wizard: {
     version: 1,
+    supports: 'El DOR indica que el asistente devuelve una lista de licencias de ciudad, estado y federales que su negocio puede necesitar, la información de contacto de cada una y los próximos pasos para la licencia comercial estatal.',
+    limits: 'El asistente necesita cookies. Sus preguntas no se revisaron y su lógica no se copia.',
+    vnote: 'Texto de la página del DOR leído el 2026-10-26. La página del asistente carga pero sus preguntas no se revisaron.',
     title: 'Confirme su lista con el Asistente oficial de licencias comerciales',
     reason: {
       applies: 'Esta demostración es un esbozo. El asistente estatal le da las agencias con las que comunicarse y los endosos para su negocio, así que úselo para revisar esta lista.',
@@ -121,6 +130,9 @@ export const RULES_ES = {
   },
   'lni-contractor': {
     version: 1,
+    supports: 'L&I indica que todos los contratistas de construcción deben registrarse, tener fianza y contar con seguro de responsabilidad civil. Da la tarifa de solicitud, el monto de la fianza de cada clasificación, los montos del seguro de responsabilidad civil, y los tiempos de la solicitud por correo y de la tarjeta de registro. Nombra oficios con requisitos adicionales.',
+    limits: 'El monto de la fianza depende de la clasificación. Los requisitos específicos de un oficio o de una actividad se aplican solo a esos oficios y actividades. Los montos y tiempos son declaraciones de L&I leídas el 2026-10-26 y pueden cambiar.',
+    vnote: 'Texto de la página de L&I releído completo el 2026-10-26 y las cifras de tarifa, fianza, seguro y tiempos comparadas con la página. Las declaraciones de tiempos de procesamiento que se superponen están marcadas como Necesita verificación.',
     title: 'Regístrese como contratista en Labor & Industries',
     reason: {
       applies: 'Usted eligió construcción y contratistas. L&I exige que los contratistas de construcción se registren en L&I. La licencia comercial no cubre esto.',
@@ -169,6 +181,9 @@ export const RULES_ES = {
   },
   health: {
     version: 1,
+    supports: 'La página del DOR solo respalda al asistente como el lugar para obtener una lista de agencias. No se revisó ninguna página oficial de salud del condado para esta regla.',
+    limits: 'Los requisitos de los condados son distintos. El condado se desconoce en esta demostración.',
+    vnote: 'Verificación pendiente. La declaración sobre el permiso de salud del condado vino de la lista de verificación comercial estatal leída antes en este proyecto. Ese sitio devolvió el error 502 el 2026-10-26, así que no se pudo releer. La fuente exacta del condado no se ha revisado.',
     title: 'Revise si necesita un permiso del departamento de salud del condado',
     reason: {
       applies: 'Usted eligió servicio de comida. Los negocios de comida pueden necesitar un permiso del departamento de salud del condado. El asistente estatal de licencias comerciales enumera las agencias con las que comunicarse para su negocio.',
@@ -193,6 +208,9 @@ export const RULES_ES = {
   },
   'lni-wc': {
     version: 1,
+    supports: 'L&I indica que es posible que deba proporcionar compensación para trabajadores si tiene trabajadores, y que la cobertura privada no se permite en Washington.',
+    limits: 'La página dice \'podría\'. Existen exenciones y autoseguro. Se aplica solo si tiene trabajadores.',
+    vnote: 'Texto de la página de L&I leído el 2026-10-26.',
     title: 'Contrate el seguro de compensación para trabajadores',
     reason: {
       applies: 'Usted planea contratar personal. L&I indica que si tiene trabajadores, es posible que deba proporcionar compensación para trabajadores.',
@@ -220,6 +238,9 @@ export const RULES_ES = {
   },
   esd: {
     version: 1,
+    supports: 'El ESD indica que todo empleador de Washington presenta dos informes cada trimestre, y su página de impuestos de desempleo cubre el pago de impuestos y los empleadores de reembolso.',
+    limits: 'Las páginas del ESD que se leyeron no indican el paso de registro de la cuenta en sí.',
+    vnote: 'Páginas del ESD leídas el 2026-10-26: la página de informes trimestrales y la guía para empleadores sobre el pago de impuestos. Describen los pasos, pero ningún revisor los ha confirmado todavía.',
     title: 'Regístrese para los impuestos de empleador en Employment Security',
     reason: {
       applies: 'Usted planea contratar personal. El ESD indica que todo empleador en Washington presenta dos informes de impuestos y salarios cada trimestre.',
@@ -247,6 +268,9 @@ export const RULES_ES = {
   },
   dshs: {
     version: 1,
+    supports: 'El DSHS indica el plazo de 20 días para informar, la definición de recontratación de 60 días y la exención tribal. La página del ESD coincide en los 20 días.',
+    limits: 'Exención para las tribus y para los negocios de propiedad tribal o de indígenas en reservas.',
+    vnote: 'Texto de las páginas del DSHS y del ESD leído el 2026-10-26.',
     title: 'Informe las nuevas contrataciones al DSHS',
     reason: {
       applies: 'Usted planea contratar personal. El DSHS indica que los empleadores deben informar los empleados recién contratados o recontratados.',
@@ -269,6 +293,9 @@ export const RULES_ES = {
   },
   ic: {
     version: 1,
+    supports: 'L&I explica la prueba de trabajo personal y la prueba de 6 partes (7 partes para la construcción) para decidir si los contratistas independientes necesitan cobertura de compensación para trabajadores.',
+    limits: 'El resultado depende de cada trabajador. Se requiere pasar todas las partes para quedar exento.',
+    vnote: 'Texto de la página de L&I leído el 2026-10-26.',
     title: 'Revise las reglas para contratistas independientes',
     reason: {
       applies: 'Usted planea usar subcontratistas o contratistas independientes. L&I indica que los negocios con trabajadores, empleados o contratistas independientes pueden necesitar cobertura de compensación para trabajadores.',
@@ -295,6 +322,9 @@ export const RULES_ES = {
   },
   local: {
     version: 1,
+    supports: 'El DOR indica que usted puede solicitar los endosos de las ciudades de la lista junto con su presentación estatal, y comunicarse directamente con cualquier ciudad que no aparezca.',
+    limits: 'No se incluyen requisitos específicos de Bellevue ni de un condado.',
+    vnote: 'Verificación pendiente. La fuente exacta de la ciudad o del condado (por ejemplo la Ciudad de Bellevue) no se ha revisado. No se afirma ningún requisito ni enlace local.',
     title: 'Revise los requisitos de la ciudad y del condado',
     reason: {
       applies: 'La zonificación, las licencias de la ciudad y las reglas del condado se fijan localmente y quedan fuera de la licencia estatal. Esta demostración no tiene reglas locales para {place}.',
@@ -344,4 +374,17 @@ export const SIMULATION_ES = { label: 'Solicitud en línea', text: 'aproximadame
 export const TIMELINE_ES = {
   estimateNote: 'Basado en estimaciones publicadas por las agencias, no es una garantía. Cuenta solo los pasos que tienen un tiempo registrado y no cuenta los días festivos, así que su fecha real puede ser posterior.',
   record: 'Documento 11, revisión de fuentes del 2026-10-26, cifras releídas completas en las páginas de las agencias. Son estimaciones de las agencias, no fechas garantizadas.',
+};
+
+// Titles of the official pages. The English title stays in brackets so a person can find the page.
+export const SOURCE_LABEL_ES = {
+  "DOR, Choose an ownership structure": "DOR, Elegir una estructura de propiedad (Choose an ownership structure)",
+  "DOR, Apply for a business license": "DOR, Solicitar una licencia comercial (Apply for a business license)",
+  "DOR, Open a business": "DOR, Abrir un negocio (Open a business)",
+  "L&I, Register as a Contractor": "L&I, Registrarse como contratista (Register as a Contractor)",
+  "L&I, Do I Need a Workers' Comp Account?": "L&I, ¿Necesito una cuenta de compensación para trabajadores? (Do I Need a Workers' Comp Account?)",
+  "ESD, Quarterly reports": "ESD, Informes trimestrales (Quarterly reports)",
+  "DSHS, New Hire Reporting": "DSHS, Informe de nuevas contrataciones (New Hire Reporting)",
+  "L&I, Independent Contractors": "L&I, Contratistas independientes (Independent Contractors)",
+  "DOR, City endorsements": "DOR, Endosos de ciudad (City endorsements)",
 };

@@ -306,7 +306,7 @@ export const pagesEs = {
   'foot.sources': 'Fuentes',
   'foot.admin': 'Reglas de administración (para administradores)',
   enNote: 'Nota: esta traducción de los requisitos y las guías es un borrador que una persona todavía debe revisar. Los títulos de las páginas oficiales y los nombres de las agencias se mantienen como están.',
-  'sr.en': 'Nota: las descripciones de las fuentes y los registros de reglas están por ahora en inglés.',
+  'sr.en': 'Nota: los títulos de las páginas oficiales se mantienen como los publica cada agencia. La traducción de las descripciones y de los registros de reglas es un borrador que una persona todavía debe revisar.',
   'nt.note': 'Nota: los avisos ya creados se quedan en el idioma en que se crearon.',
   'nf.title': 'Página no encontrada',
   'nf.text': 'No encontramos esa página en la demostración.',
