@@ -251,6 +251,22 @@ describe('voice', () => {
     expect(screen.getByRole('button', { name: /Microphone off/ })).toHaveAttribute('aria-pressed', 'false');
   });
 
+  it('"yes that is right" said aloud confirms the read-back, and "save my plan" said aloud saves and opens the checklist', async () => {
+    const user = userEvent.setup();
+    renderAt({ pathname: '/guide', state: { mode: 'type', start: STORY } });
+    await inLog(/^I heard:/);
+    const input = await screen.findByLabelText(/Tell the guide about your business/);
+    await user.type(input, 'yes that is right{Enter}');
+    expect(await inLog(/How will your business be set up/)).toBeInTheDocument();
+    for (const [question, name] of [[/set up/, 'Not sure'], [/subcontractors/, 'No'], [/sales tax/, 'Yes'], [/\$12,000/, 'Yes'], [/name other than/, 'Yes']]) {
+      await inLog(question);
+      await tap(user, name);
+    }
+    expect(await inLog(/Say or tap Save my plan/)).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/Tell the guide about your business/), 'save my plan{Enter}');
+    expect(await screen.findByRole('heading', { name: /checklist/i })).toBeInTheDocument();
+  });
+
   it('says so, and keeps typing working, when the browser cannot listen', async () => {
     delete window.webkitSpeechRecognition;
     const user = userEvent.setup();

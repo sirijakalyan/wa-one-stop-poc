@@ -17,6 +17,8 @@ const GREETING = { id: 'hello', role: 'guide', text: "Hi, I'm here to help you s
 let counter = 0;
 const nextId = () => `m${Date.now().toString(36)}${counter++}`;
 
+const SAVE_RX = /^\s*(?:(?:ok|okay|yes|please|now|then|so)[\s,]+)*(?:save|keep|store)\b|\b(?:save|keep|store|open)\b[^.?!]{0,20}\b(?:plan|checklist)\b/i;
+
 // Main screen: the conversation on the left; the business card, the plan and the road to opening day fill in on the right.
 export default function Guide() {
   const { guide, setGuide, setAnswers, setLabel, setStep, setCatsAuto } = useApp();
@@ -45,6 +47,7 @@ export default function Guide() {
   const [voiceMsg, setVoiceMsg] = useState('');
   const [tick, setTick] = useState(0);
   const spokenIdx = useRef(0);
+  const saveRef = useRef(() => {});
   const speakingCount = useRef(0);
   const listenerRef = useRef(null);
   const cond = useRef({});
@@ -67,6 +70,12 @@ export default function Guide() {
   }, []);
 
   const turn = useCallback(async (body, ownerText) => {
+    // Once the card is complete, saying "save my plan" does the same as tapping the button.
+    if (body.message && guideRef.current.complete && SAVE_RX.test(body.message)) {
+      setGuide((g) => ({ ...g, messages: [...g.messages, { id: nextId(), role: 'owner', text: ownerText || body.message }] }));
+      saveRef.current();
+      return;
+    }
     setBusy(true);
     setError('');
     const owner = ownerText ? { id: nextId(), role: 'owner', text: ownerText } : null;
@@ -87,6 +96,7 @@ export default function Guide() {
   }, [refreshPlan, setGuide]);
 
   turnRef.current = turn;
+  saveRef.current = save;
   cond.current = { micOn, speaking, busy };
 
   // Read each new guide line aloud, in order. Lines the owner typed or older lines are never read.

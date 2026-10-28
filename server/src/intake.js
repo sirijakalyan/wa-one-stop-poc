@@ -402,7 +402,7 @@ function finish(card, reply, { ask = null, ack = '', chips = null, note = '' } =
   if (complete) {
     return {
       card,
-      reply: [ack, 'That is everything I need. Your plan and your road to opening day are ready on the right. Every step shows the answer behind it.'].filter(Boolean).join(' '),
+      reply: [ack, 'That is everything I need. Your plan and your road to opening day are ready on the right. Every step shows the answer behind it. Say or tap Save my plan to keep it, or ask me a question.'].filter(Boolean).join(' '),
       ask: null, chips: [{ value: 'save', label: 'Save my plan' }], awaiting: null, complete: true,
     };
   }
