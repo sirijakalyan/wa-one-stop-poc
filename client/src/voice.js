@@ -74,6 +74,15 @@ export function speak(text, { onStart, onEnd, onSilent, lang = 'en-US' } = {}) {
   say(false);
 }
 
+// False only when the browser has loaded its voice list and none of them speaks this language. An empty list means not loaded yet.
+export function hasVoice(lang = 'en-US') {
+  if (!canSpeak()) return false;
+  const voices = window.speechSynthesis.getVoices?.() || [];
+  if (!voices.length) return true;
+  const base = String(lang).slice(0, 2).toLowerCase();
+  return voices.some((v) => String(v.lang).toLowerCase().startsWith(base));
+}
+
 export function stopSpeaking() {
   if (canSpeak()) window.speechSynthesis.cancel();
 }

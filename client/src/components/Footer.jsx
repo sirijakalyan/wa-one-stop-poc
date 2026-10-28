@@ -1,13 +1,14 @@
 import { Link } from 'react-router-dom';
-import { DISCLAIMER_SHORT, DISCLAIMER_TEXT } from '../disclaimer.js';
+import { useT } from '../i18n.js';
 
 export default function Footer() {
+  const t = useT();
   return (
     <footer>
       <div className="wrap">
-        <p className="foot-disclaimer" data-testid="footer-disclaimer"><strong>{DISCLAIMER_SHORT}.</strong> {DISCLAIMER_TEXT}</p>
-        <p>Every requirement shown comes from an official agency page and carries its source. Confirm with the relevant agency before you apply.</p>
-        <p className="foot-links"><Link to="/sources">Sources</Link><span aria-hidden="true"> · </span><Link to="/admin">Admin rules (for administrators)</Link></p>
+        <p className="foot-disclaimer" data-testid="footer-disclaimer"><strong>{t('foot.short')}.</strong> {t('foot.text')}</p>
+        <p>{t('foot.line')}</p>
+        <p className="foot-links"><Link to="/sources">{t('foot.sources')}</Link><span aria-hidden="true"> · </span><Link to="/admin">{t('foot.admin')}</Link></p>
       </div>
     </footer>
   );

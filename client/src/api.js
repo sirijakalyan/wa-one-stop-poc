@@ -92,7 +92,7 @@ export const api = {
   countySources: () => request('GET', '/api/county-sources'),
   saveCountySource: (county, entry) => request('PUT', `/api/county-sources/${encodeURIComponent(county)}`, entry),
   adminStatus: () => request('GET', '/api/admin/status'),
-  chat: (message, conversation) => request('POST', '/api/chat', { message, conversation }),
+  chat: (message, conversation, lang) => request('POST', '/api/chat', { message, conversation, lang }),
   intakeTurn: (body) => request('POST', '/api/intake/turn', body),
   intakePlan: (card, simulate = false) => request('POST', '/api/intake/plan', { card, simulate }),
   simulateRuleChange: (card) => request('POST', '/api/simulate/rule-change', { card }),

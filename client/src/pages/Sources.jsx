@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { api, useLoad } from '../api.js';
+import { useT } from '../i18n.js';
 import ExternalLink from '../components/ExternalLink.jsx';
 import { statusLabel, approvalLabel, OWNER_FALLBACK, REVIEWER_FALLBACK } from '../components/Parts.jsx';
 
@@ -23,82 +24,84 @@ const SOURCES = [
 ];
 
 export default function Sources() {
+  const t = useT();
   const fetchRules = useCallback(() => api.rules(), []);
   const { data } = useLoad(fetchRules);
   const rules = data?.rules ?? [];
 
   return (
     <>
-      <h1 tabIndex={-1}>Sources and how this demo works</h1>
-      <p className="lead">Every requirement here points to an official page. Anything not tied to an official source is left out.</p>
+      <h1 tabIndex={-1}>{t('sr.title')}</h1>
+      <p className="lead">{t('sr.lead')}</p>
+      {t.lang === 'es' && <p className="draft-note">{t('enNote')}</p>}
 
-      <h2>Official pages used</h2>
-      <p className="hint">All pages are Washington State agency pages. Each link opens in a new tab. If a page does not open, the agency site may be down. Try again later or search for the agency name. Opening a page is not the same as verifying a rule. Business.wa.gov returned 502 Bad Gateway on October 26, 2026, so it is not linked.</p>
+      <h2>{t('sr.pages')}</h2>
+      <p className="hint">{t('sr.pagesHint')}</p>
       <div className="table-scroll">
         <table className="stack">
-          <thead><tr><th scope="col">Source</th><th scope="col">What it supports</th></tr></thead>
+          <thead><tr><th scope="col">{t('sr.source')}</th><th scope="col">{t('sr.supports')}</th></tr></thead>
           <tbody>
             {SOURCES.map(([name, url, use]) => (
               <tr key={url}>
                 <td><ExternalLink href={url}>{name}</ExternalLink><br /><span className="mono-small">{url}</span></td>
-                <td data-label="What it supports">{use}</td>
+                <td data-label={t('sr.supports')}>{use}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      <h2>Business Licensing Wizard</h2>
-      <p>The wizard is the official follow-up tool. This demo is a sketch from a few answers. Confirm your actual requirements in the wizard and with each agency, and with your city and county.</p>
+      <h2>{t('sr.wiz')}</h2>
+      <p>{t('sr.wizText')}</p>
       <p>
-        <ExternalLink className="btn btn-sm" href="https://secure.dor.wa.gov/gteunauth/?Link=wiz" fallback="If the wizard does not load, turn on cookies or start at dor.wa.gov/open-business." showFallback>Open the Business Licensing Wizard</ExternalLink>
+        <ExternalLink className="btn btn-sm" href="https://secure.dor.wa.gov/gteunauth/?Link=wiz" fallback={t('sr.wizFallback')} showFallback>{t('sr.wizOpen')}</ExternalLink>
       </p>
 
       <div className="two-col">
         <div>
-          <h2>What is simulated</h2>
+          <h2>{t('sr.simTitle')}</h2>
           <ul>
-            <li>The business-type suggestion is a keyword match, not an AI model.</li>
-            <li>Status tracking is a checkbox you tick yourself. No agency feed is connected.</li>
-            <li>Notifications and the email switch are simulated. Nothing is sent.</li>
-            <li>There is no sign-in, no local city or county rules and no fee amounts. A county you enter only names your county in the county health step. It confirms nothing.</li>
+            <li>{t('sr.sim1')}</li>
+            <li>{t('sr.sim2')}</li>
+            <li>{t('sr.sim3')}</li>
+            <li>{t('sr.sim4')}</li>
           </ul>
         </div>
         <div>
-          <h2>What this demo will not do</h2>
+          <h2>{t('sr.notTitle')}</h2>
           <ul>
-            <li>File an application for you.</li>
-            <li>Give legal or tax advice.</li>
-            <li>Replace the Business Licensing Service or the Secretary of State.</li>
-            <li>Show a rule that has no official source.</li>
+            <li>{t('sr.not1')}</li>
+            <li>{t('sr.not2')}</li>
+            <li>{t('sr.not3')}</li>
+            <li>{t('sr.not4')}</li>
           </ul>
         </div>
       </div>
 
-      <h2>Rule records ({rules.length})</h2>
+      <h2>{t('sr.rules', rules.length)}</h2>
       <dl className="legend">
-        <dt>Checked</dt><dd>Someone read the official page and it supports the rule. This is not an approval.</dd>
-        <dt>Approved</dt><dd>A named reviewer approved the rule record in the admin screen. No rule is Approved until a person completes that review.</dd>
-        <dt>Pending verification</dt><dd>The exact official source has not been reviewed. Nothing is asserted beyond what is shown.</dd>
+        <dt>{t('sr.checkedT')}</dt><dd>{t('sr.checkedD')}</dd>
+        <dt>{t('sr.approvedT')}</dt><dd>{t('sr.approvedD')}</dd>
+        <dt>{t('sr.pendingT')}</dt><dd>{t('sr.pendingD')}</dd>
       </dl>
       <div className="table-scroll">
         <table className="stack">
           <thead>
             <tr>
-              <th scope="col">Requirement</th><th scope="col">Source title and URL</th><th scope="col">What it supports</th>
-              <th scope="col">Status</th><th scope="col">Last verified</th><th scope="col">Owner</th><th scope="col">Reviewer</th>
+              <th scope="col">{t('sr.requirement')}</th><th scope="col">{t('sr.srcTitle')}</th><th scope="col">{t('sr.supports')}</th>
+              <th scope="col">{t('sr.status')}</th><th scope="col">{t('sr.lastVerified')}</th><th scope="col">{t('sr.owner')}</th><th scope="col">{t('sr.reviewer')}</th>
             </tr>
           </thead>
           <tbody>
             {rules.map((r) => (
               <tr key={r.id}>
                 <td>{r.title}</td>
-                <td data-label="Source title and URL"><ExternalLink href={r.source.url}>{r.source.label}</ExternalLink><br /><span className="mono-small">{r.source.url}</span></td>
-                <td data-label="What it supports">{r.supports}{r.limits ? <><br /><em>Limits: {r.limits}</em></> : null}</td>
-                <td data-label="Status">{statusLabel(r.verification)}<br /><span className="mono-small">{approvalLabel(r)}</span></td>
-                <td data-label="Last verified">{r.lastVerified || 'Not yet verified'}</td>
-                <td data-label="Owner">{r.owner || OWNER_FALLBACK}</td>
-                <td data-label="Reviewer">{r.reviewer || REVIEWER_FALLBACK}</td>
+                <td data-label={t('sr.srcTitle')}><ExternalLink href={r.source.url}>{r.source.label}</ExternalLink><br /><span className="mono-small">{r.source.url}</span></td>
+                <td data-label={t('sr.supports')}>{r.supports}{r.limits ? <><br /><em>{t('sr.limits')}{r.limits}</em></> : null}</td>
+                <td data-label={t('sr.status')}>{statusLabel(r.verification, t)}<br /><span className="mono-small">{approvalLabel(r, t)}</span></td>
+                <td data-label={t('sr.lastVerified')}>{r.lastVerified || t('sr.notVerified')}</td>
+                <td data-label={t('sr.owner')}>{r.owner || OWNER_FALLBACK}</td>
+                <td data-label={t('sr.reviewer')}>{r.reviewer || REVIEWER_FALLBACK}</td>
               </tr>
             ))}
           </tbody>

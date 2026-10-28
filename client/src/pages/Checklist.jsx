@@ -1,13 +1,15 @@
 import { useCallback, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, useLoad } from '../api.js';
+import { useT } from '../i18n.js';
 import { useApp } from '../AppContext.jsx';
 import ChecklistItem from '../components/ChecklistItem.jsx';
 import { Chips, ErrorNote, Loading, Meter } from '../components/Parts.jsx';
-import { CAT_LABEL, STRUCT_LABEL, YN_LABEL, blankAnswers, countyLabel, stepList } from '../questions.js';
+import { blankAnswers, stepList } from '../questions.js';
 
 export default function Checklist() {
   const navigate = useNavigate();
+  const t = useT();
   const { setAnswers, setLabel, setStep, setCatsAuto } = useApp();
   const fetchChecklist = useCallback(() => api.checklist(), []);
   const { data, error, loading, setData } = useLoad(fetchChecklist);
@@ -40,17 +42,17 @@ export default function Checklist() {
     }
   }
 
-  if (loading && !data) return <Loading what="Loading your checklist" />;
+  if (loading && !data) return <Loading what={t('load.checklist')} />;
   if (error) return <ErrorNote message={error} />;
 
   if (!data?.saved) {
     return (
       <div className="empty">
-        <h1 tabIndex={-1}>Your personalized checklist</h1>
-        <p>You have not built a checklist yet. Answer the questions, or load a sample business.</p>
+        <h1 tabIndex={-1}>{t('cl.title')}</h1>
+        <p>{t('cl.none')}</p>
         <div className="row">
-          <Link className="btn btn-primary" to="/questionnaire">Start the questionnaire</Link>
-          <Link className="btn" to="/">Pick a sample</Link>
+          <Link className="btn btn-primary" to="/questionnaire">{t('cl.start')}</Link>
+          <Link className="btn" to="/">{t('cl.pick')}</Link>
         </div>
       </div>
     );
@@ -60,37 +62,37 @@ export default function Checklist() {
   const done = items.filter((i) => i.done).length;
   const percent = items.length ? Math.round((done / items.length) * 100) : 0;
   const summary = [
-    STRUCT_LABEL[answers.structure] || 'Structure not answered',
-    ...answers.cats.map((c) => CAT_LABEL[c]),
-    ...(answers.city ? [`City: ${answers.city}`] : []),
-    ...(answers.county ? [`County: ${countyLabel(answers.county)}`] : []),
-    `Hiring: ${YN_LABEL[answers.hiring] || 'not answered'}`,
-    `Sales tax: ${YN_LABEL[answers.salestax] || 'not answered'}`,
-    `Income $12,000 or more: ${YN_LABEL[answers.income] || 'not answered'}`,
-    `Business name: ${YN_LABEL[answers.tradename] || 'not answered'}`,
+    t.card.structure[answers.structure] || t('cl.structNo'),
+    ...answers.cats.map((c) => t.card.cat[c]),
+    ...(answers.city ? [`${t('cl.city')}: ${answers.city}`] : []),
+    ...(answers.county ? [`${t('cl.county')}: ${t.countyLabel(answers.county)}`] : []),
+    `${t('cl.hiring')}: ${t.card.yn[answers.hiring] || t('cl.notAnswered')}`,
+    `${t('cl.sales')}: ${t.card.yn[answers.salestax] || t('cl.notAnswered')}`,
+    `${t('cl.income')}: ${t.card.yn[answers.income] || t('cl.notAnswered')}`,
+    `${t('cl.name')}: ${t.card.yn[answers.tradename] || t('cl.notAnswered')}`,
   ];
 
   return (
     <>
       <div className="cl-head">
         <div>
-          <h1 tabIndex={-1}>{data.label ? `Sample checklist: ${data.label}` : 'Your personalized checklist'}</h1>
-          <p className="hint">Built by written rules from your answers.</p>
+          <h1 tabIndex={-1}>{data.label ? t('cl.sample', data.label) : t('cl.title')}</h1>
+          <p className="hint">{t('cl.built')}</p>
+          {t.lang === 'es' && <p className="draft-note">{t('enNote')}</p>}
           <p className="hint" data-testid="badge-legend">
-            "Source checked" means the official agency page was read on that date. It is not an approval from the agency.
-            "Pending verification" means it has not been checked yet.
+            {t('cl.legend')}
           </p>
           <Chips items={summary} />
         </div>
         <div className="row">
-          <button type="button" className="btn btn-quiet btn-sm" onClick={editAnswers}>Edit answers</button>
-          <Link className="btn btn-quiet btn-sm" to="/dashboard">See progress</Link>
-          <button type="button" className="btn btn-quiet btn-sm" onClick={startOver}>Start over</button>
+          <button type="button" className="btn btn-quiet btn-sm" onClick={editAnswers}>{t('cl.edit')}</button>
+          <Link className="btn btn-quiet btn-sm" to="/dashboard">{t('cl.progress')}</Link>
+          <button type="button" className="btn btn-quiet btn-sm" onClick={startOver}>{t('cl.over')}</button>
         </div>
         <div className="progress">
-          <p id="prog-text">{done} of {items.length} steps marked done</p>
+          <p id="prog-text">{t('cl.steps', done, items.length)}</p>
           <Meter percent={percent} labelledBy="prog-text" />
-          <p className="hint">Simulated tracking. You tick steps yourself. Nothing is sent to any agency, and ticking a step does not mean an application was filed.</p>
+          <p className="hint">{t('cl.simTrack')}</p>
         </div>
       </div>
       <ErrorNote message={actionError} />
@@ -110,7 +112,7 @@ export default function Checklist() {
 
       {skipped.length > 0 && (
         <details>
-          <summary>Left out of your checklist ({skipped.length})</summary>
+          <summary>{t('cl.left', skipped.length)}</summary>
           <ul>
             {skipped.map((s) => <li key={s.ruleId}><strong>{s.title}.</strong> {s.reason}</li>)}
           </ul>

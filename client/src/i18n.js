@@ -2,6 +2,7 @@
 // The Spanish is a DRAFT. The build spec says a person (Olger Palma, whose recorded skills include Spanish) must review it, and
 // nothing here says that review has happened. Agency rule text and the plan stay in English, and the screen says so.
 import { createContext, useContext } from 'react';
+import { pagesEn, pagesEs } from './i18nPages.js';
 
 export const LANGS = [
   { code: 'en', label: 'English', short: 'EN', speech: 'en-US' },
@@ -85,6 +86,7 @@ const en = {
   'voice.on': 'Voice is on. Tap the microphone to talk.',
   'voice.off': 'Voice is off. Tap the microphone or Unmute voice.',
   'voice.cannotListen': 'This browser cannot listen. Use Chrome or Edge, or type your answer.',
+  'voice.noEs': 'This device has no Spanish voice installed, so the guide cannot speak Spanish here. The text still shows on screen. Chrome on Windows, Mac or Android usually has one. Check your system speech settings.',
   'voice.silent': 'No sound came out. Check your computer volume and that this browser tab is not muted, then tap Mute voice and Unmute voice.',
   'voice.noMic': 'No microphone was found.',
   // Card
@@ -187,6 +189,7 @@ const es = {
   'voice.on': 'La voz está activada. Toque el micrófono para hablar.',
   'voice.off': 'La voz está apagada. Toque el micrófono o Activar voz.',
   'voice.cannotListen': 'Este navegador no puede escuchar. Use Chrome o Edge, o escriba su respuesta.',
+  'voice.noEs': 'Este dispositivo no tiene una voz en español instalada, así que la guía no puede hablar en español aquí. El texto sí aparece en pantalla. Chrome en Windows, Mac o Android suele tener una. Revise la configuración de voz del sistema.',
   'voice.silent': 'No salió sonido. Revise el volumen de su computadora y que esta pestaña no esté silenciada, y luego toque Silenciar voz y Activar voz.',
   'voice.noMic': 'No se encontró ningún micrófono.',
   'card.title': 'Su negocio',
@@ -211,7 +214,7 @@ const es = {
   'menu.close': 'Cerrar',
 };
 
-const TABLE = { en, es };
+const TABLE = { en: { ...en, ...pagesEn }, es: { ...es, ...pagesEs } };
 
 // Card wording, per language.
 export const CARD_TEXT = {
@@ -243,14 +246,20 @@ export const useLang = () => useContext(LangContext);
 
 export function useT() {
   const { lang } = useContext(LangContext);
-  const table = TABLE[lang] || en;
+  const table = TABLE[lang] || TABLE.en;
   const t = (key, ...args) => {
-    const v = table[key] ?? en[key] ?? key;
+    const v = table[key] ?? TABLE.en[key] ?? key;
     return typeof v === 'function' ? v(...args) : v;
   };
   t.lang = lang;
   t.card = CARD_TEXT[lang] || CARD_TEXT.en;
+  t.countyLabel = (county) => {
+    const name = String(county || '').trim().replace(/\s+county$/i, '').trim();
+    if (!name) return '';
+    return lang === 'es' ? `Condado de ${name}` : `${name} County`;
+  };
   return t;
 }
 
+export const dateLocale = (lang) => (lang === 'es' ? 'es-US' : 'en-US');
 export const speechLang = (lang) => (LANGS.find((l) => l.code === lang) || LANGS[0]).speech;

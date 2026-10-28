@@ -4,9 +4,11 @@ import Header from './Header.jsx';
 import Footer from './Footer.jsx';
 import ChatPanel from './ChatPanel.jsx';
 import WakeNotice from './WakeNotice.jsx';
+import { useT } from '../i18n.js';
 
 export default function Layout() {
   const { pathname } = useLocation();
+  const t = useT();
   const mainRef = useRef(null);
   const first = useRef(true);
 
@@ -22,7 +24,7 @@ export default function Layout() {
 
   return (
     <div className="app">
-      <a className="skip-link" href="#main">Skip to main content</a>
+      <a className="skip-link" href="#main">{t('skip')}</a>
       <Header />
       <main id="main" ref={mainRef} tabIndex={-1}>
         <div className="wrap">

@@ -10,7 +10,7 @@ import GuideArt from '../components/GuideArt.jsx';
 import ExternalLink from '../components/ExternalLink.jsx';
 import Icon from '../components/Icon.jsx';
 import { ErrorNote } from '../components/Parts.jsx';
-import { canListen, canSpeak, createListener, listenErrorText, speak, speakable, stopSpeaking } from '../voice.js';
+import { canListen, canSpeak, createListener, hasVoice, listenErrorText, speak, speakable, stopSpeaking } from '../voice.js';
 import { answersFromCard, confirmedCount } from '../guideCard.js';
 import { speechLang, useT } from '../i18n.js';
 
@@ -53,6 +53,7 @@ export default function Guide() {
   const [voiceMsg, setVoiceMsg] = useState('');
   const [tick, setTick] = useState(0);
   const spokenIdx = useRef(0);
+  const voiceOnRef = useRef(false);
   const saveRef = useRef(() => {});
   const speakingCount = useRef(0);
   const listenerRef = useRef(null);
@@ -105,6 +106,7 @@ export default function Guide() {
 
   turnRef.current = turn;
   // Switching language mid-conversation: stop talking, then say the current question again in the new language.
+  voiceOnRef.current = voiceOn;
   const prevLang = useRef(t.lang);
   useEffect(() => {
     if (prevLang.current === t.lang) return;
@@ -113,6 +115,8 @@ export default function Guide() {
     speakingCount.current = 0;
     setSpeaking(false);
     if (guideRef.current.messages.length > 1) turnRef.current({}, null);
+    // Only the greeting so far: say it again in the new language.
+    else spokenIdx.current = 0;
   }, [t.lang]);
   saveRef.current = save;
   cond.current = { micOn, speaking, busy };
@@ -329,7 +333,7 @@ export default function Guide() {
             <button type="button" className="btn btn-quiet btn-sm" onClick={muteToggle} aria-pressed={!voiceOn} disabled={!canSpeak()}>{voiceOn ? t('guide.mute') : t('guide.unmute')}</button>
             <button type="button" className="btn btn-quiet btn-sm" onClick={stopTalking}>{t('guide.stop')}</button>
             <p className="voice-status" role="status">
-              {voiceMsg || (listening ? t('voice.listening') : speaking ? t('voice.speaking') : !canSpeak() ? t('voice.cannotSpeak') : voiceOn ? t('voice.on') : t('voice.off'))}
+              {voiceMsg || (t.lang === 'es' && voiceOn && canSpeak() && !hasVoice(speechLang(t.lang)) ? t('voice.noEs') : listening ? t('voice.listening') : speaking ? t('voice.speaking') : !canSpeak() ? t('voice.cannotSpeak') : voiceOn ? t('voice.on') : t('voice.off'))}
             </p>
           </div>
         </section>

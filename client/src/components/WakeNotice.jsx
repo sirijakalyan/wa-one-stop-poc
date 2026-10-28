@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { useT } from '../i18n.js';
 
 // Shown only when an API request is slow, which happens on the first request after the free host sleeps.
 export default function WakeNotice() {
+  const t = useT();
   const [slow, setSlow] = useState(false);
   useEffect(() => {
     const on = () => setSlow(true);
@@ -16,7 +18,7 @@ export default function WakeNotice() {
   if (!slow) return null;
   return (
     <p className="wake-notice" role="status">
-      Waking up the server. The free host can take up to a minute after it sits idle. Thanks for waiting.
+      {t('wake')}
     </p>
   );
 }

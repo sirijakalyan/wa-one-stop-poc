@@ -90,7 +90,7 @@ describe('Spanish', () => {
     expect(await (await logOf()).findByText(/Eso es todo lo que necesito/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Guardar mi plan' })).toBeInTheDocument();
     await user.type(screen.getByLabelText(/Cuéntele a la guía sobre su negocio/), 'guardar mi plan{Enter}');
-    expect(await screen.findByRole('heading', { name: /checklist/i })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /lista de ejemplo/i })).toBeInTheDocument();
   });
 
   it('answers a Spanish question from the rules and says the agency text is in English', async () => {
@@ -112,6 +112,22 @@ describe('Spanish', () => {
     const log = await logOf();
     expect(await log.findByText(/^Entendí:/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sí, es correcto' })).toBeInTheDocument();
+  });
+
+  it('every page changes language, not only the guide', async () => {
+    const user = userEvent.setup();
+    renderAt('/questionnaire');
+    await toSpanish(user);
+    expect(await screen.findByText('¿Cómo se organizará su negocio?')).toBeInTheDocument();
+    expect(screen.getByText('Propietario único')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Siguiente' })).toBeInTheDocument();
+    expect(screen.getByText(/Cada requisito mostrado viene de una página oficial/)).toBeInTheDocument();
+    await user.click(screen.getAllByRole('link', { name: 'Fuentes' })[0]);
+    expect(await screen.findByRole('heading', { name: /Fuentes y cómo funciona esta demostración/ })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Hacer una pregunta' }));
+    expect(screen.getByText('Pregunte sobre su lista de pasos')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Switch to English' }));
+    expect(await screen.findByRole('heading', { name: /Sources and how this demo works/ })).toBeInTheDocument();
   });
 
   describe('voice', () => {
@@ -162,6 +178,36 @@ describe('Spanish', () => {
       await user.type(await screen.findByLabelText(/Cuéntele a la guía sobre su negocio/), '¿Necesito una licencia comercial?{Enter}');
       await waitFor(() => expect(uttered.some((u) => /están en inglés\. Puede leerla en la pantalla/.test(u.text))).toBe(true));
       expect(uttered.some((u) => /Washington business license/.test(u.text))).toBe(false);
+    });
+
+    it('switching language while the guide talks says the greeting again in the new language, both ways', async () => {
+      const user = userEvent.setup();
+      renderAt({ pathname: '/guide', state: { mode: 'talk' } });
+      await waitFor(() => expect(uttered.length).toBeGreaterThan(0));
+      expect(uttered[0].text).toMatch(/^Hi, I'm here to help/);
+      uttered.length = 0;
+      await toSpanish(user);
+      await waitFor(() => expect(uttered.some((u) => /^Hola, estoy aquí para ayudarle/.test(u.text) && u.lang === 'es-US')).toBe(true));
+      uttered.length = 0;
+      await user.click(screen.getByRole('button', { name: 'Switch to English' }));
+      await waitFor(() => expect(uttered.some((u) => /^Hi, I'm here to help/.test(u.text) && u.lang === 'en-US')).toBe(true));
+    });
+
+    it('switching language in the middle of the conversation speaks the question in the new language', async () => {
+      const user = userEvent.setup();
+      renderAt({ pathname: '/guide', state: { mode: 'talk', start: 'I want to open a food truck in Spokane and hire two people.' } });
+      await waitFor(() => expect(uttered.some((u) => /I heard/.test(u.text))).toBe(true));
+      uttered.length = 0;
+      await toSpanish(user);
+      await waitFor(() => expect(uttered.some((u) => /Entendí/.test(u.text) && u.lang === 'es-US')).toBe(true));
+    });
+
+    it('says so on screen when the device has no Spanish voice', async () => {
+      window.speechSynthesis.getVoices = () => [{ name: 'Microsoft Zira', lang: 'en-US', localService: true }];
+      const user = userEvent.setup();
+      renderAt({ pathname: '/guide', state: { mode: 'talk' } });
+      await toSpanish(user);
+      expect(await screen.findByText(/no tiene una voz en español instalada/)).toBeInTheDocument();
     });
   });
 });

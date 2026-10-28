@@ -1,8 +1,10 @@
 import { useCallback, useState } from 'react';
 import { api, useLoad } from '../api.js';
+import { dateLocale, useT } from '../i18n.js';
 import { ErrorNote, Loading } from '../components/Parts.jsx';
 
 export default function Notifications() {
+  const t = useT();
   const fetchNotes = useCallback(() => api.notifications(), []);
   const { data, error, loading, reload } = useLoad(fetchNotes);
   const [actionError, setActionError] = useState('');
@@ -21,7 +23,7 @@ export default function Notifications() {
     }
   }
 
-  if (loading && !data) return <Loading what="Loading notifications" />;
+  if (loading && !data) return <Loading what={t('load.notes')} />;
   if (error) return <ErrorNote message={error} />;
 
   const notes = data?.notifications ?? [];
@@ -37,7 +39,7 @@ export default function Notifications() {
     setInfo('');
     try {
       const r = await api.setEmailOptIn(true, email || savedEmail);
-      setInfo(r.note || 'Saved.');
+      setInfo(t.lang === 'es' ? t('nt.saved') : (r.note || t('nt.saved')));
       await reload();
     } catch (err) {
       setActionError(err.message);
@@ -46,11 +48,12 @@ export default function Notifications() {
 
   return (
     <>
-      <h1 tabIndex={-1}>Simulated notifications</h1>
+      <h1 tabIndex={-1}>{t('nt.title')}</h1>
+      {t.lang === 'es' && <p className="draft-note">{t('enNote')}</p>}
       <p className="lead">
-        {mode === 'live' && 'Renewal reminders can be emailed to you if you choose. We only email after you confirm your address, and every email has an unsubscribe link.'}
-        {mode === 'log' && 'Demo mode: emails are written to the server log and are not delivered to any inbox.'}
-        {mode === 'off' && 'These show what renewal reminders and rule-change alerts would look like. No email or text message is ever sent.'}
+        {mode === 'live' && t('nt.live')}
+        {mode === 'log' && t('nt.log')}
+        {mode === 'off' && t('nt.off')}
       </p>
 
       <div className="panel">
@@ -62,14 +65,14 @@ export default function Notifications() {
               onChange={(e) => run(() => api.setEmailOptIn(e.target.checked))}
             />
             <span>
-              Email me when something changes (simulated)
-              <small>In a real service email would be opt-in with an unsubscribe link. This demo sends nothing.</small>
+              {t('nt.emailMe')}
+              <small>{t('nt.emailMeSmall')}</small>
             </span>
           </label>
         )}
         {real && !optedIn && (
           <form onSubmit={turnOn} className="email-form">
-            <label htmlFor="reminder-email"><strong>Email me renewal reminders</strong> (optional)</label>
+            <label htmlFor="reminder-email"><strong>{t('nt.emailReminders')}</strong>{t('nt.optional')}</label>
             <div className="row">
               <input
                 id="reminder-email"
@@ -81,25 +84,22 @@ export default function Notifications() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
-              <button type="submit" className="btn btn-primary btn-sm">Send confirmation</button>
+              <button type="submit" className="btn btn-primary btn-sm">{t('nt.sendConfirm')}</button>
             </div>
             <p className="hint">
-              We use your address only to send renewal reminders. We email you a confirm link first. Each reminder has an
-              unsubscribe link, and unsubscribing removes your address.
+              {t('nt.emailHint')}
             </p>
           </form>
         )}
         {real && optedIn && (
           <div className="email-status" role="status">
             <p>
-              <strong>{confirmed ? 'Reminders are on' : 'Waiting for your confirmation'}</strong>
-              {' '}for {savedEmail}.{' '}
-              {confirmed
-                ? 'We email 30, 14, 7 and 1 days before a renewal date you enter on the Progress screen.'
-                : 'Open the confirm link in the email we sent. Until then no reminders are sent.'}
+              <strong>{confirmed ? t('nt.on') : t('nt.waiting')}</strong>
+              {t('nt.for', savedEmail)}
+              {confirmed ? t('nt.onText') : t('nt.waitText')}
             </p>
-            <button type="button" className="btn btn-quiet btn-sm" onClick={() => run(() => api.setEmailOptIn(false), 'Email reminders are off and your address was removed.')}>
-              Turn off and remove my email
+            <button type="button" className="btn btn-quiet btn-sm" onClick={() => run(() => api.setEmailOptIn(false), t('nt.removed'))}>
+              {t('nt.turnOff')}
             </button>
           </div>
         )}
@@ -107,36 +107,35 @@ export default function Notifications() {
           <button
             type="button"
             className="btn btn-primary btn-sm"
-            onClick={() => run(() => api.renewalReminder(), real && confirmed ? 'Reminder created and emailed.' : 'Simulated renewal reminder created.')}
+            onClick={() => run(() => api.renewalReminder(), real && confirmed ? t('nt.sentNow') : t('nt.simCreated'))}
           >
-            {real && confirmed ? 'Send me a reminder now' : 'Create a simulated renewal reminder'}
+            {real && confirmed ? t('nt.sendNow') : t('nt.createSim')}
           </button>
         </div>
         <p className="hint">
-          Reminders come from renewal dates you enter on the Progress screen. A rule-change alert appears after an
-          admin publishes a change to a rule on your checklist.
+          {t('nt.fromRenewals')}
         </p>
         <ErrorNote message={actionError} />
         {info && <p className="ok" role="status">{info}</p>}
       </div>
 
-      <h2>Your notifications ({notes.length})</h2>
-      {notes.length === 0 && <p className="hint">Nothing here yet.</p>}
+      <h2>{t('nt.yours', notes.length)}</h2>
+      {notes.length === 0 && <p className="hint">{t('nt.nothing')}</p>}
       <ul className="notes">
         {notes.map((n) => (
           <li key={n.id} className={`note-item${n.read ? ' read' : ''}`}>
             <div className="item-top">
               <span className={`pill ${n.type === 'rule-changed' ? 'maybe' : 'agency'}`}>
-                {n.type === 'rule-changed' ? 'Rule changed' : 'Renewal reminder'}
+                {n.type === 'rule-changed' ? t('nt.ruleChanged') : t('nt.renewal')}
               </span>
-              {n.simulated !== false && <span className="pill agency">Simulated</span>}
-              <time className="hint" dateTime={n.createdAt}>{new Date(n.createdAt).toLocaleString()}</time>
+              {n.simulated !== false && <span className="pill agency">{t('pill.simulated')}</span>}
+              <time className="hint" dateTime={n.createdAt}>{new Date(n.createdAt).toLocaleString(dateLocale(t.lang))}</time>
             </div>
             <h3>{n.title}</h3>
             <p>{n.body}</p>
             {!n.read && (
               <button type="button" className="btn btn-quiet btn-sm" onClick={() => run(() => api.markRead(n.id))}>
-                Mark as read
+                {t('nt.markRead')}
               </button>
             )}
           </li>

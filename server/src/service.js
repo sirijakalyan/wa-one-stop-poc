@@ -551,7 +551,10 @@ export function createService(store, options = {}) {
     const rulesDoc = await loadRules();
     const cl = await store.getChecklist(visitorOf(ctx));
     const checklist = cl ? await buildChecklist(cl, rulesDoc) : null;
-    const result = await answerQuestion({ message, conversation, rules: rulesDoc.rules, checklist, llm: options.llm });
+    const es = cleanLang(body?.lang) === 'es';
+    const result = await answerQuestion({ message: es ? esToEn(message) : message, conversation: es ? [] : conversation, rules: rulesDoc.rules, checklist, llm: options.llm });
+    // Spanish questions are matched to the English guides through a word list. The agency text stays English, and the answer says so.
+    if (es) return { ok: true, ...result, answer: result.mode === 'fallback' ? ES.noMatch : `${ES.englishNote}\n${result.answer}`, suggestions: [] };
     return { ok: true, ...result };
   });
 
