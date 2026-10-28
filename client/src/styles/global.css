@@ -113,6 +113,25 @@ nav a.active { background: #fff; color: var(--navy-900); }
 .site-head :focus-visible { outline-color: #ffd978; }
 .menu-btn { display: none; align-items: center; gap: .45rem; min-height: 44px; padding: 0 .95rem; border: 1.5px solid rgba(255,255,255,.35); border-radius: 99px; background: transparent; color: #fff; font: inherit; font-weight: 650; cursor: pointer; }
 .menu-btn:hover { background: rgba(255,255,255,.1); }
+.lang-btn { order: 3; display: inline-flex; align-items: center; gap: .4rem; min-height: 44px; padding: 0 .9rem; border: 1.5px solid rgba(255,255,255,.35); border-radius: 99px; background: transparent; color: #fff; font: inherit; font-weight: 650; cursor: pointer; }
+.lang-btn:hover { background: rgba(255,255,255,.1); }
+.lang-btn .lang-full { display: none; }
+@media (min-width: 100rem) { .lang-btn .lang-full { display: inline; } .lang-btn .lang-short { display: none; } }
+@media (max-width: 52rem) { .lang-btn .lang-full { display: inline; } .lang-btn .lang-short { display: none; } }
+nav a { padding: .5rem .65rem; }
+@media (min-width: 52.01rem) {
+  .site-head .wrap { flex-wrap: nowrap; }
+  .site-head nav { min-width: 0; }
+  .site-head .brand { flex: none; }
+  .lang-btn { flex: none; }
+}
+@media (min-width: 52.01rem) and (max-width: 75rem) {
+  .site-head nav a { padding: .45rem .5rem; font-size: .88rem; }
+  .site-head .brand { font-size: 1rem; }
+  .site-head .wrap { gap: .5rem 1rem; }
+}
+.site-head nav { order: 2; }
+.draft-note { margin: .4rem 0 0; padding: .45rem .75rem; border-radius: var(--radius); background: #fff6d6; color: #5a4300; border: 1px solid #ecd486; font-size: .88rem; }
 @media (max-width: 52rem) {
   .menu-btn { display: inline-flex; }
   .site-head nav { display: none; width: 100%; padding-top: .25rem; }
@@ -487,6 +506,8 @@ footer .api-status { background: transparent; color: #a9bdd4; border-color: rgba
   .site-head .wrap { flex-wrap: wrap; gap: .5rem .75rem; }
   .brand { flex: 1 1 0; min-width: 0; font-size: 1rem; line-height: 1.2; }
   .menu-btn { flex: none; margin-left: auto; }
+  .lang-btn { order: 1; flex: none; }
+  .site-head nav { order: 5; }
 }
 
 /* Optional email reminders */

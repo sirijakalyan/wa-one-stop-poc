@@ -6,6 +6,7 @@
 // No Node imports, so this file also runs in the in-page preview. Nothing here uses AI or randomness:
 // facts are picked out of the owner's words with plain patterns, so the demo works with no model running.
 
+import { ES, cleanLang } from './i18n.js';
 import { evaluate, normalizeAnswers, CATEGORY_LABELS, STRUCTURE_LABELS, countyLabel, blankAnswers } from './engine.js';
 
 // One row of the card per field. "heard" = picked up from the owner's words. "confirmed" = the owner said yes.
@@ -28,6 +29,10 @@ export function blankCard() {
 const YN_WORD = { yes: 'Yes', no: 'No', unsure: 'Not sure' };
 const NUMBER_WORDS = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, a: 1, an: 1 };
 const UNSURE_RX = /\b(not sure|unsure|don'?t know|do not know|no idea|maybe|not certain)\b/i;
+// Spanish patterns use lookarounds instead of \b, because \b does not treat accented letters as letters.
+const wb = (src) => new RegExp(`(?<![\\p{L}])(?:${src})(?![\\p{L}])`, 'iu');
+const ES_UNSURE = wb('no estoy segur[oa]|no s[eé]|ni idea|quiz[aá]s?|tal vez|no estoy cierto');
+const ES_NUM = { uno: 1, una: 1, un: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10 };
 
 // ---- Reading the owner's words -------------------------------------------------------------------------------------
 
@@ -44,7 +49,7 @@ function findPlace(text, places, { anywhere }) {
     // In running speech a city needs a word like "in" before it, so common words are not mistaken for a city.
     const rx = anywhere
       ? new RegExp(`(^|[^a-z])${name}(?=$|[^a-z])`, 'i')
-      : new RegExp(`\\b(?:in|at|near|around|outside|from|downtown)\\s+${name}(?=$|[^a-z])`, 'i');
+      : new RegExp(`(?<![\\p{L}])(?:in|at|near|around|outside|from|downtown|en|cerca de|alrededor de|a las afueras de|desde)\\s+${name}(?=$|[^a-z])`, 'iu');
     if (rx.test(t)) return p;
   }
   return null;
@@ -66,8 +71,8 @@ function numberOf(s) {
 }
 
 function moneyFrom(text) {
-  const near = /(?:income|revenue|earn(?:ing)?s?|make|making|gross|sales|bring in|profit)[^.]{0,50}?\$?\s?(\d[\d,]*(?:\.\d+)?)\s*(k|thousand|million)?/i.exec(text)
-    || /\$\s?(\d[\d,]*(?:\.\d+)?)\s*(k|thousand|million)?[^.]{0,30}?(?:a year|per year|annually|yearly|in sales|in revenue)/i.exec(text);
+  const near = /(?:income|revenue|earn(?:ing)?s?|make|making|gross|sales|bring in|profit|ingresos?|ganar|ganancias?|ventas|facturar)[^.]{0,50}?\$?\s?(\d[\d,]*(?:\.\d+)?)\s*(k|thousand|million)?/i.exec(text)
+    || /\$\s?(\d[\d,]*(?:\.\d+)?)\s*(k|thousand|million)?[^.]{0,30}?(?:a year|per year|annually|yearly|in sales|in revenue|al a[ñn]o|anuales?|por a[ñn]o)/i.exec(text);
   if (!near) return null;
   let n = Number(near[1].replace(/,/g, ''));
   const unit = (near[2] || '').toLowerCase();
@@ -79,27 +84,29 @@ function moneyFrom(text) {
 const ACTIVITY_PHRASES = [
   'food truck', 'restaurant', 'coffee shop', 'cafe', 'bakery', 'catering', 'bar', 'brewery', 'remodeling', 'roofing', 'framing',
   'plumbing', 'electrical', 'landscaping', 'construction', 'cleaning', 'salon', 'barbershop', 'consulting', 'photography', 'retail shop',
-  'online store', 'daycare', 'gym', 'bookkeeping', 'plumber', 'electrician', 'roofer', 'carpenter', 'handyman', 'tutor', 'photographer', 'hair salon', 'nail salon',
+  'online store', 'daycare', 'gym', 'bookkeeping', 'camión de comida', 'camion de comida', 'restaurante', 'cafetería', 'cafeteria', 'panadería', 'panaderia', 'tienda en línea', 'tienda en linea', 'guardería', 'guarderia', 'gimnasio', 'peluquería', 'peluqueria', 'fotógrafo', 'consultoría', 'consultoria', 'plomero', 'electricista', 'techador', 'carpintero', 'servicio de limpieza', 'limpieza', 'plumber', 'electrician', 'roofer', 'carpenter', 'handyman', 'tutor', 'photographer', 'hair salon', 'nail salon',
 ];
 
 // "wanted to start a food service" is a story, not a description. Keep just the kind of business.
 export function cleanDesc(text) {
   const t = String(text || '').trim().replace(/[.!?]+$/, '');
   const c = t.replace(/^(?:(?:i|we)(?:'d| would| want| wanted| am| are| will| plan| planned)?\s*)?(?:(?:really |just )?(?:want|wanted|would like|like|plan|planning|going|trying|need|hope|hoping)\s+(?:to\s+)?)?(?:start|open|run|launch|begin|operate|set up|do|have|starting|opening|running)\s+(?:a|an|my|the|some)?\s*/i, '').trim();
-  const d = (c || t).replace(/^(?:(?:so|well|um|uh|and|like|actually|basically)\s+|(?:it|that|this) (?:is|was)\s+|it's\s+|its\s+|we(?:'re| are)\s+|i(?:'m| am)\s+|(?:in|on|at|about)\s+|(?:the )?(?:field|business|industry) of\s+|a\s+|an\s+)+/i, '').trim();
+  const es = t.replace(/^(?:(?:yo )?(?:quiero|quisiera|voy a|vamos a|pienso|planeo|me gustar[ií]a)\s+)?(?:abrir|iniciar|empezar|comenzar|tener|poner|montar|manejar)\s+(?:un|una|mi|el|la|unos|unas)?\s*/i, '').trim();
+  const d0 = es !== t ? es : (c || t);
+  const d = d0.replace(/^(?:(?:so|well|um|uh|and|like|actually|basically|pues|bueno|entonces)\s+|(?:es|soy|somos|estoy|estamos)\s+(?:un|una)?\s*|(?:en|de|del)\s+|(?:it|that|this) (?:is|was)\s+|it's\s+|its\s+|we(?:'re| are)\s+|i(?:'m| am)\s+|(?:in|on|at|about)\s+|(?:the )?(?:field|business|industry) of\s+|a\s+|an\s+)+/i, '').trim();
   // Still a long ramble: keep nothing, so the card shows the business type instead.
   return d.split(/\s+/).length > 7 ? '' : d.slice(0, 120);
 }
 
-const CONFIRM_YES = new Set(['yes', 'yeah', 'yep', 'yup', 'sure', 'ok', 'okay', 'correct', 'right', 'exactly', 'absolutely', 'definitely', 'good', 'perfect', 'fine', 'huh']);
-const CONFIRM_FILLER = new Set(['that', "that's", 'thats', 'is', 'it', "it's", 'its', 'looks', 'sounds', 'great', 'please', 'thanks', 'thank', 'you', 'got', 'uh', 'um', 'mm', 'hmm', 'go', 'ahead', 'all', 'very', 'so', 'and', 'the', 'this', 'are', 'was', 'be']);
-const CONFIRM_NO = new Set(['no', 'nope', 'nah', 'wrong', 'incorrect', 'not', "isn't", 'isnt', "that's not", 'change', 'fix', 'mistake', 'wait']);
+const CONFIRM_YES = new Set(['sí', 'si', 'claro', 'correcto', 'exacto', 'exactamente', 'perfecto', 'bueno', 'vale', 'listo', 'efectivamente', 'afirmativo', 'yes', 'yeah', 'yep', 'yup', 'sure', 'ok', 'okay', 'correct', 'right', 'exactly', 'absolutely', 'definitely', 'good', 'perfect', 'fine', 'huh']);
+const CONFIRM_FILLER = new Set(['es', 'está', 'esta', 'así', 'asi', 'eso', 'lo', 'que', 'muy', 'bien', 'por', 'supuesto', 'favor', 'gracias', 'pues', 'ok', 'okay', 'that', "that's", 'thats', 'is', 'it', "it's", 'its', 'looks', 'sounds', 'great', 'please', 'thanks', 'thank', 'you', 'got', 'uh', 'um', 'mm', 'hmm', 'go', 'ahead', 'all', 'very', 'so', 'and', 'the', 'this', 'are', 'was', 'be']);
+const CONFIRM_NO = new Set(['no', 'incorrecto', 'equivocado', 'mal', 'cambiar', 'cambio', 'error', 'espera', 'espere', 'negativo', 'no,', 'nope', 'nah', 'wrong', 'incorrect', 'not', "isn't", 'isnt', "that's not", 'change', 'fix', 'mistake', 'wait']);
 // While a read-back is waiting ("I heard: LLC. Is that right?"), a spoken "yes that is right" or "no, that's wrong" counts like tapping the button.
 export function spokenConfirmation(rawCard, message, asking) {
   if (asking) return null;
   const card = cleanCard(rawCard);
   if (!CARD_FIELDS.some((f) => card.status[f] === 'heard')) return null;
-  const words = String(message || '').toLowerCase().replace(/[^a-z' ]+/g, ' ').split(/\s+/).filter(Boolean);
+  const words = String(message || '').toLowerCase().replace(/[^a-záéíóúüñ' ]+/g, ' ').split(/\s+/).filter(Boolean);
   if (!words.length || words.length > 8) return null;
   if (words.some((w) => CONFIRM_NO.has(w))) return words.every((w) => CONFIRM_NO.has(w) || CONFIRM_FILLER.has(w) || CONFIRM_YES.has(w)) ? 'change' : null;
   if (words.every((w) => CONFIRM_YES.has(w) || CONFIRM_FILLER.has(w)) && words.some((w) => CONFIRM_YES.has(w))) return 'confirm';
@@ -108,19 +115,19 @@ export function spokenConfirmation(rawCard, message, asking) {
 
 function activityPhrase(text) {
   const t = String(text).toLowerCase();
-  const known = ACTIVITY_PHRASES.find((p) => new RegExp(`\\b${p}\\b`).test(t));
+  const known = ACTIVITY_PHRASES.find((p) => new RegExp(`(?<![\\p{L}])${p}(?![\\p{L}])`, 'iu').test(t));
   if (known) return known;
-  const m = /(?:open|start|run|launch|operate|have|do)\s+(?:a|an|my|some)?\s*([a-z][a-z -]{2,40}?)(?=\s+(?:in|at|near|and|with|that|which|called|for)\b|[,.]|$)/i.exec(String(text));
+  const m = /(?:open|start|run|launch|operate|have|do|abrir|iniciar|empezar|comenzar|tener|tengo|manejar)\s+(?:a|an|my|some|un|una|mi|unos|unas)?\s*([a-z][a-z -]{2,40}?)(?=\s+(?:in|at|near|and|with|that|which|called|for|en|y|con|que|para)(?![\p{L}])|[,.]|$)/i.exec(String(text));
   return m ? m[1].trim() : '';
 }
 
 function categoriesFrom(text) {
   // "subcontractors" and "independent contractors" are about who the owner pays. They never mean construction contracting.
-  const t = String(text).toLowerCase().replace(/\b(sub-?contractors?|independent contractors?|contract workers?)\b/g, ' ');
+  const t = String(text).toLowerCase().replace(/\b(sub-?contractors?|independent contractors?|contract workers?)\b/g, ' ').replace(/subcontratistas?|contratistas? independientes?|trabajadores por contrato/g, ' ');
   const out = [];
-  if (/restaurant|cafe|coffee|food|catering|bakery|kitchen|\bbar\b|truck|diner|brewery/.test(t)) out.push('food');
-  if (/construct|contractor|remodel|roof|plumb|electric|carpent|framing|concrete|handyman/.test(t)) out.push('construction');
-  if (!out.length && /shop|store|retail|salon|barber|clean|consult|design|photograph|tutor|daycare|gym|bookkeep|sell|service/.test(t)) out.push('other');
+  if (/restaurant|cafe|coffee|food|catering|bakery|kitchen|\bbar\b|truck|diner|brewery|comida|cafeter|panader|cocina|camión|camion/.test(t)) out.push('food');
+  if (/construct|contractor|remodel|roof|plumb|electric|carpent|framing|concrete|handyman|construcci|contratista|remodelaci|plomer|electricista|carpinter|techador|albañil|albanil/.test(t)) out.push('construction');
+  if (!out.length && /shop|store|retail|salon|barber|clean|consult|design|photograph|tutor|daycare|gym|bookkeep|sell|service|tienda|venta|vend|servicio|sal[oó]n|peluquer|limpieza|consultor|dise[ñn]|fot[oó]graf|guarder|gimnasio|comercio/.test(t)) out.push('other');
   return out;
 }
 
@@ -131,10 +138,10 @@ export function extractFacts(text, places) {
   const found = {};
   const list = loadPlaces(places);
 
-  if (/\b(llc|l\.l\.c\.|limited liability)\b/i.test(t)) found.structure = 'llc';
-  else if (/\b(corporation|incorporated|corp|inc)\b/i.test(t)) found.structure = 'corp';
-  else if (/\b(partnership|llp|partners?)\b/i.test(t)) found.structure = 'partnership';
-  else if (/\b(sole proprietor(?:ship)?|sole owner|self-employed|self employed)\b/i.test(t)) found.structure = 'sole';
+  if (/\b(llc|l\.l\.c\.|limited liability)\b/i.test(t) || /(?<![\p{L}])(sociedad de responsabilidad limitada)(?![\p{L}])/iu.test(t)) found.structure = 'llc';
+  else if (/\b(corporation|incorporated|corp|inc)\b/i.test(t) || wb('corporaci[oó]n|sociedad an[oó]nima|incorporad[oa]').test(t)) found.structure = 'corp';
+  else if (/\b(partnership|llp|partners?)\b/i.test(t) || wb('sociedad|socios?|asociaci[oó]n').test(t)) found.structure = 'partnership';
+  else if (/\b(sole proprietor(?:ship)?|sole owner|self-employed|self employed)\b/i.test(t) || wb('propietari[oa] [uú]nic[oa]|due[ñn]o [uú]nico|trabajador independiente|aut[oó]nomo|por mi cuenta').test(t)) found.structure = 'sole';
 
   const cats = categoriesFrom(t);
   if (cats.length) {
@@ -151,29 +158,30 @@ export function extractFacts(text, places) {
     found.county = explicitCounty;
   }
 
-  const countMatch = /\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:more\s+)?(?:people|workers|employees|staff|helpers|cooks|servers|hires?|team members)\b/i.exec(raw);
-  if (/\b(no employees|no staff|no workers|without employees|(?:don'?t|do not) have (?:any )?(?:employees|staff|workers)|not hiring|won'?t hire|don'?t (?:plan to )?hire|do not (?:plan to )?hire|no hiring|just me|by myself|on my own|solo|myself only)\b/i.test(t)) {
+  const countMatch = /\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:more\s+)?(?:people|workers|employees|staff|helpers|cooks|servers|hires?|team members)\b/i.exec(raw)
+    || wb('(\\d+|uno|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\\s+(?:m[aá]s\\s+)?(?:personas|empleados|trabajadores|ayudantes|cocineros|meseros|colaboradores)').exec(raw);
+  if (wb('no tengo empleados|sin empleados|no voy a contratar|no contratar[eé]|no pienso contratar|solo yo|yo solo|yo sola|por mi cuenta|sin personal').test(t) || /\b(no employees|no staff|no workers|without employees|(?:don'?t|do not) have (?:any )?(?:employees|staff|workers)|not hiring|won'?t hire|don'?t (?:plan to )?hire|do not (?:plan to )?hire|no hiring|just me|by myself|on my own|solo|myself only)\b/i.test(t)) {
     found.hiring = 'no';
-  } else if (/\b(hire|hiring|employees?|staff|workers?|team members)\b/i.test(t) || countMatch) {
+  } else if (/\b(hire|hiring|employees?|staff|workers?|team members)\b/i.test(t) || wb('contratar|contrato a|contrataré|empleados?|personal|trabajadores|colaboradores').test(t) || countMatch) {
     found.hiring = 'yes';
-    const n = countMatch ? numberOf(countMatch[1]) : null;
+    const n = countMatch ? numberOf(countMatch[1]) || ES_NUM[String(countMatch[1]).toLowerCase()] || null : null;
     if (n) found.employees = n;
   }
 
-  if (/\b(no subcontractors|without subcontractors|no independent contractors|won'?t use subcontractors|don'?t use subcontractors)\b/i.test(t)) found.subs = 'no';
-  else if (/\b(subcontract\w*|independent contractors?|freelanc\w*|contract workers?|1099)\b/i.test(t)) found.subs = 'yes';
+  if (/\b(no subcontractors|without subcontractors|no independent contractors|won'?t use subcontractors|don'?t use subcontractors)\b/i.test(t) || wb('sin subcontratistas|no (voy a )?us(o|ar[eé]) subcontratistas|no tengo subcontratistas|sin contratistas independientes').test(t)) found.subs = 'no';
+  else if (/\b(subcontract\w*|independent contractors?|freelanc\w*|contract workers?|1099)\b/i.test(t) || wb('subcontrat\\p{L}*|contratistas? independientes?|freelancers?').test(t)) found.subs = 'yes';
 
-  if (/\b(no sales tax|don'?t (?:collect|charge)|do not (?:collect|charge)|won'?t (?:collect|charge)|services? only|not selling products)\b/i.test(t)) found.salestax = 'no';
-  else if (/\bsales tax\b|\bretail\b|\bsell(?:ing)?\s+(?:products?|goods|merchandise|items|food|meals|drinks|things)\b/i.test(t)) found.salestax = 'yes';
+  if (/\b(no sales tax|don'?t (?:collect|charge)|do not (?:collect|charge)|won'?t (?:collect|charge)|services? only|not selling products)\b/i.test(t) || wb('no cobro impuesto|no cobrar[eé] impuesto|solo servicios|no vendo productos|sin impuesto sobre las ventas').test(t)) found.salestax = 'no';
+  else if (/\bsales tax\b|\bretail\b|\bsell(?:ing)?\s+(?:products?|goods|merchandise|items|food|meals|drinks|things)\b/i.test(t) || wb('impuesto (sobre las |sobre |de )?ventas|vend(er|o|eré)\\s+(productos|mercanc[ií]as?|comida|bebidas|art[ií]culos|cosas)|minorista').test(t)) found.salestax = 'yes';
 
   const money = moneyFrom(raw);
   if (money != null) {
-    if (/\b(less than|under|below|fewer than)\b/i.test(raw)) found.income = money <= 12000 ? 'no' : 'yes';
+    if (/\b(less than|under|below|fewer than)\b/i.test(raw) || wb('menos de|menor de|por debajo de|debajo de|menos que').test(raw)) found.income = money <= 12000 ? 'no' : 'yes';
     else found.income = money >= 12000 ? 'yes' : 'no';
   }
 
-  if (/\b(business name|trade name|dba|doing business as|under the name|call(?:ed|ing)? (?:it|my business|the business)|my brand|named)\b/i.test(t)) found.tradename = 'yes';
-  if (/\b(under my (?:own |legal |full )?name|using my (?:own |legal |full )?name|no business name|my own name)\b/i.test(t)) found.tradename = 'no';
+  if (/\b(business name|trade name|dba|doing business as|under the name|call(?:ed|ing)? (?:it|my business|the business)|my brand|named)\b/i.test(t) || wb('nombre comercial|nombre del negocio|con el nombre|se llama|mi marca|nombre de mi negocio').test(t)) found.tradename = 'yes';
+  if (/\b(under my (?:own |legal |full )?name|using my (?:own |legal |full )?name|no business name|my own name)\b/i.test(t) || wb('mi propio nombre|con mi nombre|sin nombre comercial|mi nombre legal').test(t)) found.tradename = 'no';
 
   return found;
 }
@@ -184,7 +192,7 @@ export function parseDirect(field, text, places) {
   const t = raw.toLowerCase();
   if (!raw) return null;
   if (field === 'structure') {
-    if (UNSURE_RX.test(t)) return { structure: 'unsure' };
+    if (UNSURE_RX.test(t) || ES_UNSURE.test(t)) return { structure: 'unsure' };
     const f = extractFacts(raw, places);
     if (f.structure) return { structure: f.structure };
     if (/^(llc|limited liability company)/.test(t)) return { structure: 'llc' };
@@ -193,13 +201,13 @@ export function parseDirect(field, text, places) {
   }
   if (field === 'activity') {
     const cats = categoriesFrom(t);
-    if (/food/.test(t) && !/construction/.test(t)) return { cats: ['food'], desc: cleanDesc(raw) };
-    if (/construction/.test(t)) return { cats: ['construction'], desc: cleanDesc(raw) };
-    if (/other|retail|service/.test(t) && !cats.length) return { cats: ['other'], desc: cleanDesc(raw) };
+    if (/food|comida|restaurante|cocina/.test(t) && !/construction|construcci/.test(t)) return { cats: ['food'], desc: cleanDesc(raw) };
+    if (/construction|construcci|contratista/.test(t)) return { cats: ['construction'], desc: cleanDesc(raw) };
+    if (/other|retail|service|otro|servicio|comercio|tienda/.test(t) && !cats.length) return { cats: ['other'], desc: cleanDesc(raw) };
     return cats.length ? { cats, desc: cleanDesc(raw) } : null;
   }
   if (field === 'place') {
-    if (/^(skip|later|no|none|not now|not sure|prefer not)/.test(t) || UNSURE_RX.test(t)) return { city: '', county: '', skipped: true };
+    if (/^(skip|later|no|none|not now|not sure|prefer not|omitir|omito|despu[eé]s|luego|ahora no|prefiero no|ninguna)/.test(t) || UNSURE_RX.test(t) || ES_UNSURE.test(t)) return { city: '', county: '', skipped: true };
     const list = loadPlaces(places);
     const county = findCounty(raw, places);
     const p = findPlace(raw, list, { anywhere: true });
@@ -208,12 +216,12 @@ export function parseDirect(field, text, places) {
     return null;
   }
   if (['hiring', 'subs', 'salestax', 'income', 'tradename'].includes(field)) {
-    if (UNSURE_RX.test(t)) return { [field]: 'unsure' };
+    if (UNSURE_RX.test(t) || ES_UNSURE.test(t)) return { [field]: 'unsure' };
     // Spoken answers come with extras: "hello yes yes", "yeah we will", "no no". A short reply with a clear yes or no word is that answer.
-    const words = t.replace(/[^a-z' ]+/g, ' ').split(/\s+/).filter(Boolean);
+    const words = t.replace(/[^a-záéíóúüñ' ]+/g, ' ').split(/\s+/).filter(Boolean);
     if (words.length && words.length <= 6) {
-      const isYes = (w) => ['yes', 'yeah', 'yea', 'yep', 'yup', 'ya', 'yah', 'yeh', 'yas', 'yess', 'yees', 'sure', 'correct', 'definitely', 'absolutely', 'certainly', 'probably'].includes(w);
-      const isNo = (w) => ['no', 'noo', 'nope', 'nah', 'nay', 'never', 'none', 'not'].includes(w) || /^(don'?t|dont|won'?t|wont)$/.test(w);
+      const isYes = (w) => ['yes', 'yeah', 'yea', 'yep', 'yup', 'ya', 'yah', 'yeh', 'yas', 'yess', 'yees', 'sure', 'correct', 'definitely', 'absolutely', 'certainly', 'probably', 'sí', 'si', 'claro', 'correcto', 'seguro', 'exacto', 'efectivamente', 'obvio', 'afirmativo'].includes(w);
+      const isNo = (w) => ['no', 'noo', 'nope', 'nah', 'nay', 'never', 'none', 'not', 'nunca', 'ninguno', 'ninguna', 'tampoco', 'negativo'].includes(w) || /^(don'?t|dont|won'?t|wont)$/.test(w);
       const firstDecisive = words.find((w) => isYes(w) || isNo(w));
       const yes = words.some(isYes);
       const no = words.some(isNo);
@@ -282,18 +290,20 @@ function setConfirmed(card, field, patch) {
   return next;
 }
 
-export function describeField(card, field) {
+export function describeField(card, field, lang = 'en') {
+  const es = cleanLang(lang) === 'es';
+  const yn = es ? ES.yn : YN_WORD;
   const v = card.values;
   switch (field) {
-    case 'structure': return v.structure ? STRUCTURE_LABELS[v.structure] : '';
+    case 'structure': return v.structure ? (es ? ES.structure : STRUCTURE_LABELS)[v.structure] : '';
     case 'activity': {
-      const types = v.cats.map((c) => CATEGORY_LABELS[c]).join(', ');
+      const types = v.cats.map((c) => (es ? ES.category : CATEGORY_LABELS)[c]).join(', ');
       const desc = v.desc && v.desc.toLowerCase() !== types.toLowerCase() ? v.desc.charAt(0).toUpperCase() + v.desc.slice(1) : '';
       return [desc, types].filter(Boolean).join(' · ');
     }
-    case 'place': return [v.city, countyLabel(v.county) && `${countyLabel(v.county)}`].filter(Boolean).join(', ');
-    case 'hiring': return v.hiring ? `${YN_WORD[v.hiring]}${v.hiring === 'yes' && card.employees ? ` (${card.employees} ${card.employees === 1 ? 'person' : 'people'})` : ''}` : '';
-    default: return v[field] ? YN_WORD[v[field]] : '';
+    case 'place': return [v.city, es ? (v.county && ES.county(String(v.county).replace(/\s+county$/i, '').trim())) : countyLabel(v.county)].filter(Boolean).join(', ');
+    case 'hiring': return v.hiring ? `${yn[v.hiring]}${v.hiring === 'yes' && card.employees ? ` (${card.employees} ${es ? (card.employees === 1 ? 'persona' : 'personas') : (card.employees === 1 ? 'person' : 'people')})` : ''}` : '';
+    default: return v[field] ? yn[v[field]] : '';
   }
 }
 
@@ -322,16 +332,21 @@ const ASKS = {
 };
 const YN_CHIPS = [['yes', 'Yes'], ['no', 'No'], ['unsure', 'Not sure']];
 
-export function nextAsk(card) {
+const ES_YN_CHIPS = [['yes', 'Sí'], ['no', 'No'], ['unsure', 'No estoy seguro']];
+export function nextAsk(card, lang = 'en') {
   const field = CARD_FIELDS.find((f) => !card.status[f]);
   if (!field) return null;
-  const a = ASKS[field];
-  return { field, question: a.question, chips: (a.chips === 'yn' ? YN_CHIPS : a.chips).map(([value, label]) => ({ value, label })) };
+  const es = cleanLang(lang) === 'es';
+  const a = es ? ES.asks[field] : ASKS[field];
+  const chips = a.chips === 'yn' || !a.chips ? (es ? ES_YN_CHIPS : YN_CHIPS) : a.chips;
+  return { field, question: a.question, chips: chips.map(([value, label]) => ({ value, label })) };
 }
 
-function readback(card, fields) {
+function readback(card, fields, lang = 'en') {
+  const es = cleanLang(lang) === 'es';
   const parts = fields.map((f) => {
-    const text = describeField(card, f);
+    const text = describeField(card, f, lang);
+    if (es && ES.readback[f]) { const r = ES.readback[f]; const val = card.values[f] || 'unsure'; return typeof r[val] === 'function' ? r[val](card.employees) : r[val]; }
     if (f === 'hiring') return card.values.hiring === 'yes' ? `hiring${card.employees ? ` ${card.employees} ${card.employees === 1 ? 'person' : 'people'}` : ''} within 90 days` : card.values.hiring === 'no' ? 'no hiring within 90 days' : 'not sure about hiring';
     if (f === 'subs') return card.values.subs === 'yes' ? 'using subcontractors' : card.values.subs === 'no' ? 'no subcontractors' : 'not sure about subcontractors';
     if (f === 'salestax') return card.values.salestax === 'yes' ? 'collecting sales tax' : card.values.salestax === 'no' ? 'not collecting sales tax' : 'not sure about sales tax';
@@ -339,7 +354,7 @@ function readback(card, fields) {
     if (f === 'tradename') return card.values.tradename === 'yes' ? 'using a business name' : card.values.tradename === 'no' ? 'using your own name' : 'not sure about a business name';
     return text;
   }).filter(Boolean);
-  return `I heard: ${parts.join('; ')}. Is that right?`;
+  return es ? `${ES.readback.heard}: ${parts.join('; ')}. ${ES.readback.right}` : `I heard: ${parts.join('; ')}. Is that right?`;
 }
 
 const CONFIRM_CHIPS = [{ value: 'confirm', label: "Yes, that's right" }, { value: 'change', label: 'Change something' }];
@@ -347,24 +362,26 @@ const CONFIRM_CHIPS = [{ value: 'confirm', label: "Yes, that's right" }, { value
 // One turn of the conversation. Pure: the card goes in, a new card and the guide's reply come out.
 //   input: { message, action, field, value, asking }
 //   action: 'confirm' (read-back accepted), 'change' (read-back rejected), 'set' (tap a chip or edit a row), 'skip'
-export function intakeTurn({ card: rawCard, message, action, field, value, asking }, { places } = {}) {
+export function intakeTurn({ card: rawCard, message, action, field, value, asking, lang: rawLang }, { places } = {}) {
+  const lang = cleanLang(rawLang);
+  const es = lang === 'es';
   let card = cleanCard(rawCard);
   const said = String(message || '').trim().slice(0, 500);
   let ack = '';
 
   if (action === 'confirm') {
     for (const f of CARD_FIELDS) if (card.status[f] === 'heard') card.status[f] = 'confirmed';
-    ack = 'Thank you. That is on your card.';
+    ack = es ? ES.ackConfirmed : 'Thank you. That is on your card.';
   } else if (action === 'change') {
-    return finish(card, 'No problem. Tap any row on your card to change it, or tell me what to fix.', { ask: nextAskUnlessHeard(card), chips: [] });
+    return finish(card, es ? ES.change : 'No problem. Tap any row on your card to change it, or tell me what to fix.', { ask: nextAskUnlessHeard(card, lang), chips: [], lang });
   } else if (action === 'set' && CARD_FIELDS.includes(field)) {
     card = applySet(card, field, value, places);
-    ack = 'Got it.';
+    ack = es ? ES.ackGot : 'Got it.';
   } else if (said) {
     const direct = asking && CARD_FIELDS.includes(asking) ? parseDirect(asking, said, places) : null;
     if (direct) {
       card = setConfirmed(card, asking, direct);
-      ack = 'Got it.';
+      ack = es ? ES.ackGot : 'Got it.';
     }
     // Anything else in the message is heard, not confirmed. The asked field is skipped so a one-word answer is not re-read.
     const found = extractFacts(said, places);
@@ -372,12 +389,14 @@ export function intakeTurn({ card: rawCard, message, action, field, value, askin
     const merged = mergeHeard(card, found);
     card = merged.card;
     if (!direct && !merged.changed.length) {
-      return finish(card, asking === 'place' ? 'I did not catch a Washington city in that. Say or type the city again, or tap Skip for now.' : asking ? "I did not catch that. Please tap one of the answers below or type it again." : 'I did not pick out a business detail from that. Tell me what you want to start, or answer the question below.', { ask: nextAskUnlessHeard(card), note: 'no-facts' });
+      return finish(card, es ? (asking === 'place' ? ES.noFacts.place : asking ? ES.noFacts.asking : ES.noFacts.none) : asking === 'place' ? 'I did not catch a Washington city in that. Say or type the city again, or tap Skip for now.' : asking ? "I did not catch that. Please tap one of the answers below or type it again." : 'I did not pick out a business detail from that. Tell me what you want to start, or answer the question below.', { ask: nextAskUnlessHeard(card, lang), note: 'no-facts', lang });
     }
   } else {
-    return finish(card, nextAsk(card)?.question || 'Your card is complete.', { ask: nextAsk(card) });
+    // No message and no action (for example the owner just switched language): say the current question or read-back again.
+    if (CARD_FIELDS.some((f) => card.status[f] === 'heard')) return finishTurn(card, '', lang);
+    return finish(card, nextAsk(card, lang)?.question || (es ? ES.completeCard : 'Your card is complete.'), { ask: nextAsk(card, lang), lang });
   }
-  return finishTurn(card, ack);
+  return finishTurn(card, ack, lang);
 }
 
 function applySet(card, field, value, places) {
@@ -397,25 +416,26 @@ function applySet(card, field, value, places) {
   return next;
 }
 
-function nextAskUnlessHeard(card) {
-  return CARD_FIELDS.some((f) => card.status[f] === 'heard') ? null : nextAsk(card);
+function nextAskUnlessHeard(card, lang = 'en') {
+  return CARD_FIELDS.some((f) => card.status[f] === 'heard') ? null : nextAsk(card, lang);
 }
 
-function finishTurn(card, ack) {
+function finishTurn(card, ack, lang = 'en') {
   const heard = CARD_FIELDS.filter((f) => card.status[f] === 'heard');
   if (heard.length) {
-    return { card, reply: [ack, readback(card, heard)].filter(Boolean).join(' '), ask: null, chips: CONFIRM_CHIPS, awaiting: 'confirm', complete: false };
+    return { card, reply: [ack, readback(card, heard, lang)].filter(Boolean).join(' '), ask: null, chips: cleanLang(lang) === 'es' ? ES.confirmChips : CONFIRM_CHIPS, awaiting: 'confirm', complete: false };
   }
-  return finish(card, '', { ack, ask: nextAsk(card) });
+  return finish(card, '', { ack, ask: nextAsk(card, lang), lang });
 }
 
-function finish(card, reply, { ask = null, ack = '', chips = null, note = '' } = {}) {
+function finish(card, reply, { ask = null, ack = '', chips = null, note = '', lang = 'en' } = {}) {
   const complete = isComplete(card);
+  const es = cleanLang(lang) === 'es';
   if (complete) {
     return {
       card,
-      reply: [ack, 'That is everything I need. Your plan and your road to opening day are ready on the right. Every step shows the answer behind it. Say or tap Save my plan to keep it, or ask me a question.'].filter(Boolean).join(' '),
-      ask: null, chips: [{ value: 'save', label: 'Save my plan' }], awaiting: null, complete: true,
+      reply: [ack, es ? ES.complete : 'That is everything I need. Your plan and your road to opening day are ready on the right. Every step shows the answer behind it. Say or tap Save my plan to keep it, or ask me a question.'].filter(Boolean).join(' '),
+      ask: null, chips: [{ value: 'save', label: es ? ES.saveChip : 'Save my plan' }], awaiting: null, complete: true,
     };
   }
   const text = reply || [ack, ask?.question].filter(Boolean).join(' ');

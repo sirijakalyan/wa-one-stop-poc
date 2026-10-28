@@ -11,6 +11,7 @@ import { DISCLAIMER } from './disclaimer.js';
 import { evaluate, normalizeAnswers, suggestCategories, countyLabel } from './engine.js';
 import { SAMPLES } from './samples.js';
 import { answerQuestion } from './chat.js';
+import { cleanLang, ES, ES_RX, esToEn } from './i18n.js';
 import { intakeTurn, spokenConfirmation, planFromCard, buildTimeline, blankCard, CARD_FIELDS, extractFacts } from './intake.js';
 
 const DEFAULT_VISITOR = 'public-demo';
@@ -565,6 +566,7 @@ export function createService(store, options = {}) {
   // A question that starts with a statement ("I dont have employees, do I still need workers comp").
   const MID_Q_RX = /\b(do i|do we|can i|can u|can you|am i|is it|is that|is this|are you|should i|will i|would i|what do i|what should i|what will i|how much|how long|how many|how do i)\b(?!\s+not\b)/i;
   const QUESTION_RX = new RegExp(STRICT_Q_RX.source + String.raw`|^\s*(?:(?:so|ok|okay|see|well)[\s,]+)*(will|explain|show|list|give)\b|\b(tell me|show me|explain|what are|what is|the steps|which steps|help me understand|want to know|not sure what|how to)\b`, 'i');
+  const SPECIAL_ES = /(?<![\p{L}])(alcohol|licor|cerveza|vino|bebidas alcoh[oó]licas|cannabis|marihuana|tabaco|armas|guarder[ií]a|cuidado de ni[ñn]os|peluquer[ií]a|barber[ií]a|taxi|bienes ra[ií]ces|farmacia|cl[ií]nica)(?![\p{L}])/iu;
   const AI_Q = /\b(are you|r u|you)\s+(a\s+|an\s+)?(real|human|person|robot|bot|ai|machine|chatgpt)\b/i;
   const OFFICIAL_Q = /\b(is|are) (this|it|you|the app|the site)\b[^.?!]{0,20}\b(official|government|legit|legal advice)\b|\bofficial (site|website|app|advice)\b/i;
   const SPECIAL = /\b(alcohol|liquor|beer|wine|spirits|cannabis|marijuana|tobacco|vape|firearms?|guns?|daycare|day care|child ?care|cosmetolog\w*|barber\w*|hair salon|nail salon|taxi|trucking|real estate|insurance agent|pharmacy|clinic|medical)\b/i;
@@ -574,47 +576,77 @@ export function createService(store, options = {}) {
     const message = String(body?.message ?? '').trim();
     if (message.length > 500) fail('Keep each message under 500 characters.');
     const card = cardOf(body);
+    const lang = cleanLang(body?.lang);
+    const es = lang === 'es';
     // "Yes that is right" said aloud counts as tapping the button, so it must be checked before anything else.
     const spoken = !body?.action ? spokenConfirmation(card, message, body?.asking) : null;
-    const input = { card, message: spoken ? '' : message, action: spoken || body?.action, field: body?.field, value: body?.value, asking: body?.asking };
+    const input = { card, message: spoken ? '' : message, action: spoken || body?.action, field: body?.field, value: body?.value, asking: body?.asking, lang };
     const places = options.places || [];
     const said = message && !body?.action && !spoken;
     const hasFacts = said && Object.keys(extractFacts(message, places)).length > 0;
-    const question = said && ((QUESTION_RX.test(message) && !hasFacts) || STRICT_Q_RX.test(message) || MID_Q_RX.test(message));
+    const strictQ = es ? ES_RX.strictQuestion : STRICT_Q_RX;
+    const midQ = es ? ES_RX.midQuestion : MID_Q_RX;
+    const looseQ = es ? new RegExp(`${ES_RX.strictQuestion.source}|\\b(dime|expl[ií]came|cu[eé]ntame|mu[eé]strame|quiero saber|los pasos)\\b`, 'iu') : QUESTION_RX;
+    const question = said && ((looseQ.test(message) && !hasFacts) || strictQ.test(message) || midQ.test(message));
+    // Spanish questions are matched to the English rules and guides through a word list (a retrieval aid only). The agency text
+    // stays in English, and the answer says so, so nobody mistakes it for a reviewed translation.
     const askGrounded = async (text, { keepOnFallback = false } = {}) => {
       const rulesDoc = await loadRules();
       const cl = await store.getChecklist(visitorOf(ctx));
       const checklist = cl ? await buildChecklist(cl, rulesDoc) : null;
-      const answered = await answerQuestion({ message: text.replace(/\bstill\b/gi, ' ').replace(/\s+/g, ' ').trim(), conversation: [], rules: rulesDoc.rules, checklist, llm: options.llm });
+      const q = (es ? esToEn(text) : text).replace(/\bstill\b/gi, ' ').replace(/\s+/g, ' ').trim();
+      const answered = await answerQuestion({ message: q, conversation: [], rules: rulesDoc.rules, checklist, llm: options.llm });
       if (keepOnFallback && answered.mode === 'fallback') return null;
       const turn = intakeTurn({ ...input, message: '' }, { places });
-      return { ok: true, ...turn, reply: answered.answer, answer: { links: answered.links || [], matched: answered.matched || [] }, followUp: turn.ask?.question || '' };
+      const replyText = es ? (answered.mode === 'fallback' ? ES.noMatch : `${ES.englishNote}\n${answered.answer}`) : answered.answer;
+      return { ok: true, ...turn, reply: replyText, answer: { links: answered.links || [], matched: answered.matched || [] }, followUp: turn.ask?.question || (turn.awaiting === 'confirm' ? turn.reply : '') };
     };
     const reply = async (text) => {
       const turn = intakeTurn({ ...input, message: '' }, { places });
-      return { ok: true, ...turn, reply: text, answer: { links: [], matched: [] }, followUp: turn.ask?.question || '' };
+      return { ok: true, ...turn, reply: text, answer: { links: [], matched: [] }, followUp: turn.ask?.question || (turn.awaiting === 'confirm' ? turn.reply : '') };
+    };
+    // Fixed answers, in the language the owner chose.
+    const fixed = (m) => {
+      if (es) {
+        if (ES_RX.ai.test(m)) return ES.ai;
+        if (ES_RX.official.test(m)) return ES.official;
+        if (ES_RX.outOfScope.test(m)) return ES.outOfScope;
+        if (ES_RX.otherState.test(m)) return ES.otherState;
+        if (ES_RX.costTotal.test(m)) return ES.costTotal;
+        if (ES_RX.timeTotal.test(m)) return ES.timeTotal;
+        return '';
+      }
+      if (AI_Q.test(m)) return 'I am an AI guide, not a person. I take notes and explain steps from the written rules in this app. The rules decide what applies to you, and you confirm every fact.';
+      if (OFFICIAL_Q.test(m)) return 'No. This is a demo, not an official government site, and it is not legal advice. Each step links to the agency\'s own page, so confirm there before you apply.';
+      return '';
     };
     // A question goes to the grounded helper, which answers only from the app's own rules and guides, and never changes the card.
     if (question) {
-      if (AI_Q.test(message)) return reply('I am an AI guide, not a person. I take notes and explain steps from the written rules in this app. The rules decide what applies to you, and you confirm every fact.');
-      if (OFFICIAL_Q.test(message)) return reply('No. This is a demo, not an official government site, and it is not legal advice. Each step links to the agency\'s own page, so confirm there before you apply.');
+      const f = fixed(message);
+      if (f) return reply(f);
       const nothingYet = !Object.values(card.status || {}).includes('confirmed');
-      if (nothingYet && /\b(first|next)\b/i.test(message) && /\b(what|whats|which)\b/i.test(message)) return askGrounded('How do I get started?');
+      if (nothingYet && (es ? /\b(primer|primero|siguiente)\b/i.test(message) : /\b(first|next)\b/i.test(message) && /\b(what|whats|which)\b/i.test(message))) return askGrounded(es ? 'cómo empiezo' : 'How do I get started?');
       return askGrounded(message);
+    }
+    if (said && es && !hasFacts) {
+      const f = fixed(message);
+      if (f) return reply(f);
+      if (ES_RX.thanks.test(message)) return reply(ES.thanks);
+      if (ES_RX.greeting.test(message)) return reply(ES.greeting);
     }
     const turn = intakeTurn(input, { places });
     // Not a business detail and not an answer to the question: the owner may be talking, not answering, so try the grounded helper.
-    if (said && turn.note === 'no-facts' && /\b(confused|don'?t understand|do not understand|lost|stuck|no idea)\b/i.test(message)) {
-      return reply('No problem. Tell me, in your own words, what kind of business you want to start, for example "a food truck in Spokane". Or tap one of the answers below. You can also use the step-by-step form instead.');
+    if (said && turn.note === 'no-facts' && (es ? ES_RX.confused : /\b(confused|don'?t understand|do not understand|lost|stuck|no idea)\b/i).test(message)) {
+      return reply(es ? ES.confused : 'No problem. Tell me, in your own words, what kind of business you want to start, for example "a food truck in Spokane". Or tap one of the answers below. You can also use the step-by-step form instead.');
     }
     // A free-text answer (a city) that was not understood stays a "did not catch that", unless the helper has a real topic for it.
-    if (said && turn.note === 'no-facts' && !/^(yes|no|ok|okay|yeah|yep|nope|sure|what|huh)\b[\s!.?]*$/i.test(message)) {
+    if (said && turn.note === 'no-facts' && !(es ? /^(s[ií]|no|ok|okay|vale|claro|qu[eé]|eh)\b[\s!.?]*$/i : /^(yes|no|ok|okay|yeah|yep|nope|sure|what|huh)\b[\s!.?]*$/i).test(message)) {
       const g = await askGrounded(message, { keepOnFallback: true });
-      if (g && !(body?.asking === 'place' && !QUESTION_RX.test(message))) return g;
+      if (g && !(body?.asking === 'place' && !looseQ.test(message))) return g;
     }
     // Some businesses need licenses this demo has no rules for. Say so now instead of staying silent.
-    if (said && hasFacts && SPECIAL.test(message) && turn.reply) {
-      turn.reply += ' One more thing: some businesses, such as those that sell alcohol or run child care, need special licenses from other agencies. This demo has no rules for those, so ask the agency.';
+    if (said && hasFacts && (es ? SPECIAL_ES : SPECIAL).test(message) && turn.reply) {
+      turn.reply += es ? ES.special : ' One more thing: some businesses, such as those that sell alcohol or run child care, need special licenses from other agencies. This demo has no rules for those, so ask the agency.';
     }
     return { ok: true, ...turn };
   });

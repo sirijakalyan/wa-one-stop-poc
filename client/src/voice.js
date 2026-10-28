@@ -7,8 +7,15 @@ export const recognitionClass = () => (typeof window === 'undefined' ? null : wi
 export const canListen = () => Boolean(recognitionClass());
 
 // Prefer a voice installed on the computer. Chrome's network voices ("Google ...") are known to go silent after the first line or on longer text.
-function pickVoice() {
+function pickVoice(lang = 'en-US') {
   const voices = window.speechSynthesis.getVoices?.() || [];
+  const base = String(lang).slice(0, 2).toLowerCase();
+  if (base === 'es') {
+    const es = voices.filter((v) => /^es/i.test(v.lang));
+    const local = es.filter((v) => v.localService !== false && !/google/i.test(v.name));
+    // Mexican and US Spanish first, then any other Spanish.
+    return local.find((v) => /^es[-_](US|MX)/i.test(v.lang)) || local[0] || es.find((v) => !/google/i.test(v.name)) || es[0] || null;
+  }
   const en = voices.filter((v) => /^en[-_]US/i.test(v.lang));
   const local = en.filter((v) => v.localService !== false && !/google/i.test(v.name));
   return local.find((v) => /aria|jenny|zira|samantha|natural/i.test(v.name)) || local[0]
@@ -17,9 +24,11 @@ function pickVoice() {
 
 // What gets read aloud is shorter than what is on screen: no agency names in brackets, no "source checked" footers, at most about
 // three sentences. The full text stays on screen and in the captions, so nothing is lost.
-export function speakable(text, max = 340) {
+export function speakable(text, max = 340, lang = 'en') {
+  // A Spanish answer that carries English agency text is not read aloud in a Spanish voice: it points to the screen instead.
+  if (lang === 'es' && /por ahora están en inglés:/.test(String(text || ''))) return 'Encontré la respuesta en las reglas oficiales, que por ahora están en inglés. Puede leerla en la pantalla.';
   const lines = String(text || '').split(/\n+/).map((l) => l.trim()).filter((l) => l && !/^(source checked|these are the agency|not yet approved|confirm with the agency|related steps|steps:|\d+\.|-\s)/i.test(l));
-  let t = lines.join(' ').replace(/^(?:got it|thank you|thanks|no problem)[.!]\s+(?=\S)/i, '').replace(/\s*\([^)]*\)/g, '').replace(/\s+/g, ' ').replace(/\bL&I\b/g, 'L and I').replace(/\bDOR\b/g, 'D O R').replace(/\bUBI\b/g, 'U B I').trim();
+  let t = lines.join(' ').replace(/^(?:got it|thank you|thanks|no problem|entendido|gracias|está bien)[.!]\s+(?=\S)/i, '').replace(/\s*\([^)]*\)/g, '').replace(/\s+/g, ' ').replace(/\bL&I\b/g, lang === 'es' ? 'L y I' : 'L and I').replace(/\bDOR\b/g, 'D O R').replace(/\bUBI\b/g, 'U B I').trim();
   if (t.length <= max) return t;
   const cut = t.slice(0, max);
   const end = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('? '), cut.lastIndexOf('! '));
@@ -27,7 +36,7 @@ export function speakable(text, max = 340) {
 }
 
 // Speak one line. Lines queue up, so a reply and its follow-up question are read in order.
-export function speak(text, { onStart, onEnd, onSilent } = {}) {
+export function speak(text, { onStart, onEnd, onSilent, lang = 'en-US' } = {}) {
   if (!canSpeak() || !text) return;
   let done = false;
   let started = false;
@@ -42,9 +51,9 @@ export function speak(text, { onStart, onEnd, onSilent } = {}) {
   };
   const say = (retry) => {
     const u = new window.SpeechSynthesisUtterance(String(text));
-    u.lang = 'en-US';
+    u.lang = lang;
     u.rate = 1.08;
-    const v = pickVoice();
+    const v = pickVoice(lang);
     if (v) u.voice = v;
     u.onstart = () => { started = true; onStart?.(); };
     u.onend = finish;
@@ -75,14 +84,21 @@ const ERRORS = {
   'audio-capture': 'No microphone was found. Check that one is connected, or type instead.',
   network: 'Voice input needs an internet connection and could not reach the speech service. Type instead.',
 };
-export const listenErrorText = (code) => ERRORS[code] || '';
+const ERRORS_ES = {
+  'not-allowed': 'El micrófono está bloqueado. Permítalo en su navegador, o escriba.',
+  'service-not-allowed': 'El micrófono está bloqueado. Permítalo en su navegador, o escriba.',
+  'audio-capture': 'No se encontró ningún micrófono. Revise que haya uno conectado, o escriba.',
+  network: 'La entrada de voz necesita internet y no pudo conectarse al servicio de voz. Escriba.',
+  'language-not-supported': 'Este navegador no reconoce voz en español. Escriba su respuesta.',
+};
+export const listenErrorText = (code, lang = 'en') => (lang === 'es' ? ERRORS_ES : ERRORS)[code] || '';
 
 // One listener. start() begins one round of listening and ends by itself after the owner pauses.
-export function createListener({ onInterim, onFinal, onEnd, onError }) {
+export function createListener({ onInterim, onFinal, onEnd, onError, getLang = () => 'en-US' }) {
   const Rec = recognitionClass();
   if (!Rec) return null;
   const rec = new Rec();
-  rec.lang = 'en-US';
+  rec.lang = getLang();
   rec.interimResults = true;
   rec.continuous = false;
   rec.maxAlternatives = 1;
@@ -121,6 +137,7 @@ export function createListener({ onInterim, onFinal, onEnd, onError }) {
       if (running) return;
       finalText = '';
       delivered = false;
+      rec.lang = getLang();
       try { rec.start(); running = true; } catch { running = false; }
     },
     stop() {

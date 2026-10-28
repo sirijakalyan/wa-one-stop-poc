@@ -1,5 +1,6 @@
 // Wording and small helpers for the "Your business" card. The server (server/src/intake.js) owns the logic.
 import { CAT_LABEL, STRUCT_LABEL, YN_LABEL, blankAnswers, countyLabel } from './questions.js';
+import { CARD_TEXT } from './i18n.js';
 
 export const CARD_FIELDS = ['structure', 'activity', 'place', 'hiring', 'subs', 'salestax', 'income', 'tradename'];
 export const FIELD_LABELS = {
@@ -33,8 +34,22 @@ export function answersFromCard(card) {
   return a;
 }
 
-export function rowText(card, field) {
+export function rowText(card, field, lang = 'en') {
   const v = card.values;
+  if (lang === 'es') {
+    const x = CARD_TEXT.es;
+    switch (field) {
+      case 'structure': return v.structure ? x.structure[v.structure] : '';
+      case 'activity': {
+        const types = v.cats.map((c) => x.cat[c]).join(', ');
+        const desc = v.desc && v.desc.toLowerCase() !== types.toLowerCase() ? v.desc.charAt(0).toUpperCase() + v.desc.slice(1) : '';
+        return [desc, types].filter(Boolean).join(' · ');
+      }
+      case 'place': { const c = String(v.county || '').replace(/\s+county$/i, '').trim(); return [v.city, c && `Condado de ${c}`].filter(Boolean).join(', '); }
+      case 'hiring': return v.hiring ? `${x.yn[v.hiring]}${v.hiring === 'yes' && card.employees ? ` (${card.employees} ${card.employees === 1 ? 'persona' : 'personas'})` : ''}` : '';
+      default: return v[field] ? x.yn[v[field]] : '';
+    }
+  }
   switch (field) {
     case 'structure': return v.structure ? STRUCT_LABEL[v.structure] : '';
     case 'activity': {

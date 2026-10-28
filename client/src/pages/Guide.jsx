@@ -11,17 +11,23 @@ import ExternalLink from '../components/ExternalLink.jsx';
 import Icon from '../components/Icon.jsx';
 import { ErrorNote } from '../components/Parts.jsx';
 import { canListen, canSpeak, createListener, listenErrorText, speak, speakable, stopSpeaking } from '../voice.js';
-import { answersFromCard, confirmedCount, FIELD_LABELS } from '../guideCard.js';
+import { answersFromCard, confirmedCount } from '../guideCard.js';
+import { speechLang, useT } from '../i18n.js';
 
-const GREETING = { id: 'hello', role: 'guide', text: "Hi, I'm here to help you start your Washington business. Tell me what you want to do, in your own words." };
+const GREETING = { id: 'hello', role: 'guide', text: '' };
 let counter = 0;
 const nextId = () => `m${Date.now().toString(36)}${counter++}`;
 
 const SAVE_RX = /^\s*(?:(?:ok|okay|yes|please|now|then|so)[\s,]+)*(?:save|keep|store)\b|\b(?:save|keep|store|open)\b[^.?!]{0,20}\b(?:plan|checklist)\b/i;
+const SAVE_ES = /^\s*(?:(?:ok|okay|s[ií]|por favor|ahora|entonces|bueno)[\s,]+)*(?:guardar|guarda|guarde|conservar|conserva)(?![\p{L}])|(?<![\p{L}])(?:guardar|guarda|guarde|conservar|abrir)(?![\p{L}])[^.?!]{0,20}(?<![\p{L}])(?:plan|lista)(?![\p{L}])/iu;
 
 // Main screen: the conversation on the left; the business card, the plan and the road to opening day fill in on the right.
 export default function Guide() {
   const { guide, setGuide, setAnswers, setLabel, setStep, setCatsAuto } = useApp();
+  const t = useT();
+  const langRef = useRef(t.lang);
+  langRef.current = t.lang;
+  const FIELD_LABELS = t.card.fields;
   const location = useLocation();
   const navigate = useNavigate();
   const [mode] = useState(location.state?.mode || 'type');
@@ -53,7 +59,9 @@ export default function Guide() {
   const cond = useRef({});
   const turnRef = useRef(null);
 
-  const messages = guide.messages.length ? guide.messages : [GREETING];
+  // The greeting is stored without text, so it always shows in the language chosen right now.
+  const localized = (m) => (m.id === 'hello' ? { ...m, text: t('home.greeting') } : m);
+  const messages = (guide.messages.length ? guide.messages : [GREETING]).map(localized);
   const last = messages[messages.length - 1];
 
   const refreshPlan = useCallback(async (card, simulate = false) => {
@@ -71,7 +79,7 @@ export default function Guide() {
 
   const turn = useCallback(async (body, ownerText) => {
     // Once the card is complete, saying "save my plan" does the same as tapping the button.
-    if (body.message && guideRef.current.complete && SAVE_RX.test(body.message)) {
+    if (body.message && guideRef.current.complete && (langRef.current === 'es' ? SAVE_ES : SAVE_RX).test(body.message)) {
       setGuide((g) => ({ ...g, messages: [...g.messages, { id: nextId(), role: 'owner', text: ownerText || body.message }] }));
       saveRef.current();
       return;
@@ -82,7 +90,7 @@ export default function Guide() {
     setGuide((g) => ({ ...g, messages: [...(g.messages.length ? g.messages : [GREETING]), ...(owner ? [owner] : [])] }));
     try {
       const cur = guideRef.current;
-      const r = await api.intakeTurn({ card: cur.card, asking: cur.ask?.field, ...body });
+      const r = await api.intakeTurn({ card: cur.card, asking: cur.ask?.field, lang: langRef.current, ...body });
       const added = [{ id: nextId(), role: 'guide', text: r.reply, links: r.answer?.links || [] }];
       if (r.followUp) added.push({ id: nextId(), role: 'guide', text: r.followUp });
       setGuide((g) => ({ ...g, messages: [...g.messages, ...added], card: r.card, ask: r.ask, awaiting: r.awaiting, complete: r.complete, chips: r.chips || [] }));
@@ -96,6 +104,16 @@ export default function Guide() {
   }, [refreshPlan, setGuide]);
 
   turnRef.current = turn;
+  // Switching language mid-conversation: stop talking, then say the current question again in the new language.
+  const prevLang = useRef(t.lang);
+  useEffect(() => {
+    if (prevLang.current === t.lang) return;
+    prevLang.current = t.lang;
+    stopSpeaking();
+    speakingCount.current = 0;
+    setSpeaking(false);
+    if (guideRef.current.messages.length > 1) turnRef.current({}, null);
+  }, [t.lang]);
   saveRef.current = save;
   cond.current = { micOn, speaking, busy };
 
@@ -106,8 +124,9 @@ export default function Guide() {
       if (messages[i].role !== 'guide') continue;
       speakingCount.current += 1;
       setSpeaking(true);
-      speak(speakable(messages[i].text), {
-        onSilent: () => setVoiceMsg('No sound came out. Check your computer volume and that this browser tab is not muted, then tap Mute voice and Unmute voice.'),
+      speak(speakable(messages[i].text, 340, langRef.current), {
+        lang: speechLang(langRef.current),
+        onSilent: () => setVoiceMsg(t('voice.silent')),
         onEnd: () => {
           speakingCount.current = Math.max(0, speakingCount.current - 1);
           if (!speakingCount.current) setSpeaking(false);
@@ -127,9 +146,10 @@ export default function Guide() {
 
   function toggleMic() {
     setVoiceMsg('');
-    if (!canListen()) { setVoiceMsg('This browser cannot listen. Use Chrome or Edge, or type your answer.'); return; }
+    if (!canListen()) { setVoiceMsg(t('voice.cannotListen')); return; }
     if (!listenerRef.current) {
       listenerRef.current = createListener({
+        getLang: () => speechLang(langRef.current),
         onInterim: (t) => setText(t),
         onFinal: (t) => { setText(''); turnRef.current({ message: t }, t); },
         onEnd: () => {
@@ -138,7 +158,7 @@ export default function Guide() {
           if (c.micOn && !c.speaking && !c.busy) setTimeout(() => setTick((n) => n + 1), 120);
         },
         onError: (code) => {
-          const msg = listenErrorText(code);
+          const msg = listenErrorText(code, langRef.current);
           if (msg) { setVoiceMsg(msg); setMicOn(false); }
         },
       });
@@ -192,7 +212,7 @@ export default function Guide() {
     if (guide.ask) return turn({ action: 'set', field: guide.ask.field, value: c.value }, c.label);
     return undefined;
   }
-  const edit = (field, value) => turn({ action: 'set', field, value }, `I changed "${FIELD_LABELS[field]}".`);
+  const edit = (field, value) => turn({ action: 'set', field, value }, t('guide.edited', FIELD_LABELS[field]));
 
   async function save() {
     setBusy(true);
@@ -239,26 +259,27 @@ export default function Guide() {
       <header className="guide-head">
         <GuideArt small />
         <div>
-          <h1 id="guide-title" tabIndex={-1}>Your guide</h1>
-          <p className="ai-label"><Icon name="chat" size={16} /> You&apos;re talking to an AI guide. Written rules decide your plan; the guide only listens and asks.</p>
+          <h1 id="guide-title" tabIndex={-1}>{t('guide.title')}</h1>
+          <p className="ai-label"><Icon name="chat" size={16} /> {t('guide.ai')}</p>
+          {t('draft.note') ? <p className="draft-note" role="note">{t('draft.note')}</p> : null}
         </div>
-        <button type="button" className="btn btn-quiet btn-sm" onClick={useForm}>Use the step-by-step form instead</button>
+        <button type="button" className="btn btn-quiet btn-sm" onClick={useForm}>{t('guide.useForm')}</button>
       </header>
 
-      <div className="guide-tabs" role="tablist" aria-label="Guide sections">
-        <button type="button" role="tab" id="tab-chat" aria-selected={tab === 'chat'} aria-controls="guide-chat" onClick={() => setTab('chat')}>Conversation</button>
+      <div className="guide-tabs" role="tablist" aria-label={t('guide.sections')}>
+        <button type="button" role="tab" id="tab-chat" aria-selected={tab === 'chat'} aria-controls="guide-chat" onClick={() => setTab('chat')}>{t('guide.tabChat')}</button>
         <button type="button" role="tab" id="tab-plan" aria-selected={tab === 'plan'} aria-controls="guide-side" onClick={() => setTab('plan')}>
-          Plan <span className="tab-badge" aria-label={`${planCount} steps`}>{planCount}</span>
+          {t('guide.tabPlan')} <span className="tab-badge" aria-label={t('guide.steps', planCount)}>{planCount}</span>
         </button>
       </div>
 
       <div className="guide-grid">
         <section id="guide-chat" className={`guide-chat${tab === 'chat' ? ' is-active' : ''}`} data-tab="chat" aria-labelledby="chat-title">
-          <h2 id="chat-title" className="sr-only">Conversation</h2>
-          <div className="chat-log" ref={logRef} role="log" aria-live="polite" aria-label="Conversation with the guide">
+          <h2 id="chat-title" className="sr-only">{t('guide.tabChat')}</h2>
+          <div className="chat-log" ref={logRef} role="log" aria-live="polite" aria-label={t('guide.log')}>
             {messages.map((m) => (
               <div key={m.id} className={`bubble ${m.role}`}>
-                <span className="bubble-who">{m.role === 'guide' ? 'Guide' : 'You'}</span>
+                <span className="bubble-who">{m.role === 'guide' ? t('guide.guide') : t('guide.you')}</span>
                 <p>{m.text}</p>
                 {m.links?.length ? (
                   <ul className="bubble-links">
@@ -267,10 +288,10 @@ export default function Guide() {
                 ) : null}
               </div>
             ))}
-            {busy ? <div className="bubble guide" aria-busy="true"><span className="bubble-who">Guide</span><p>Taking notes...</p></div> : null}
+            {busy ? <div className="bubble guide" aria-busy="true"><span className="bubble-who">{t('guide.guide')}</span><p>{t('guide.notes')}</p></div> : null}
           </div>
           {chips.length ? (
-            <ul className="tap-chips" aria-label="Quick answers">
+            <ul className="tap-chips" aria-label={t('guide.quick')}>
               {chips.map((c) => (
                 <li key={c.value}>
                   <button type="button" className={`tap-chip${c.value === 'confirm' || c.value === 'save' ? ' primary' : ''}`} onClick={() => tap(c)}>{c.label}</button>
@@ -279,14 +300,14 @@ export default function Guide() {
             </ul>
           ) : null}
           <ErrorNote message={error} />
-          <p className="captions" aria-hidden="true" data-testid="captions"><strong>{last.role === 'guide' ? 'Guide' : 'You'}:</strong> {last.text}</p>
+          <p className="captions" aria-hidden="true" data-testid="captions"><strong>{last.role === 'guide' ? t('guide.guide') : t('guide.you')}:</strong> {last.text}</p>
           <form className="mic-bar" onSubmit={submit}>
-            <label htmlFor="guide-input" className="sr-only">Tell the guide about your business, or answer its question</label>
+            <label htmlFor="guide-input" className="sr-only">{t('guide.inputLabel')}</label>
             <button
               type="button"
               className={`mic-btn${micOn ? ' is-on' : ''}`}
               aria-pressed={micOn}
-              aria-label={micOn ? 'Microphone on. Tap to turn it off.' : 'Microphone off. Tap to talk.'}
+              aria-label={micOn ? t('guide.micOn') : t('guide.micOff')}
               onClick={toggleMic}
             >
               <Icon name="mic" size={20} />
@@ -298,28 +319,28 @@ export default function Guide() {
               value={text}
               maxLength={500}
               autoComplete="off"
-              placeholder="Type here, for example: I want to open a food truck in Spokane"
+              placeholder={t('guide.placeholder')}
               onChange={(e) => setText(e.target.value)}
               disabled={busy}
             />
-            <button type="submit" className="btn btn-primary" disabled={busy || !text.trim()}>Send</button>
+            <button type="submit" className="btn btn-primary" disabled={busy || !text.trim()}>{t('guide.send')}</button>
           </form>
           <div className="voice-controls">
-            <button type="button" className="btn btn-quiet btn-sm" onClick={muteToggle} aria-pressed={!voiceOn} disabled={!canSpeak()}>{voiceOn ? 'Mute voice' : 'Unmute voice'}</button>
-            <button type="button" className="btn btn-quiet btn-sm" onClick={stopTalking}>Stop</button>
+            <button type="button" className="btn btn-quiet btn-sm" onClick={muteToggle} aria-pressed={!voiceOn} disabled={!canSpeak()}>{voiceOn ? t('guide.mute') : t('guide.unmute')}</button>
+            <button type="button" className="btn btn-quiet btn-sm" onClick={stopTalking}>{t('guide.stop')}</button>
             <p className="voice-status" role="status">
-              {voiceMsg || (listening ? 'Listening. Speak now.' : speaking ? 'The guide is speaking.' : !canSpeak() ? 'This browser cannot speak. Captions and typing still work.' : voiceOn ? 'Voice is on. Tap the microphone to talk.' : 'Voice is off. Tap the microphone or Unmute voice.')}
+              {voiceMsg || (listening ? t('voice.listening') : speaking ? t('voice.speaking') : !canSpeak() ? t('voice.cannotSpeak') : voiceOn ? t('voice.on') : t('voice.off'))}
             </p>
           </div>
         </section>
 
-        <section id="guide-side" className={`guide-side${tab === 'plan' ? ' is-active' : ''}`} data-tab="plan" aria-label="Your business and your plan">
+        <section id="guide-side" className={`guide-side${tab === 'plan' ? ' is-active' : ''}`} data-tab="plan" aria-label={t('guide.sideLabel')}>
           <BusinessCard card={guide.card} onEdit={edit} disabled={busy} />
           <PlanPanel plan={view.plan} newIds={newIds} onSimulate={simulate} simulating={Boolean(sim)} busy={busy} />
           {guide.complete ? (
             <div className="save-box">
-              <button type="button" className="btn btn-primary" onClick={save} disabled={busy}>Save my plan and open my checklist</button>
-              <p className="hint">Saves your confirmed answers for this browser. You can mark steps done on the checklist, which is simulated tracking.</p>
+              <button type="button" className="btn btn-primary" onClick={save} disabled={busy}>{t('guide.save')}</button>
+              <p className="hint">{t('guide.saveHint')}</p>
             </div>
           ) : null}
         </section>
@@ -329,7 +350,7 @@ export default function Guide() {
       <div className={`guide-road${tab === 'plan' ? ' is-active' : ''}`} data-tab="plan">
         <SimulatePanel result={sim} onClose={endSimulation} />
         <Timeline timeline={view.timeline} simulated={Boolean(sim)} />
-        <p className="hint">Need the full checklist later? <Link to="/checklist">Open My checklist</Link> after you save your plan.</p>
+        <p className="hint">{t('guide.checklistHint')} <Link to="/checklist">{t('guide.checklistLink')}</Link> {t('guide.checklistAfter')}</p>
       </div>
     </div>
   );

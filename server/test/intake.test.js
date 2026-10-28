@@ -409,3 +409,96 @@ test('a rambling answer about the kind of business is tidied or dropped', () => 
   assert.equal(desc('wanted to start a food service'), 'food service');
   assert.equal(desc('we are basically a company that does a whole lot of different kinds of construction work for people'), '');
 });
+
+// ---- Spanish (draft text, pending review by a person) ----
+test('Spanish: the guide understands a Spanish story and reads it back in Spanish', async () => {
+  const app = await startApp();
+  try {
+    const call = async (body) => (await app.call('POST', '/api/intake/turn', { lang: 'es', ...body })).body;
+    const a = await call({ message: 'Quiero abrir un camión de comida en Spokane y contratar a dos personas', card: blankCard() });
+    assert.match(a.reply, /^Entendí:/);
+    assert.match(a.reply, /Servicio de comida/);
+    assert.match(a.reply, /Spokane, Condado de Spokane/);
+    assert.match(a.reply, /contratará a 2 personas dentro de 90 días/);
+    assert.match(a.reply, /¿Es correcto\?/);
+    assert.deepEqual(a.chips.map((c) => c.label), ['Sí, es correcto', 'Cambiar algo']);
+    assert.equal(a.card.values.hiring, 'yes');
+    assert.equal(a.card.employees, 2);
+    for (const m of ['sí', 'sí es correcto', 'claro', 'correcto', 'exacto']) {
+      const r = await call({ message: m, card: a.card });
+      assert.equal(r.card.status.hiring, 'confirmed', m);
+      assert.match(r.reply, /¿Cómo estará organizado su negocio\?/, m);
+    }
+    for (const m of ['no', 'no es correcto', 'incorrecto']) {
+      const r = await call({ message: m, card: a.card });
+      assert.equal(r.card.status.hiring, 'heard', m);
+      assert.match(r.reply, /Toque cualquier fila/);
+    }
+  } finally {
+    await app.stop();
+  }
+});
+
+test('Spanish: yes/no answers, structure and every question come out in Spanish', async () => {
+  const app = await startApp();
+  try {
+    const call = async (body) => (await app.call('POST', '/api/intake/turn', { lang: 'es', ...body })).body;
+    for (const m of ['sí', 'sí sí', 'claro que sí', 'hola sí']) assert.equal((await call({ message: m, card: blankCard(), asking: 'subs' })).card.values.subs, 'yes', m);
+    for (const m of ['no', 'no gracias', 'nunca']) assert.equal((await call({ message: m, card: blankCard(), asking: 'subs' })).card.values.subs, 'no', m);
+    assert.equal((await call({ message: 'no estoy seguro', card: blankCard(), asking: 'income' })).card.values.income, 'unsure');
+    const s = await call({ message: 'propietario único', card: blankCard(), asking: 'structure' });
+    assert.equal(s.card.values.structure, 'sole');
+    assert.match(s.reply, /¿Qué tipo de negocio es\?/);
+    assert.deepEqual(s.chips.map((c) => c.label), ['Servicio de comida', 'Construcción y contratistas', 'Otro servicio o comercio']);
+    const place = await call({ message: 'Seattle', card: s.card, asking: 'place' });
+    assert.equal(place.card.values.city, 'Seattle');
+    assert.match(place.reply, /Entendido\./);
+    const miss = await call({ message: 'blablabla', card: s.card, asking: 'place' });
+    assert.match(miss.reply, /No reconocí una ciudad de Washington/);
+    // A full run to a complete card, all in Spanish.
+    let card = blankCard();
+    let r = await call({ message: 'Quiero abrir una panadería en Tacoma', card });
+    r = await call({ message: 'sí', card: r.card });
+    const answers = { structure: 'LLC', hiring: 'no', subs: 'no', salestax: 'sí', income: 'sí', tradename: 'no' };
+    for (let i = 0; i < 12 && !r.complete; i += 1) {
+      const field = r.ask?.field;
+      if (!field) break;
+      r = await call({ message: answers[field] || 'sí', card: r.card, asking: field });
+    }
+    assert.equal(r.complete, true);
+    assert.match(r.reply, /Eso es todo lo que necesito/);
+    assert.equal(r.chips[0].label, 'Guardar mi plan');
+  } finally {
+    await app.stop();
+  }
+});
+
+test('Spanish: questions are answered from the rules with an honest note that the agency text is in English', async () => {
+  const app = await startApp();
+  try {
+    const ask = async (message) => (await app.call('POST', '/api/intake/turn', { lang: 'es', message, card: blankCard(), asking: 'structure' })).body;
+    const lic = await ask('¿Necesito una licencia comercial?');
+    assert.match(lic.reply, /vienen? de las reglas y guías oficiales, que por ahora están en inglés/);
+    assert.match(lic.reply, /business license/i);
+    assert.ok(lic.followUp.startsWith('¿Cómo estará organizado'));
+    const cases = [
+      ['¿Cuánto me va a costar todo esto?', /No puedo dar un total/],
+      ['¿Cuánto tiempo falta para abrir?', /10 días hábiles/],
+      ['¿Eres una persona real?', /guía de inteligencia artificial/],
+      ['¿Es esto un sitio oficial?', /no un sitio oficial del gobierno/i],
+      ['¿Funciona en Oregon?', /solamente el estado de Washington/],
+      ['¿Cómo registro una marca registrada?', /fuera de lo que cubre/],
+      ['hola', /Respondo preguntas/],
+      ['gracias', /De nada/],
+      ['no entiendo', /No hay problema/],
+      ['¿Qué es el seguro de compensación laboral?', /workers' compensation/i],
+      ['¿Cómo empiezo?', /Secretary of State/i],
+    ];
+    for (const [q, yes] of cases) assert.match((await ask(q)).reply, yes, q);
+    // English is unchanged when no language is sent.
+    const en = (await app.call('POST', '/api/intake/turn', { message: 'hi', card: blankCard(), asking: 'structure' })).body;
+    assert.match(en.reply, /answer questions about the steps/);
+  } finally {
+    await app.stop();
+  }
+});
