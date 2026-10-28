@@ -2,6 +2,9 @@ import { createApp } from './app.js';
 import { createStore } from './store.js';
 import { createPgStore } from './db/pgStore.js';
 import { createPool, isDatabaseConfigured } from './db/pool.js';
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 // Load server/.env when present (Node 20.12+). Render sets real env vars instead.
 try { process.loadEnvFile?.(new URL('../.env', import.meta.url)); } catch { /* no .env file */ }
@@ -18,7 +21,12 @@ async function main() {
     store = createStore();
     console.log('Storage: JSON files in server/data (set DATABASE_URL to use PostgreSQL)');
   }
-  const app = createApp({ store });
+  // Serve the built client without any setting: use CLIENT_DIST if given, else client/dist (or ./dist) next to the server.
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  const candidates = [process.env.CLIENT_DIST, path.resolve(here, '../../client/dist'), path.resolve(here, '../client/dist'), path.resolve(here, '../dist')].filter(Boolean);
+  const clientDist = candidates.find((d) => existsSync(path.join(d, 'index.html')));
+  console.log(clientDist ? `Client: serving ${clientDist}` : 'Client: no built client found (run "npm run build"); only /api is served');
+  const app = createApp({ store, clientDist });
   app.listen(port, () => console.log(`WA One-Stop-Shop server listening on port ${port}`));
 
   // Send due renewal reminders once an hour (and once at start). Each reminder is sent only once.
