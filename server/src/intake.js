@@ -212,8 +212,8 @@ export function parseDirect(field, text, places) {
     // Spoken answers come with extras: "hello yes yes", "yeah we will", "no no". A short reply with a clear yes or no word is that answer.
     const words = t.replace(/[^a-z' ]+/g, ' ').split(/\s+/).filter(Boolean);
     if (words.length && words.length <= 6) {
-      const isYes = (w) => ['yes', 'yeah', 'yea', 'yep', 'yup', 'sure', 'correct', 'definitely', 'absolutely', 'certainly', 'probably'].includes(w);
-      const isNo = (w) => ['no', 'nope', 'nah', 'never', 'none', 'not'].includes(w) || /^(don'?t|dont|won'?t|wont)$/.test(w);
+      const isYes = (w) => ['yes', 'yeah', 'yea', 'yep', 'yup', 'ya', 'yah', 'yeh', 'yas', 'yess', 'yees', 'sure', 'correct', 'definitely', 'absolutely', 'certainly', 'probably'].includes(w);
+      const isNo = (w) => ['no', 'noo', 'nope', 'nah', 'nay', 'never', 'none', 'not'].includes(w) || /^(don'?t|dont|won'?t|wont)$/.test(w);
       const firstDecisive = words.find((w) => isYes(w) || isNo(w));
       const yes = words.some(isYes);
       const no = words.some(isNo);

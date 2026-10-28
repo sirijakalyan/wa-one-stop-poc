@@ -17,3 +17,9 @@ describe('speakable', () => {
     expect(speakable('How will your business be set up? If you are not sure, that is fine.')).toBe('How will your business be set up? If you are not sure, that is fine.');
   });
 });
+
+describe('speakable ack', () => {
+  it('does not read "Got it." before the next question, so the owner can answer sooner', () => {
+    expect(speakable('Got it. Do you expect gross income of $12,000 a year or more?')).toBe('Do you expect gross income of $12,000 a year or more?');
+  });
+});

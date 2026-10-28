@@ -16,7 +16,7 @@ function pickVoice() {
 // three sentences. The full text stays on screen and in the captions, so nothing is lost.
 export function speakable(text, max = 340) {
   const lines = String(text || '').split(/\n+/).map((l) => l.trim()).filter((l) => l && !/^(source checked|these are the agency|not yet approved|confirm with the agency|related steps|steps:|\d+\.|-\s)/i.test(l));
-  let t = lines.join(' ').replace(/\s*\([^)]*\)/g, '').replace(/\s+/g, ' ').replace(/\bL&I\b/g, 'L and I').replace(/\bDOR\b/g, 'D O R').replace(/\bUBI\b/g, 'U B I').trim();
+  let t = lines.join(' ').replace(/^(?:got it|thank you|thanks|no problem)[.!]\s+(?=\S)/i, '').replace(/\s*\([^)]*\)/g, '').replace(/\s+/g, ' ').replace(/\bL&I\b/g, 'L and I').replace(/\bDOR\b/g, 'D O R').replace(/\bUBI\b/g, 'U B I').trim();
   if (t.length <= max) return t;
   const cut = t.slice(0, max);
   const end = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('? '), cut.lastIndexOf('! '));
@@ -28,12 +28,23 @@ export function speak(text, { onStart, onEnd } = {}) {
   if (!canSpeak() || !text) return;
   const u = new window.SpeechSynthesisUtterance(String(text));
   u.lang = 'en-US';
-  u.rate = 1;
+  u.rate = 1.08;
   const v = pickVoice();
   if (v) u.voice = v;
+  // Some browsers never send the "end" event for a line. Without it the microphone would stay switched off, so a timer
+  // closes the line after a generous estimate of how long it takes to say.
+  let done = false;
+  let timer = null;
+  const finish = () => {
+    if (done) return;
+    done = true;
+    clearTimeout(timer);
+    onEnd?.();
+  };
+  timer = setTimeout(finish, 3500 + String(text).length * 100);
   u.onstart = () => onStart?.();
-  u.onend = () => onEnd?.();
-  u.onerror = () => onEnd?.();
+  u.onend = finish;
+  u.onerror = finish;
   window.speechSynthesis.speak(u);
 }
 
