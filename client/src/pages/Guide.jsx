@@ -313,11 +313,12 @@ export default function Guide() {
           ) : null}
         </section>
 
-        <div className={`guide-road${tab === 'plan' ? ' is-active' : ''}`} data-tab="plan">
-          <SimulatePanel result={sim} onClose={endSimulation} />
-          <Timeline timeline={view.timeline} simulated={Boolean(sim)} />
-          <p className="hint">Need the full checklist later? <Link to="/checklist">Open My checklist</Link> after you save your plan.</p>
-        </div>
+      </div>
+
+      <div className={`guide-road${tab === 'plan' ? ' is-active' : ''}`} data-tab="plan">
+        <SimulatePanel result={sim} onClose={endSimulation} />
+        <Timeline timeline={view.timeline} simulated={Boolean(sim)} />
+        <p className="hint">Need the full checklist later? <Link to="/checklist">Open My checklist</Link> after you save your plan.</p>
       </div>
     </div>
   );
