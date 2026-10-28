@@ -23,7 +23,7 @@ export default function Header() {
       <div className="wrap">
         <Link to="/" className="brand">
           <span className="brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 38 38" fill="none"><circle cx="19" cy="19" r="18" fill="#0f5b4d" stroke="rgba(255,255,255,.25)"/><path d="M5 24c5-6 9 2 14-3s9-6 14-1" stroke="#9fe0d0" strokeWidth="1.5" strokeLinecap="round"/><path d="M5 29c5-5 9 2 14-2s9-5 14-1" stroke="#9fe0d0" strokeOpacity=".5" strokeWidth="1.2" strokeLinecap="round"/><path d="M9 17c4-1 6-6 10-6s6 4 10 3" stroke="#ffc83d" strokeWidth="2.2" strokeLinecap="round" strokeDasharray="1 4.2"/><circle cx="29" cy="14" r="3" fill="#ffc83d"/></svg>
+            <svg viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="14" fill="#1f5fd6"/><path d="M8 27c4-7 8 1 12-4s8-5 12-1" stroke="#fff" strokeWidth="2.4" strokeLinecap="round"/><circle cx="29" cy="13" r="5" fill="#ffcf3f"/><circle cx="12" cy="13" r="2" fill="#ff7a59"/><circle cx="17" cy="9" r="1.5" fill="#2bbf94"/></svg>
           </span>
           <span>WA Business One-Stop-Shop</span>
         </Link>
