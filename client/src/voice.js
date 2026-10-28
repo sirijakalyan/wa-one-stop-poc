@@ -60,6 +60,7 @@ export function createListener({ onInterim, onFinal, onEnd, onError }) {
   rec.maxAlternatives = 1;
   let running = false;
   let finalText = '';
+  let delivered = false;
   rec.onresult = (e) => {
     let interim = '';
     for (let i = e.resultIndex; i < e.results.length; i += 1) {
@@ -68,19 +69,30 @@ export function createListener({ onInterim, onFinal, onEnd, onError }) {
       else interim += r[0].transcript;
     }
     if (interim) onInterim?.(interim);
+    // Hand the sentence over as soon as the browser is sure of it, instead of waiting for it to close the microphone.
+    const t = finalText.trim();
+    if (t && !delivered) {
+      delivered = true;
+      finalText = '';
+      onFinal?.(t);
+      try { rec.stop(); } catch { /* already stopped */ }
+    }
   };
   rec.onerror = (e) => { onError?.(e.error); };
   rec.onend = () => {
     running = false;
     const t = finalText.trim();
     finalText = '';
-    if (t) onFinal?.(t);
-    onEnd?.(Boolean(t));
+    if (t && !delivered) onFinal?.(t);
+    const had = delivered || Boolean(t);
+    delivered = false;
+    onEnd?.(had);
   };
   return {
     start() {
       if (running) return;
       finalText = '';
+      delivered = false;
       try { rec.start(); running = true; } catch { running = false; }
     },
     stop() {

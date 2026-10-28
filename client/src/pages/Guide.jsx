@@ -134,7 +134,7 @@ export default function Guide() {
         onEnd: () => {
           setListening(false);
           const c = cond.current;
-          if (c.micOn && !c.speaking && !c.busy) setTimeout(() => setTick((n) => n + 1), 400);
+          if (c.micOn && !c.speaking && !c.busy) setTimeout(() => setTick((n) => n + 1), 120);
         },
         onError: (code) => {
           const msg = listenErrorText(code);

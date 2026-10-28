@@ -23,7 +23,7 @@ export default function BusinessCard({ card, onEdit, disabled }) {
                 {editing === f ? (
                   <Editor field={f} card={card} onCancel={() => setEditing('')} onSave={(value) => { setEditing(''); onEdit(f, value); }} />
                 ) : (
-                  <span className="biz-value">{text || <em>Not asked yet</em>}</span>
+                  <span className="biz-value">{text || <em>{state === 'confirmed' ? 'Skipped' : 'Not asked yet'}</em>}</span>
                 )}
               </div>
               <span className="biz-state">{STATUS_TEXT[state] || ''}</span>

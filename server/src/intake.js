@@ -86,7 +86,9 @@ const ACTIVITY_PHRASES = [
 export function cleanDesc(text) {
   const t = String(text || '').trim().replace(/[.!?]+$/, '');
   const c = t.replace(/^(?:(?:i|we)(?:'d| would| want| wanted| am| are| will| plan| planned)?\s*)?(?:(?:really |just )?(?:want|wanted|would like|like|plan|planning|going|trying|need|hope|hoping)\s+(?:to\s+)?)?(?:start|open|run|launch|begin|operate|set up|do|have|starting|opening|running)\s+(?:a|an|my|the|some)?\s*/i, '').trim();
-  return (c || t).slice(0, 120);
+  const d = (c || t).replace(/^(?:(?:so|well|um|uh|and|like|actually|basically)\s+|(?:it|that|this) (?:is|was)\s+|it's\s+|its\s+|we(?:'re| are)\s+|i(?:'m| am)\s+|(?:in|on|at|about)\s+|(?:the )?(?:field|business|industry) of\s+|a\s+|an\s+)+/i, '').trim();
+  // Still a long ramble: keep nothing, so the card shows the business type instead.
+  return d.split(/\s+/).length > 7 ? '' : d.slice(0, 120);
 }
 
 const CONFIRM_YES = new Set(['yes', 'yeah', 'yep', 'yup', 'sure', 'ok', 'okay', 'correct', 'right', 'exactly', 'absolutely', 'definitely', 'good', 'perfect', 'fine', 'huh']);
@@ -207,6 +209,16 @@ export function parseDirect(field, text, places) {
   }
   if (['hiring', 'subs', 'salestax', 'income', 'tradename'].includes(field)) {
     if (UNSURE_RX.test(t)) return { [field]: 'unsure' };
+    // Spoken answers come with extras: "hello yes yes", "yeah we will", "no no". A short reply with a clear yes or no word is that answer.
+    const words = t.replace(/[^a-z' ]+/g, ' ').split(/\s+/).filter(Boolean);
+    if (words.length && words.length <= 6) {
+      const isYes = (w) => ['yes', 'yeah', 'yea', 'yep', 'yup', 'sure', 'correct', 'definitely', 'absolutely', 'certainly', 'probably'].includes(w);
+      const isNo = (w) => ['no', 'nope', 'nah', 'never', 'none', 'not'].includes(w) || /^(don'?t|dont|won'?t|wont)$/.test(w);
+      const firstDecisive = words.find((w) => isYes(w) || isNo(w));
+      const yes = words.some(isYes);
+      const no = words.some(isNo);
+      if (firstDecisive && (yes !== no || words.length <= 3)) return { [field]: isYes(firstDecisive) ? 'yes' : 'no' };
+    }
     if (/^(yes|yeah|yep|yup|sure|correct|right|definitely|i will|we will|i do|we do|probably)\b/.test(t)) return { [field]: 'yes' };
     if (/^(no|nope|nah|none|never|not)\b/.test(t)) return { [field]: 'no' };
     const f = extractFacts(raw, places);

@@ -394,3 +394,18 @@ test('API: a city that was not understood is not answered with "I don\'t have th
     await app.stop();
   }
 });
+
+test('spoken yes/no answers with extra words are still the answer', () => {
+  const ans = (message, field = 'subs') => turn({ card: blankCard(), message, asking: field }).card.values[field];
+  for (const m of ['hello yes yes', 'yes yes', 'yeah we will', 'yes please', 'sure', 'uh yes']) assert.equal(ans(m), 'yes', m);
+  for (const m of ['no no', 'no thanks', 'nope', "no I don't", 'hello no']) assert.equal(ans(m), 'no', m);
+  assert.equal(ans('not sure'), 'unsure');
+  assert.equal(ans('hello yes yes', 'hiring'), 'yes');
+});
+
+test('a rambling answer about the kind of business is tidied or dropped', () => {
+  const desc = (m) => turn({ card: blankCard(), message: m, asking: 'activity' }).card.values.desc;
+  assert.equal(desc('so it is in construction'), 'construction');
+  assert.equal(desc('wanted to start a food service'), 'food service');
+  assert.equal(desc('we are basically a company that does a whole lot of different kinds of construction work for people'), '');
+});
