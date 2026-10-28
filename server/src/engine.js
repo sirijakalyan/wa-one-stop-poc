@@ -105,9 +105,9 @@ export function countyLabel(county) {
   return name ? `${name} County` : '';
 }
 
-export function joinList(list) {
+export function joinList(list, and = 'and') {
   if (list.length <= 1) return list.join('');
-  return `${list.slice(0, -1).join(', ')} and ${list[list.length - 1]}`;
+  return `${list.slice(0, -1).join(', ')} ${and} ${list[list.length - 1]}`;
 }
 
 function fill(template, ctx) {
@@ -122,8 +122,11 @@ const LEFT_OUT_NOTES = {
     : ''),
 };
 
+import { STRUCTURE_ES, LEFT_OUT_ES } from './ruleText.es.js';
+
 // Returns { items, skipped }. Items are sorted by phase, then rule order.
-export function evaluate(rules, answers) {
+export function evaluate(rules, answers, lang = 'en') {
+  const es = lang === 'es';
   const a = normalizeAnswers(answers);
   const items = [];
   const skipped = [];
@@ -131,14 +134,15 @@ export function evaluate(rules, answers) {
   for (const rule of published) {
     const res = evalCondition(rule.applies, a);
     const ctx = {
-      structure: STRUCTURE_LABELS[a.structure] || 'your structure',
-      place: a.city || 'your city',
-      county: countyLabel(a.county) || 'your county',
-      hits: joinList(res.hits),
-      unsure: joinList(res.unsure),
+      structure: (es ? STRUCTURE_ES[a.structure] : STRUCTURE_LABELS[a.structure]) || (es ? 'su estructura' : 'your structure'),
+      place: a.city || (es ? 'su ciudad' : 'your city'),
+      county: (es ? (a.county ? `Condado de ${String(a.county).replace(/\s+county$/i, '').trim()}` : '') : countyLabel(a.county)) || (es ? 'su condado' : 'your county'),
+      countyName: String(a.county || '').replace(/\s+county$/i, '').trim() || (es ? 'su condado' : 'your county'),
+      hits: joinList(res.hits, es ? 'y' : 'and'),
+      unsure: joinList(res.unsure, es ? 'y' : 'and'),
     };
     if (res.state === 'no') {
-      skipped.push({ ruleId: rule.id, title: rule.title, reason: fill(rule.reason?.no, ctx) + (LEFT_OUT_NOTES[rule.id]?.(a) || '') });
+      skipped.push({ ruleId: rule.id, title: rule.title, reason: fill(rule.reason?.no, ctx) + (es ? (a.subs === 'yes' ? LEFT_OUT_ES[rule.id] || '' : '') : (LEFT_OUT_NOTES[rule.id]?.(a) || '')) });
     } else {
       items.push({
         rule,

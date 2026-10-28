@@ -455,13 +455,13 @@ export function confirmedAnswers(card) {
   return a;
 }
 
-export function planFromCard(card, rules) {
+export function planFromCard(card, rules, lang = 'en') {
   const c = cleanCard(card);
   const confirmedCount = CARD_FIELDS.filter((f) => c.status[f] === 'confirmed').length;
   const complete = isComplete(c);
   const answers = confirmedAnswers(c);
   if (!confirmedCount) return { complete: false, answers, items: [], skipped: [] };
-  const { items, skipped } = evaluate(rules, answers);
+  const { items, skipped } = evaluate(rules, answers, lang);
   // While the card is still filling in, show only steps that a confirmed answer already triggers.
   const shown = items.filter((i) => complete || i.status === 'applies');
   return {
@@ -499,7 +499,7 @@ const isoDay = (d) => d.toISOString().slice(0, 10);
 
 // Orders steps by phase and by "comes after", attaches only the processing times recorded in doc 11, and adds up an earliest
 // date along the steps that depend on each other. A step with no recorded time says so and adds nothing to the date.
-export function buildTimeline(plan, phases, timesDoc, now = new Date(), { simulate = false } = {}) {
+export function buildTimeline(plan, phases, timesDoc, now = new Date(), { simulate = false, lang = 'en' } = {}) {
   const startDay = new Date(`${isoDay(now)}T00:00:00Z`);
   const byRule = Object.fromEntries((timesDoc?.times || []).map((t) => [t.ruleId, t]));
   if (simulate && timesDoc?.simulation) byRule[timesDoc.simulation.ruleId] = { ...byRule[timesDoc.simulation.ruleId], ...timesDoc.simulation };
@@ -534,7 +534,7 @@ export function buildTimeline(plan, phases, timesDoc, now = new Date(), { simula
       date: isoDay(latest),
       basedOn: timed.map((s) => ({ id: s.id, title: s.title, text: s.time.text })),
       noPublishedTime: steps.filter((s) => !s.time).map((s) => s.title),
-      note: 'Based on agency published estimates, not a guarantee. It counts only the steps that have a recorded time and does not count holidays, so your real date may be later.',
+      note: lang === 'es' ? 'Basado en estimaciones publicadas por las agencias, no es una garantía. Cuenta solo los pasos que tienen un tiempo registrado y no cuenta los días festivos, así que su fecha real puede ser posterior.' : 'Based on agency published estimates, not a guarantee. It counts only the steps that have a recorded time and does not count holidays, so your real date may be later.',
     };
   }
   return {

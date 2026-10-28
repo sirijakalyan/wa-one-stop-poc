@@ -114,6 +114,8 @@ export default function Guide() {
     stopSpeaking();
     speakingCount.current = 0;
     setSpeaking(false);
+    // The plan and the road come back from the server in the new language.
+    refreshPlan(guideRef.current.card, false);
     if (guideRef.current.messages.length > 1) turnRef.current({}, null);
     // Only the greeting so far: say it again in the new language.
     else spokenIdx.current = 0;

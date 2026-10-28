@@ -37,7 +37,12 @@ const emit = (name) => { try { globalThis.dispatchEvent?.(new Event(name)); } ca
 // Shown when the server or a proxy in front of it did not answer. No technical words.
 const UNREACHABLE = 'We could not reach the server just now. Please try again in a moment.';
 
+// The page language goes along as ?lang=es so rule text, guides and notes come back in Spanish.
+let apiLang = 'en';
+export const setApiLang = (l) => { apiLang = l === 'es' ? 'es' : 'en'; };
+
 async function request(method, url, body) {
+  if (apiLang === 'es' && !/[?&]lang=/.test(url) && !/^\/api\/(admin|rules|changes|county|source|demo)/.test(url)) url += `${url.includes('?') ? '&' : '?'}lang=es`;
   const headers = { 'content-type': 'application/json', 'x-visitor-id': visitorId() };
   const key = getAdminKey();
   if (key) headers['x-admin-key'] = key;

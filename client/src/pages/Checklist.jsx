@@ -11,7 +11,7 @@ export default function Checklist() {
   const navigate = useNavigate();
   const t = useT();
   const { setAnswers, setLabel, setStep, setCatsAuto } = useApp();
-  const fetchChecklist = useCallback(() => api.checklist(), []);
+  const fetchChecklist = useCallback(() => api.checklist(), [t.lang]); // eslint-disable-line react-hooks/exhaustive-deps
   const { data, error, loading, setData } = useLoad(fetchChecklist);
   const [actionError, setActionError] = useState('');
 

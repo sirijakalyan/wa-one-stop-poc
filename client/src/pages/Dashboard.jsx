@@ -8,7 +8,7 @@ import { ErrorNote, Loading, Meter } from '../components/Parts.jsx';
 
 export default function Dashboard() {
   const t = useT();
-  const fetchDash = useCallback(() => api.dashboard(), []);
+  const fetchDash = useCallback(() => api.dashboard(), [t.lang]); // eslint-disable-line react-hooks/exhaustive-deps
   const { data, error, loading, reload } = useLoad(fetchDash);
   const [actionError, setActionError] = useState('');
   const [savedId, setSavedId] = useState('');

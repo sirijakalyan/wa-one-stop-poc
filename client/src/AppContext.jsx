@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { LangContext } from './i18n.js';
 import { blankAnswers } from './questions.js';
 import { blankCard } from './guideCard.js';
+import { setApiLang } from './api.js';
 
 // Holds the questionnaire in progress so it survives moving between screens.
 const Ctx = createContext(null);
@@ -19,6 +20,7 @@ export function AppProvider({ children }) {
     setLangState(next);
     try { window.localStorage.setItem(LANG_KEY, next); } catch { /* storage blocked */ }
   };
+  setApiLang(lang); // before any page asks the server for text
   useEffect(() => { try { document.documentElement.lang = lang; } catch { /* no document */ } }, [lang]);
   const langValue = useMemo(() => ({ lang, setLang }), [lang]);
   const [answers, setAnswers] = useState(blankAnswers());

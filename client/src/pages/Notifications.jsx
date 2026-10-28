@@ -49,7 +49,7 @@ export default function Notifications() {
   return (
     <>
       <h1 tabIndex={-1}>{t('nt.title')}</h1>
-      {t.lang === 'es' && <p className="draft-note">{t('enNote')}</p>}
+      {t.lang === 'es' && <p className="draft-note">{t('nt.note')}</p>}
       <p className="lead">
         {mode === 'live' && t('nt.live')}
         {mode === 'log' && t('nt.log')}

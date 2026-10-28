@@ -33,7 +33,7 @@ export default function Sources() {
     <>
       <h1 tabIndex={-1}>{t('sr.title')}</h1>
       <p className="lead">{t('sr.lead')}</p>
-      {t.lang === 'es' && <p className="draft-note">{t('enNote')}</p>}
+      {t.lang === 'es' && <p className="draft-note">{t('sr.en')}</p>}
 
       <h2>{t('sr.pages')}</h2>
       <p className="hint">{t('sr.pagesHint')}</p>

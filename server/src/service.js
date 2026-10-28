@@ -12,6 +12,7 @@ import { evaluate, normalizeAnswers, suggestCategories, countyLabel } from './en
 import { SAMPLES } from './samples.js';
 import { answerQuestion } from './chat.js';
 import { cleanLang, ES, ES_RX, esToEn } from './i18n.js';
+import { localizeRules, localizeFound, localizeCountyNote, localizeTimes } from './localize.js';
 import { intakeTurn, spokenConfirmation, planFromCard, buildTimeline, blankCard, CARD_FIELDS, extractFacts } from './intake.js';
 
 const DEFAULT_VISITOR = 'public-demo';
@@ -100,6 +101,8 @@ export function createService(store, options = {}) {
     if (!isAdmin(ctx)) fail(options.adminKey ? 'Enter the admin key to change rules.' : 'Admin is locked. Set ADMIN_KEY on the server to enable it.', 403);
   };
   const visitorOf = (ctx) => ctx.visitor || DEFAULT_VISITOR;
+  // The page language travels as ?lang=es (or lang in the body). It only changes the words shown, never what applies.
+  const langIn = (query, body) => cleanLang(query?.lang || body?.lang);
   const mailer = options.mailer || null;
   const publicUrl = String(options.publicUrl || 'http://localhost:3001').replace(/\/$/, '');
   const emailMode = mailer ? mailer.mode : 'off';
@@ -161,23 +164,26 @@ export function createService(store, options = {}) {
   // shown as "not yet verified". Otherwise the visitor gets a plain message that nothing was found. Nothing here is ever invented.
   const COUNTY_RULE_ID = 'health';
   const countyKeyOf = (c) => String(c ?? '').trim().toLowerCase().replace(/\s+county$/, '').replace(/\s+/g, ' ');
-  async function resolveCountyHealth(county) {
+  async function resolveCountyHealth(county, lang = 'en') {
+    const es = lang === 'es';
     const key = countyKeyOf(county);
     if (!key) {
-      return { state: 'no-county', message: 'Add your county (use Edit answers) and we will look for its health department page.' };
+      return { state: 'no-county', message: es ? 'Agregue su condado (use Editar respuestas) y buscaremos la página de su departamento de salud.' : 'Add your county (use Edit answers) and we will look for its health department page.' };
     }
-    const name = countyLabel(county);
+    const name = es ? `Condado de ${String(county).trim().replace(/\s+county$/i, '').trim()}` : countyLabel(county);
     const verified = (await store.listCountySources()).find((c) => c.county === key && c.status === 'verified' && c.officialUrl);
     if (verified) {
       return { state: 'verified', county: name, url: verified.officialUrl, reviewedBy: verified.reviewedBy, reviewedAt: String(verified.reviewedAt || '').slice(0, 10) };
     }
     const found = (options.countyHealthPages?.counties || []).find((c) => countyKeyOf(c.county) === key && c.url);
     if (found) {
-      return { state: 'found', county: name, url: found.url, agency: found.agency || '', note: found.note || '', searchedOn: options.countyHealthPages.searchedOn || '' };
+      return { state: 'found', county: name, url: found.url, agency: found.agency || '', note: localizeCountyNote(found.note || '', lang), searchedOn: options.countyHealthPages.searchedOn || '' };
     }
     return {
       state: 'not-found', county: name,
-      message: `We could not find an official health department page for ${name}. Please contact the ${name} health department directly. The Business Licensing Wizard also lists the agencies to contact for your business.`,
+      message: es
+        ? `No pudimos encontrar una página oficial del departamento de salud de ${name}. Comuníquese directamente con el departamento de salud de ese condado. El Asistente de licencias comerciales también enumera las agencias con las que comunicarse para su negocio.`
+        : `We could not find an official health department page for ${name}. Please contact the ${name} health department directly. The Business Licensing Wizard also lists the agencies to contact for your business.`,
     };
   }
 
@@ -188,9 +194,10 @@ export function createService(store, options = {}) {
     .map((l) => ({ label: l.label, url: l.url, agency: l.agency || '', note: l.note || '', searchedOn: options.foundLinks.searchedOn || '' }));
 
   // Build the response for a saved checklist.
-  async function buildChecklist(cl, rulesDoc) {
-    const { items, skipped } = evaluate(rulesDoc.rules, cl.answers);
-    const countyHealth = items.some((i) => i.rule.id === COUNTY_RULE_ID) ? await resolveCountyHealth(cl.answers.county) : null;
+  async function buildChecklist(cl, rawDoc, lang = 'en') {
+    const rulesDoc = localizeRules(rawDoc, lang);
+    const { items, skipped } = evaluate(rulesDoc.rules, cl.answers, lang);
+    const countyHealth = items.some((i) => i.rule.id === COUNTY_RULE_ID) ? await resolveCountyHealth(cl.answers.county, lang) : null;
     const ids = new Set(items.map((i) => i.rule.id));
     const titleById = Object.fromEntries(rulesDoc.rules.map((r) => [r.id, r.title]));
     return {
@@ -208,7 +215,7 @@ export function createService(store, options = {}) {
         supports: i.rule.supports || '', limits: i.rule.limits || '', guide: i.rule.guide || null, owner: i.rule.owner, reviewer: i.rule.reviewer || null,
         done: Boolean(cl.done[i.rule.id]), renewal: cl.renewals[i.rule.id] || null,
         ...(i.rule.id === COUNTY_RULE_ID ? { countyHealth } : {}),
-        ...(foundFor(i.rule.id, cl.answers.city).length ? { foundLinks: foundFor(i.rule.id, cl.answers.city) } : {}),
+        ...(foundFor(i.rule.id, cl.answers.city).length ? { foundLinks: foundFor(i.rule.id, cl.answers.city).map((l) => localizeFound(l, lang)) } : {}),
       })),
       skipped,
     };
@@ -234,26 +241,26 @@ export function createService(store, options = {}) {
   }));
 
   // Evaluate answers without saving.
-  route('POST', '/api/evaluate', async ({ body }) => {
+  route('POST', '/api/evaluate', async ({ body, query }) => {
     const rulesDoc = await loadRules();
     const answers = normalizeAnswers(body?.answers);
-    const built = await buildChecklist({ answers, label: '', done: {}, renewals: {} }, rulesDoc);
+    const built = await buildChecklist({ answers, label: '', done: {}, renewals: {} }, rulesDoc, langIn(query, body));
     return { ok: true, ...built, saved: false };
   });
 
-  route('GET', '/api/checklist', async ({ ctx }) => {
+  route('GET', '/api/checklist', async ({ ctx, query }) => {
     const cl = await store.getChecklist(visitorOf(ctx));
     if (!cl) return { ok: true, saved: false };
-    return { ok: true, ...(await buildChecklist(cl, await loadRules())) };
+    return { ok: true, ...(await buildChecklist(cl, await loadRules(), langIn(query))) };
   });
 
-  route('POST', '/api/checklist', async ({ body, ctx }) => {
+  route('POST', '/api/checklist', async ({ body, ctx, query }) => {
     const answers = normalizeAnswers(body?.answers);
     if (!answers.structure) fail('Choose a business structure first.');
     const label = typeof body?.label === 'string' ? body.label.slice(0, 80) : '';
     const cl = { answers, label, done: {}, renewals: {}, savedAt: new Date().toISOString() };
     await store.putChecklist(visitorOf(ctx), cl);
-    return { ok: true, ...(await buildChecklist(cl, await loadRules())) };
+    return { ok: true, ...(await buildChecklist(cl, await loadRules(), langIn(query, body))) };
   });
 
   route('DELETE', '/api/checklist', async ({ ctx }) => {
@@ -261,17 +268,17 @@ export function createService(store, options = {}) {
     return { ok: true };
   });
 
-  route('PATCH', '/api/checklist/done', async ({ body, ctx }) => {
+  route('PATCH', '/api/checklist/done', async ({ body, ctx, query }) => {
     const cl = await store.getChecklist(visitorOf(ctx));
     if (!cl) fail('No saved checklist.', 404);
     const { ruleId, done } = body || {};
     if (typeof ruleId !== 'string' || typeof done !== 'boolean') fail('ruleId and done are required.');
     cl.done[ruleId] = done;
     await store.putChecklist(visitorOf(ctx), cl);
-    return { ok: true, ...(await buildChecklist(cl, await loadRules())) };
+    return { ok: true, ...(await buildChecklist(cl, await loadRules(), langIn(query, body))) };
   });
 
-  route('PUT', '/api/checklist/renewal', async ({ body, ctx }) => {
+  route('PUT', '/api/checklist/renewal', async ({ body, ctx, query }) => {
     const cl = await store.getChecklist(visitorOf(ctx));
     if (!cl) fail('No saved checklist.', 404);
     const { ruleId, date } = body || {};
@@ -279,16 +286,17 @@ export function createService(store, options = {}) {
     if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) fail('Use a date like 2027-03-31.');
     if (date) cl.renewals[ruleId] = date; else delete cl.renewals[ruleId];
     await store.putChecklist(visitorOf(ctx), cl);
-    return { ok: true, ...(await buildChecklist(cl, await loadRules())) };
+    return { ok: true, ...(await buildChecklist(cl, await loadRules(), langIn(query, body))) };
   });
 
-  route('GET', '/api/dashboard', async ({ ctx }) => {
+  route('GET', '/api/dashboard', async ({ ctx, query }) => {
     const cl = await store.getChecklist(visitorOf(ctx));
     const notes = await store.listNotifications(visitorOf(ctx));
     const unread = notes.filter((n) => !n.read).length;
     if (!cl) return { ok: true, saved: false, unread };
-    const rulesDoc = await loadRules();
-    const built = await buildChecklist(cl, rulesDoc);
+    const lang = langIn(query);
+    const rulesDoc = localizeRules(await loadRules(), lang);
+    const built = await buildChecklist(cl, await loadRules(), lang);
     const done = built.items.filter((i) => i.done).length;
     const next = built.items.find((i) => !i.done) || null;
     const byPhase = Object.entries(rulesDoc.phases).map(([p, name]) => {
@@ -654,44 +662,52 @@ export function createService(store, options = {}) {
     return { ok: true, ...turn };
   });
 
-  route('POST', '/api/intake/plan', async ({ body }) => {
-    const rulesDoc = await loadRules();
+  route('POST', '/api/intake/plan', async ({ body, query }) => {
+    const lang = langIn(query, body);
+    const rulesDoc = localizeRules(await loadRules(), lang);
     const card = cardOf(body);
-    const plan = planFromCard(card, rulesDoc.rules);
-    const timeline = buildTimeline(plan, rulesDoc.phases, options.processingTimes, new Date(), { simulate: Boolean(body?.simulate) });
+    const plan = planFromCard(card, rulesDoc.rules, lang);
+    const timeline = buildTimeline(plan, rulesDoc.phases, localizeTimes(options.processingTimes, lang), new Date(), { simulate: Boolean(body?.simulate), lang });
     return { ok: true, plan, timeline, complete: plan.complete, answers: plan.answers };
   });
 
   // Public on purpose: the reviewer must see a rule change without the admin key. It changes no stored rule. It writes one
   // alert, marked as a simulation, to the caller's own notifications and shows the timeline before and after.
-  route('POST', '/api/simulate/rule-change', async ({ body, ctx }) => {
-    const sim = options.processingTimes?.simulation;
+  route('POST', '/api/simulate/rule-change', async ({ body, ctx, query }) => {
+    const lang = langIn(query, body);
+    const es = lang === 'es';
+    const times = localizeTimes(options.processingTimes, lang);
+    const sim = times?.simulation;
     if (!sim) fail('Simulation is not set up.', 404);
-    const rulesDoc = await loadRules();
+    const rulesDoc = localizeRules(await loadRules(), lang);
     const rule = rulesDoc.rules.find((r) => r.id === sim.ruleId);
-    const plan = planFromCard(cardOf(body), rulesDoc.rules);
+    const plan = planFromCard(cardOf(body), rulesDoc.rules, lang);
     const affected = plan.items.some((i) => i.id === sim.ruleId);
-    const before = options.processingTimes.times.find((t) => t.ruleId === sim.ruleId);
-    const timelineBefore = buildTimeline(plan, rulesDoc.phases, options.processingTimes, new Date());
-    const timelineAfter = buildTimeline(plan, rulesDoc.phases, options.processingTimes, new Date(), { simulate: true });
-    const title = `Simulation: ${rule?.title || sim.ruleId} changed`;
-    const notice = affected
-      ? `The source page for "${rule?.title}" now shows ${sim.text} for the ${sim.label.toLowerCase()}, up from ${before?.text}. This step is on your plan, so your earliest date moved.`
-      : `The source page for "${rule?.title}" changed. This step is not on your plan, so nothing moved for you.`;
+    const before = times.times.find((t) => t.ruleId === sim.ruleId);
+    const timelineBefore = buildTimeline(plan, rulesDoc.phases, times, new Date(), { lang });
+    const timelineAfter = buildTimeline(plan, rulesDoc.phases, times, new Date(), { simulate: true, lang });
+    const title = es ? `Simulación: cambió "${rule?.title || sim.ruleId}"` : `Simulation: ${rule?.title || sim.ruleId} changed`;
+    const notice = es
+      ? (affected
+        ? `La página de la fuente de "${rule?.title}" ahora muestra ${sim.text} para "${sim.label.toLowerCase()}", antes ${before?.text}. Este paso está en su plan, así que su fecha más temprana cambió.`
+        : `La página de la fuente de "${rule?.title}" cambió. Este paso no está en su plan, así que nada cambió para usted.`)
+      : (affected
+        ? `The source page for "${rule?.title}" now shows ${sim.text} for the ${sim.label.toLowerCase()}, up from ${before?.text}. This step is on your plan, so your earliest date moved.`
+        : `The source page for "${rule?.title}" changed. This step is not on your plan, so nothing moved for you.`);
     let alert = null;
     if (affected) {
       alert = {
         id: uuid(), type: 'rule-changed', simulated: true, read: false, createdAt: new Date().toISOString(), title,
-        body: `${notice} This is a made-up change to show how alerts work. No real page changed.`,
+        body: es ? `${notice} Este es un cambio inventado para mostrar cómo funcionan las alertas. Ninguna página real cambió.` : `${notice} This is a made-up change to show how alerts work. No real page changed.`,
       };
       await store.addNotification(visitorOf(ctx), alert);
     }
     return {
       ok: true, simulated: true, affected,
       rule: { id: sim.ruleId, title: rule?.title || sim.ruleId, source: rule?.source || null },
-      before: { label: before?.label || sim.label, text: before?.text || 'not recorded' },
+      before: { label: before?.label || sim.label, text: before?.text || (es ? 'no registrado' : 'not recorded') },
       after: { label: sim.label, text: sim.text, note: sim.note || '' },
-      notice: { draft: true, text: notice, note: 'The guide drafts the notice. A person approves it before any owner sees it.' },
+      notice: { draft: true, text: notice, note: es ? 'La guía redacta el aviso. Una persona lo aprueba antes de que cualquier dueño lo vea.' : 'The guide drafts the notice. A person approves it before any owner sees it.' },
       alert, timelineBefore, timelineAfter,
     };
   });
