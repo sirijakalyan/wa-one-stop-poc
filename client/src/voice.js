@@ -6,10 +6,13 @@ export const canSpeak = () => typeof window !== 'undefined' && 'speechSynthesis'
 export const recognitionClass = () => (typeof window === 'undefined' ? null : window.SpeechRecognition || window.webkitSpeechRecognition || null);
 export const canListen = () => Boolean(recognitionClass());
 
+// Prefer a voice installed on the computer. Chrome's network voices ("Google ...") are known to go silent after the first line or on longer text.
 function pickVoice() {
   const voices = window.speechSynthesis.getVoices?.() || [];
   const en = voices.filter((v) => /^en[-_]US/i.test(v.lang));
-  return en.find((v) => /natural|online|google|samantha|aria|jenny/i.test(v.name)) || en[0] || voices.find((v) => /^en/i.test(v.lang)) || null;
+  const local = en.filter((v) => v.localService !== false && !/google/i.test(v.name));
+  return local.find((v) => /aria|jenny|zira|samantha|natural/i.test(v.name)) || local[0]
+    || en.find((v) => !/google/i.test(v.name)) || voices.find((v) => /^en/i.test(v.lang) && !/google/i.test(v.name)) || en[0] || null;
 }
 
 // What gets read aloud is shorter than what is on screen: no agency names in brackets, no "source checked" footers, at most about
@@ -24,28 +27,42 @@ export function speakable(text, max = 340) {
 }
 
 // Speak one line. Lines queue up, so a reply and its follow-up question are read in order.
-export function speak(text, { onStart, onEnd } = {}) {
+export function speak(text, { onStart, onEnd, onSilent } = {}) {
   if (!canSpeak() || !text) return;
-  const u = new window.SpeechSynthesisUtterance(String(text));
-  u.lang = 'en-US';
-  u.rate = 1.08;
-  const v = pickVoice();
-  if (v) u.voice = v;
-  // Some browsers never send the "end" event for a line. Without it the microphone would stay switched off, so a timer
-  // closes the line after a generous estimate of how long it takes to say.
   let done = false;
+  let started = false;
   let timer = null;
+  let check = null;
   const finish = () => {
     if (done) return;
     done = true;
     clearTimeout(timer);
+    clearTimeout(check);
     onEnd?.();
   };
-  timer = setTimeout(finish, 3500 + String(text).length * 100);
-  u.onstart = () => onStart?.();
-  u.onend = finish;
-  u.onerror = finish;
-  window.speechSynthesis.speak(u);
+  const say = (retry) => {
+    const u = new window.SpeechSynthesisUtterance(String(text));
+    u.lang = 'en-US';
+    u.rate = 1.08;
+    const v = pickVoice();
+    if (v) u.voice = v;
+    u.onstart = () => { started = true; onStart?.(); };
+    u.onend = finish;
+    u.onerror = (e) => { if (e?.error === 'interrupted' || e?.error === 'canceled') finish(); else if (!retry) say(true); else finish(); };
+    // A browser that was left paused will accept a line and never play it.
+    try { if (window.speechSynthesis.paused) window.speechSynthesis.resume(); } catch { /* ignore */ }
+    window.speechSynthesis.speak(u);
+    // If nothing started and nothing is queued, the line was silently dropped: try once more, then say so.
+    check = setTimeout(() => {
+      const synth = window.speechSynthesis;
+      if (done || started || synth.speaking || synth.pending) return;
+      if (!retry) { try { synth.cancel(); } catch { /* ignore */ } setTimeout(() => say(true), 150); } else { onSilent?.(); finish(); }
+    }, 2500);
+  };
+  // Some browsers never send the "end" event for a line. Without it the microphone would stay switched off, so a timer
+  // closes the line after a generous estimate of how long it takes to say.
+  timer = setTimeout(finish, 6000 + String(text).length * 110);
+  say(false);
 }
 
 export function stopSpeaking() {

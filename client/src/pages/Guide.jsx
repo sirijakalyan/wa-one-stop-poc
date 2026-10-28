@@ -107,6 +107,7 @@ export default function Guide() {
       speakingCount.current += 1;
       setSpeaking(true);
       speak(speakable(messages[i].text), {
+        onSilent: () => setVoiceMsg('No sound came out. Check your computer volume and that this browser tab is not muted, then tap Mute voice and Unmute voice.'),
         onEnd: () => {
           speakingCount.current = Math.max(0, speakingCount.current - 1);
           if (!speakingCount.current) setSpeaking(false);
