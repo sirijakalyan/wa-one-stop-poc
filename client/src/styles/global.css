@@ -560,7 +560,11 @@ footer .api-status { background: transparent; color: #a9bdd4; border-color: rgba
 .mic-bar { display: flex; gap: .5rem; align-items: center; }
 .mic-bar input { flex: 1; min-width: 0; min-height: 48px; border-radius: 99px; border: 1.5px solid var(--line-strong); background: var(--surface); color: var(--ink); font: inherit; padding: 0 1rem; }
 .mic-btn { width: 48px; height: 48px; flex: none; border-radius: 50%; border: 1.5px solid var(--line-strong); background: var(--surface-2); color: var(--muted); display: grid; place-items: center; }
+.mic-btn { cursor: pointer; }
+.mic-btn.is-on { background: var(--brand); border-color: var(--brand); color: var(--brand-ink); box-shadow: 0 0 0 4px rgba(21,150,166,.3); }
 .mic-btn:disabled { cursor: not-allowed; opacity: .6; }
+.voice-controls { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.voice-status { margin: 0; flex: 1 1 14rem; font-size: .9rem; color: var(--muted); }
 
 .biz-card, .plan-panel, .panel-lite, .sim-panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: 1.1rem 1.25rem; }
 .biz-card h2, .plan-panel h2, .panel-lite h2, .sim-panel h2 { margin: 0 0 .8rem; font-size: 1.25rem; display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }

@@ -10,6 +10,7 @@ import GuideArt from '../components/GuideArt.jsx';
 import ExternalLink from '../components/ExternalLink.jsx';
 import Icon from '../components/Icon.jsx';
 import { ErrorNote } from '../components/Parts.jsx';
+import { canListen, canSpeak, createListener, listenErrorText, speak, stopSpeaking } from '../voice.js';
 import { answersFromCard, confirmedCount, FIELD_LABELS } from '../guideCard.js';
 
 const GREETING = { id: 'hello', role: 'guide', text: "Hi, I'm here to help you start your Washington business. Tell me what you want to do, in your own words." };
@@ -35,6 +36,19 @@ export default function Guide() {
   const inputRef = useRef(null);
   const logRef = useRef(null);
   const started = useRef(false);
+
+  // Voice: the guide speaks its replies and the owner can talk back. It starts only after a tap (Talk to me, the microphone or Unmute).
+  const [voiceOn, setVoiceOn] = useState(mode === 'talk' && canSpeak());
+  const [micOn, setMicOn] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [voiceMsg, setVoiceMsg] = useState('');
+  const [tick, setTick] = useState(0);
+  const spokenIdx = useRef(0);
+  const speakingCount = useRef(0);
+  const listenerRef = useRef(null);
+  const cond = useRef({});
+  const turnRef = useRef(null);
 
   const messages = guide.messages.length ? guide.messages : [GREETING];
   const last = messages[messages.length - 1];
@@ -72,6 +86,65 @@ export default function Guide() {
     }
   }, [refreshPlan, setGuide]);
 
+  turnRef.current = turn;
+  cond.current = { micOn, speaking, busy };
+
+  // Read each new guide line aloud, in order. Lines the owner typed or older lines are never read.
+  useEffect(() => {
+    if (!voiceOn) { spokenIdx.current = messages.length; return; }
+    for (let i = spokenIdx.current; i < messages.length; i += 1) {
+      if (messages[i].role !== 'guide') continue;
+      speakingCount.current += 1;
+      setSpeaking(true);
+      speak(messages[i].text, {
+        onEnd: () => {
+          speakingCount.current = Math.max(0, speakingCount.current - 1);
+          if (!speakingCount.current) setSpeaking(false);
+        },
+      });
+    }
+    spokenIdx.current = messages.length;
+  }, [messages, voiceOn]);
+
+  // Listen only while the microphone is on and the guide is neither speaking nor thinking, so it never hears itself.
+  useEffect(() => {
+    const l = listenerRef.current;
+    if (micOn && !speaking && !busy) { l?.start(); setListening(true); } else { l?.stop(); setListening(false); }
+  }, [micOn, speaking, busy, tick]);
+  useEffect(() => () => { stopSpeaking(); listenerRef.current?.stop(); }, []);
+
+  function toggleMic() {
+    setVoiceMsg('');
+    if (!canListen()) { setVoiceMsg('This browser cannot listen. Use Chrome or Edge, or type your answer.'); return; }
+    if (!listenerRef.current) {
+      listenerRef.current = createListener({
+        onInterim: (t) => setText(t),
+        onFinal: (t) => { setText(''); turnRef.current({ message: t }, t); },
+        onEnd: () => {
+          setListening(false);
+          const c = cond.current;
+          if (c.micOn && !c.speaking && !c.busy) setTimeout(() => setTick((n) => n + 1), 400);
+        },
+        onError: (code) => {
+          const msg = listenErrorText(code);
+          if (msg) { setVoiceMsg(msg); setMicOn(false); }
+        },
+      });
+    }
+    if (!micOn && canSpeak()) setVoiceOn(true);
+    setMicOn(!micOn);
+  }
+  function muteToggle() {
+    if (voiceOn) { stopSpeaking(); speakingCount.current = 0; setSpeaking(false); }
+    setVoiceOn(!voiceOn);
+  }
+  function stopTalking() {
+    stopSpeaking();
+    speakingCount.current = 0;
+    setSpeaking(false);
+    setMicOn(false);
+  }
+
   // First visit: show the greeting. If the home page sent a sentence or a sample story, send it as the first message.
   useEffect(() => {
     if (!guideRef.current.messages.length) setGuide((g) => ({ ...g, messages: [GREETING] }));
@@ -90,7 +163,7 @@ export default function Guide() {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [messages.length, busy]);
   useEffect(() => {
-    if (!busy && mode !== 'form') inputRef.current?.focus({ preventScroll: true });
+    if (!busy && mode !== 'form' && mode !== 'talk') inputRef.current?.focus({ preventScroll: true });
   }, [busy, mode]);
 
   function submit(e) {
@@ -170,9 +243,6 @@ export default function Guide() {
       <div className="guide-grid">
         <section id="guide-chat" className={`guide-chat${tab === 'chat' ? ' is-active' : ''}`} data-tab="chat" aria-labelledby="chat-title">
           <h2 id="chat-title" className="sr-only">Conversation</h2>
-          {mode === 'talk' ? (
-            <p className="note" role="note">Voice is not switched on in this build. Type or tap an answer. Everything else works the same.</p>
-          ) : null}
           <div className="chat-log" ref={logRef} role="log" aria-live="polite" aria-label="Conversation with the guide">
             {messages.map((m) => (
               <div key={m.id} className={`bubble ${m.role}`}>
@@ -200,8 +270,14 @@ export default function Guide() {
           <p className="captions" aria-hidden="true" data-testid="captions"><strong>{last.role === 'guide' ? 'Guide' : 'You'}:</strong> {last.text}</p>
           <form className="mic-bar" onSubmit={submit}>
             <label htmlFor="guide-input" className="sr-only">Tell the guide about your business, or answer its question</label>
-            <button type="button" className="mic-btn" disabled aria-label="Microphone. Voice is not switched on in this build." title="Voice is not switched on in this build">
-              <Icon name="user" size={20} />
+            <button
+              type="button"
+              className={`mic-btn${micOn ? ' is-on' : ''}`}
+              aria-pressed={micOn}
+              aria-label={micOn ? 'Microphone on. Tap to turn it off.' : 'Microphone off. Tap to talk.'}
+              onClick={toggleMic}
+            >
+              <Icon name="mic" size={20} />
             </button>
             <input
               id="guide-input"
@@ -216,6 +292,13 @@ export default function Guide() {
             />
             <button type="submit" className="btn btn-primary" disabled={busy || !text.trim()}>Send</button>
           </form>
+          <div className="voice-controls">
+            <button type="button" className="btn btn-quiet btn-sm" onClick={muteToggle} aria-pressed={!voiceOn} disabled={!canSpeak()}>{voiceOn ? 'Mute voice' : 'Unmute voice'}</button>
+            <button type="button" className="btn btn-quiet btn-sm" onClick={stopTalking}>Stop</button>
+            <p className="voice-status" role="status">
+              {voiceMsg || (listening ? 'Listening. Speak now.' : speaking ? 'The guide is speaking.' : !canSpeak() ? 'This browser cannot speak. Captions and typing still work.' : voiceOn ? 'Voice is on. Tap the microphone to talk.' : 'Voice is off. Tap the microphone or Unmute voice.')}
+            </p>
+          </div>
         </section>
 
         <section id="guide-side" className={`guide-side${tab === 'plan' ? ' is-active' : ''}`} data-tab="plan" aria-label="Your business and your plan">

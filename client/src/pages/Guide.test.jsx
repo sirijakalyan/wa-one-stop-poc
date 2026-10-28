@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
@@ -54,14 +54,6 @@ describe('home page', () => {
     // The sentence was sent to the guide as the first message.
     expect(await screen.findByRole('heading', { name: 'Your guide' })).toBeInTheDocument();
     expect(await inLog(/^I heard:/)).toBeInTheDocument();
-  });
-
-  it('"Talk to me" opens the guide and is honest that voice is not switched on yet', async () => {
-    const user = userEvent.setup();
-    renderAt('/');
-    await user.click(screen.getByRole('button', { name: 'Talk to me' }));
-    expect(await screen.findByText(/Voice is not switched on in this build/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Tell the guide about your business/)).toBeEnabled();
   });
 });
 
@@ -175,5 +167,96 @@ describe('guide screen', () => {
     expect(within(tabPlan).getByLabelText(/\d+ steps/)).toBeInTheDocument();
     await user.click(tabPlan);
     expect(tabPlan).toHaveAttribute('aria-selected', 'true');
+  });
+});
+
+// The browser's speech features are faked, so these tests check what the screen asks them to do.
+describe('voice', () => {
+  let spoken;
+  class FakeRec {
+    constructor() { FakeRec.last = this; }
+    start() { this.started = true; }
+    abort() { this.started = false; this.onend?.(); }
+    say(text) { this.onresult({ resultIndex: 0, results: [Object.assign([{ transcript: text }], { isFinal: true })] }); this.started = false; this.onend(); }
+  }
+  beforeEach(() => {
+    spoken = [];
+    window.SpeechSynthesisUtterance = class { constructor(t) { this.text = t; } };
+    window.speechSynthesis = {
+      speak: vi.fn((u) => { spoken.push(u.text); setTimeout(() => { u.onstart?.(); u.onend?.(); }, 0); }),
+      cancel: vi.fn(),
+      getVoices: () => [],
+    };
+    window.webkitSpeechRecognition = FakeRec;
+    FakeRec.last = null;
+  });
+  afterEach(() => {
+    delete window.SpeechSynthesisUtterance;
+    delete window.speechSynthesis;
+    delete window.webkitSpeechRecognition;
+  });
+
+  it('is silent until the owner taps: typing mode never speaks and says voice is off', async () => {
+    renderAt({ pathname: '/guide', state: { mode: 'type' } });
+    expect(await screen.findByRole('status', { name: '' })).toHaveTextContent(/Voice is off/);
+    expect(window.speechSynthesis.speak).not.toHaveBeenCalled();
+  });
+
+  it('"Talk to me" has the guide speak its greeting aloud, with captions and Stop and Mute visible', async () => {
+    const user = userEvent.setup();
+    renderAt('/');
+    await user.click(screen.getByRole('button', { name: 'Talk to me' }));
+    await waitFor(() => expect(spoken[0]).toMatch(/^Hi, I'm here to help you start your Washington business/));
+    expect(screen.getByTestId('captions')).toHaveTextContent(/Hi, I'm here to help/);
+    expect(screen.getByRole('button', { name: 'Mute voice' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Microphone off/ })).toBeEnabled();
+  });
+
+  it('reads each new guide reply aloud, but never the owner\'s own words', async () => {
+    const user = userEvent.setup();
+    renderAt({ pathname: '/guide', state: { mode: 'talk', start: STORY } });
+    await waitFor(() => expect(spoken.some((t) => /^I heard:/.test(t))).toBe(true));
+    expect(spoken.some((t) => t === STORY)).toBe(false);
+    const before = spoken.length;
+    await tap(user, "Yes, that's right");
+    await waitFor(() => expect(spoken.length).toBeGreaterThan(before));
+    expect(spoken[spoken.length - 1]).toMatch(/How will your business be set up/);
+  });
+
+  it('Mute voice stops speech now and keeps later replies quiet', async () => {
+    const user = userEvent.setup();
+    renderAt({ pathname: '/guide', state: { mode: 'talk', start: STORY } });
+    await waitFor(() => expect(spoken.some((t) => /^I heard:/.test(t))).toBe(true));
+    await user.click(screen.getByRole('button', { name: 'Mute voice' }));
+    expect(window.speechSynthesis.cancel).toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Unmute voice' })).toBeInTheDocument();
+    const before = spoken.length;
+    await tap(user, "Yes, that's right");
+    await inLog(/How will your business be set up/);
+    expect(spoken.length).toBe(before);
+  });
+
+  it('the microphone turns spoken words into a message the guide answers, and Stop turns it off', async () => {
+    const user = userEvent.setup();
+    renderAt({ pathname: '/guide', state: { mode: 'type' } });
+    await user.click(await screen.findByRole('button', { name: /Microphone off/ }));
+    await waitFor(() => expect(FakeRec.last?.started).toBe(true));
+    expect(screen.getByRole('button', { name: /Microphone on/ })).toHaveAttribute('aria-pressed', 'true');
+    FakeRec.last.say('I want to open a food truck in Spokane and hire two people');
+    expect(await inLog(/^I heard:/)).toBeInTheDocument();
+    expect(log().getByText('I want to open a food truck in Spokane and hire two people')).toBeInTheDocument();
+    await waitFor(() => expect(spoken.some((t) => /^I heard:/.test(t))).toBe(true));
+    await user.click(screen.getByRole('button', { name: 'Stop' }));
+    expect(screen.getByRole('button', { name: /Microphone off/ })).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  it('says so, and keeps typing working, when the browser cannot listen', async () => {
+    delete window.webkitSpeechRecognition;
+    const user = userEvent.setup();
+    renderAt({ pathname: '/guide', state: { mode: 'type' } });
+    await user.click(await screen.findByRole('button', { name: /Microphone off/ }));
+    expect(await screen.findByText(/This browser cannot listen/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Tell the guide about your business/)).toBeEnabled();
   });
 });
