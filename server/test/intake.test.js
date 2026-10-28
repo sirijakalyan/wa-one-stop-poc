@@ -195,6 +195,23 @@ test('API: turn, plan and a question routed to the grounded helper', async () =>
   }
 });
 
+test('API: a spoken question with no question mark and filler words still gets an answer, not "I did not catch that"', async () => {
+  const app = await startApp();
+  try {
+    const first = await app.call('POST', '/api/intake/turn', { message: 'I want to open a bakery', card: blankCard() });
+    for (const message of ['see I want to start a new business so tell me what are the steps clearly', 'so what do I need to do first', 'tell me about the license']) {
+      const q = await app.call('POST', '/api/intake/turn', { message, card: first.body.card, asking: 'structure' });
+      assert.equal(q.status, 200);
+      assert.doesNotMatch(q.body.reply, /did not catch/, message);
+      assert.ok(q.body.followUp, message);
+    }
+    const ans = await app.call('POST', '/api/intake/turn', { message: 'LLC', card: first.body.card, asking: 'structure' });
+    assert.equal(ans.body.card.values.structure, 'llc', 'a plain answer is still taken as an answer');
+  } finally {
+    await app.stop();
+  }
+});
+
 test('API: an overlong or malformed card is cleaned, not trusted', async () => {
   const app = await startApp();
   try {

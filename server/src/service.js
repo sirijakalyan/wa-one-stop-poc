@@ -558,7 +558,8 @@ export function createService(store, options = {}) {
   /* ---------- The talking guide ----------
      The guide listens and takes notes in a card. Only confirmed card fields reach the rules engine. The server keeps no
      conversation: the browser sends the card each turn, so a visitor can switch between chat and form and lose nothing. */
-  const QUESTION_RX = /\?\s*$|^\s*(do|does|did|how|what|when|where|why|can|could|should|is|are|will|which)\b/i;
+  // Spoken questions rarely end in a question mark and often start with filler, so look for question words and requests anywhere.
+  const QUESTION_RX = /\?\s*$|^\s*(?:(?:so|ok|okay|see|well|hi|hello|hey|um|uh)[\s,]+)*(do|does|did|how|what|when|where|why|can|could|should|is|are|will|which|explain|show|list|give)\b|\b(tell me|show me|explain|what are|what is|what do i|how do i|how to|the steps|which steps|help me understand|want to know|not sure what)\b/i;
   const cardOf = (body) => (body?.card && typeof body.card === 'object' ? body.card : blankCard());
 
   route('POST', '/api/intake/turn', async ({ body, ctx }) => {
