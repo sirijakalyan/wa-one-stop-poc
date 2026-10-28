@@ -559,6 +559,8 @@ export function createService(store, options = {}) {
      The guide listens and takes notes in a card. Only confirmed card fields reach the rules engine. The server keeps no
      conversation: the browser sends the card each turn, so a visitor can switch between chat and form and lose nothing. */
   // Spoken questions rarely end in a question mark and often start with filler, so look for question words and requests anywhere.
+  // A real question, even if it mentions a detail ("Do I need a permit for a food truck?"), is answered and never taken as a statement about the business.
+  const STRICT_Q_RX = /\?\s*$|^\s*(?:(?:so|ok|okay|see|well|hi|hello|hey|um|uh)[\s,]+)*(do|does|did|how|what|when|where|why|can|could|should|is|are|which)\b/i;
   const QUESTION_RX = /\?\s*$|^\s*(?:(?:so|ok|okay|see|well|hi|hello|hey|um|uh)[\s,]+)*(do|does|did|how|what|when|where|why|can|could|should|is|are|will|which|explain|show|list|give)\b|\b(tell me|show me|explain|what are|what is|what do i|how do i|how to|the steps|which steps|help me understand|want to know|not sure what)\b/i;
   const cardOf = (body) => (body?.card && typeof body.card === 'object' ? body.card : blankCard());
 
@@ -569,7 +571,7 @@ export function createService(store, options = {}) {
     const input = { card, message, action: body?.action, field: body?.field, value: body?.value, asking: body?.asking };
     const places = options.places || [];
     // A question with no business details in it goes to the grounded helper, which answers only from the app's own rules and guides.
-    if (message && !body?.action && QUESTION_RX.test(message) && !Object.keys(extractFacts(message, places)).length) {
+    if (message && !body?.action && ((QUESTION_RX.test(message) && !Object.keys(extractFacts(message, places)).length) || STRICT_Q_RX.test(message))) {
       const rulesDoc = await loadRules();
       const cl = await store.getChecklist(visitorOf(ctx));
       const checklist = cl ? await buildChecklist(cl, rulesDoc) : null;

@@ -284,3 +284,30 @@ test('refresh fix: without CLIENT_DIST the server stays API-only', async () => {
     await app.stop();
   }
 });
+
+test('API: real questions get grounded answers, and out-of-scope ones are said to be out of scope', async () => {
+  const app = await startApp();
+  try {
+    const ask = async (message) => (await app.call('POST', '/api/intake/turn', { message, card: blankCard(), asking: 'structure' })).body;
+    const cases = [
+      ['What is a trade name?', /business license/i, /contractor/i],
+      ['What if I earn less than 12000 dollars?', /business license/i, /don't have that/i],
+      ['Do I need a health permit for a restaurant?', /health department/i, /I heard/],
+      ['Do I need to register as a contractor?', /contractor/i, /I heard/],
+      ['Do I have to collect sales tax?', /business license/i, /I heard/],
+      ['How do I register a trademark?', /outside what this demo covers/i, /Register as a contractor/i],
+      ['Where do I file my annual report?', /outside what this demo covers/i, /File your business entity/i],
+      ['tell me the steps clearly', /Secretary of State/i, /did not catch/i],
+    ];
+    for (const [q, yes, no] of cases) {
+      const r = await ask(q);
+      assert.match(r.reply, yes, q);
+      assert.doesNotMatch(r.reply, no, q);
+      assert.ok(r.followUp, q);
+    }
+    const s = await ask('I want to open a food truck in Spokane and hire two people');
+    assert.match(s.reply, /^I heard/, 'a statement about the business still goes to the card');
+  } finally {
+    await app.stop();
+  }
+});

@@ -13,9 +13,9 @@ const STOP = new Set(('a an and are as at be but by can do does for from get has
 // Retrieval aids only. These words help match a question to a record. They are not facts.
 const SYNONYMS = {
   sos: ['llc', 'corporation', 'partnership', 'llp', 'entity', 'secretary', 'state', 'form', 'formation', 'incorporate', 'register'],
-  dor: ['license', 'licence', 'ubi', 'revenue', 'dor', 'endorsement', 'endorsements', 'business', 'apply', 'sales', 'tax'],
+  dor: ['license', 'licence', 'ubi', 'revenue', 'dor', 'endorsement', 'endorsements', 'business', 'apply', 'sales', 'tax', 'trade', 'name', 'income', 'earn', 'gross', '12000', 'threshold'],
   wizard: ['wizard', 'licensing', 'confirm', 'list'],
-  'lni-contractor': ['contractor', 'construction', 'bond', 'trades', 'trade', 'plumber', 'electrician', 'builder', 'contracting'],
+  'lni-contractor': ['contractor', 'construction', 'bond', 'trades', 'plumber', 'electrician', 'builder', 'contracting'],
   health: ['food', 'restaurant', 'health', 'permit', 'county', 'kitchen', 'cafe', 'catering'],
   'lni-wc': ['workers', 'compensation', 'comp', 'insurance', 'injury', 'coverage', 'li', 'l&i', 'labor', 'industries'],
   esd: ['unemployment', 'employer', 'quarterly', 'reports', 'employment', 'security', 'esd', 'payroll', 'wages'],
@@ -135,6 +135,16 @@ export function topicList(rules) {
   return rules.map((r) => r.title);
 }
 
+// Topics this demo has no rule or guide for. Saying so is better than matching a nearby rule by a shared word like "register".
+const OUT_OF_SCOPE = /\b(trade ?marks?|patents?|copyrights?|visas?|immigration|green card|annual report|weather|stock|invest(ing|ment)?|bankrupt(cy)?|divorce|lawsuit|sue)\b/i;
+function outOfScope() {
+  return {
+    answer: "That is outside what this demo covers. I only use the written rules and guides in this app, and none of them cover that topic. Please ask the relevant agency, or try the Sources page. I can help with the business license, Secretary of State filing, contractor registration, workers' compensation, employer taxes, new hire reporting and county health permits.",
+    links: [], matched: [], mode: 'fallback',
+    suggestions: ['How do I get started?', 'Do I need a business license?', 'What is my next step?'],
+  };
+}
+
 function fallback(rules) {
   const topics = ['business license', 'Secretary of State filing', 'contractor registration', 'workers\' compensation', 'employer taxes', 'new hire reporting', 'county health permit'];
   void rules;
@@ -166,7 +176,7 @@ function checklistAnswer(checklist) {
 }
 
 const START = /\b(how (do|to|can|should) (i |we )?(start|begin|open|launch|set ?up|get started)|where (do|should|can) (i|we) (start|begin)|get(ting)? started|first step|start(ing)? (a|my|the) (business|company)|open(ing)? (a|my) business|know (anything|nothing)|new to (this|business))\b|\bhow to start\b|\bstart\b.*\b(tell|explain|help)\b/i;
-const OVERVIEW = /\b(list (of )?(all|every|the)|all (the )?(steps|requirements|agencies)|every step|overview|summary|summari[sz]e|everything|whole process|big picture|which agencies|what agencies|what steps|which steps|how many steps|what does this (app|tool|site)|what is this (app|tool|site))\b/i;
+const OVERVIEW = /\b(list (of )?(all|every|the)|all (the )?(steps|requirements|agencies)|every step|overview|summary|summari[sz]e|everything|whole process|big picture|which agencies|what agencies|what steps|which steps|how many steps|the steps( clearly)?|what does this (app|tool|site)|what is this (app|tool|site))\b/i;
 
 function orderedRules(rules) {
   return [...rules].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
@@ -552,6 +562,7 @@ export async function answerQuestion({ message, conversation = [], rules, checkl
   }
   if (THANKS.test(message.trim())) return { answer: 'You are welcome. Ask me about any step, its fees or timing, or say "what is my next step?" anytime.', links: [], matched: [], mode: 'grounded', suggestions: ['What is my next step?', 'How do I get started?'] };
   if (BYE.test(message.trim())) return { answer: 'Good luck with your business. Confirm each requirement with the agency before you apply. I am here if you have more questions.', links: [], matched: [], mode: 'grounded' };
+  if (OUT_OF_SCOPE.test(message)) return outOfScope();
   if (CAPS.test(message)) return capabilitiesAnswer();
   if (SUBMIT_FOR_ME.test(message)) return limitAnswer('submit', rules, checklist, message);
   if (GUARANTEE.test(message)) return limitAnswer('guarantee', rules, checklist, message);
