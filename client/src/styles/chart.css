@@ -1,0 +1,160 @@
+/*
+  "Sound chart" look. Loaded after global.css; look and feel only.
+  A nautical chart of Puget Sound: deep water, contour lines, one dashed route
+  from "your idea" to "open for business". Yellow marks where you are.
+*/
+:root {
+  --fathom: #0a2d36;
+  --fathom-2: #0d3a45;
+  --spruce: #0f5b4d;
+  --spruce-2: #0b4a3f;
+  --kelp: #3c9a78;
+  --glass: #edf4f2;
+  --fog: #f8fbfa;
+  --signal: #ffc83d;
+
+  --navy-950: #061f26; --navy-900: var(--fathom); --navy-800: #124a57;
+  --teal-700: var(--spruce-2); --teal-600: var(--spruce); --teal-500: var(--kelp);
+  --teal-100: #d5ebe3; --teal-50: #e6f2ed;
+  --bg: var(--glass); --surface: #ffffff; --surface-2: var(--fog);
+  --ink: #0b2328; --muted: #4b6268; --line: #d4e1de; --line-strong: #b7cbc6;
+  --brand: var(--spruce); --brand-strong: var(--spruce-2); --brand-soft: #e3f1ec; --link: #0b5a73;
+  --focus: #e8a400;
+  --radius: 12px; --radius-lg: 22px;
+  --shadow: 0 1px 1px rgba(10,45,54,.05), 0 8px 24px -8px rgba(10,45,54,.14);
+  --shadow-lift: 0 2px 2px rgba(10,45,54,.06), 0 18px 40px -12px rgba(10,45,54,.28);
+  --font-display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --font-body: 'Atkinson Hyperlegible Next', 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #061d23; --surface: #0b2d36; --surface-2: #09252d;
+    --ink: #e6f1ef; --muted: #9db8b8; --line: #1b4650; --line-strong: #2a5e69;
+    --brand: #4fc3a1; --brand-strong: #86dcc2; --brand-ink: #03251e; --brand-soft: #0e3a40; --link: #86d0ea;
+  }
+}
+
+body {
+  background:
+    radial-gradient(60rem 30rem at 100% -5%, rgba(60,154,120,.10), transparent 70%),
+    var(--bg);
+  letter-spacing: .003em;
+}
+h1, h2, h3, h4 { font-variation-settings: 'wdth' 88; letter-spacing: -.02em; }
+h1 { font-weight: 800; }
+h2 { font-weight: 750; }
+h2::after { content: ""; display: block; width: 2.4rem; height: 4px; margin-top: .55rem; border-radius: 4px; background: var(--signal); }
+.hero h2::after, .key-card h2::after, .panel h2::after, .item h2::after, .chat h2::after { display: none; }
+
+/* ---------- Header: deep water, yellow marks the page you are on ---------- */
+.site-head { background: linear-gradient(180deg, #082730, var(--fathom)); border-bottom: 1px solid rgba(255,255,255,.08); }
+.brand { font-variation-settings: 'wdth' 85; font-weight: 800; letter-spacing: -.02em; }
+.brand-mark { background: none; box-shadow: none; width: 38px; height: 38px; border-radius: 0; }
+.brand-mark svg { width: 38px; height: 38px; display: block; }
+.brand small { background: var(--signal); color: var(--fathom); }
+nav a { color: #bfd8d6; border-radius: 6px; position: relative; }
+nav a:hover { background: rgba(255,255,255,.07); }
+nav a.active { background: transparent; color: #fff; }
+nav a.active::after { content: ""; position: absolute; left: .65rem; right: .65rem; bottom: .12rem; height: 3px; border-radius: 3px; background: var(--signal); }
+.menu-btn, .lang-btn { border-color: rgba(255,255,255,.28); border-radius: 10px; }
+@media (max-width: 52rem) { nav a.active::after { left: 1rem; right: auto; width: 2rem; bottom: .45rem; } }
+
+/* ---------- Buttons ---------- */
+.btn { border-radius: 12px; font-weight: 700; }
+.btn-primary { background: var(--spruce); border-color: var(--spruce); box-shadow: 0 1px 0 rgba(255,255,255,.18) inset, 0 6px 14px -6px rgba(15,91,77,.6); }
+.btn-primary:hover { background: var(--spruce-2); border-color: var(--spruce-2); box-shadow: 0 10px 20px -8px rgba(15,91,77,.7); transform: translateY(-1px); }
+.btn-quiet:hover { border-color: var(--spruce); }
+
+/* ---------- Hero: the chart ---------- */
+.hero {
+  background:
+    radial-gradient(58% 75% at 68% 52%, rgba(7,36,44,.82), rgba(7,36,44,.5) 60%, transparent 100%),
+    url('./contours.svg') right center / cover no-repeat,
+    radial-gradient(90% 120% at 100% 0%, #14606a 0%, transparent 60%),
+    linear-gradient(160deg, var(--fathom-2), var(--fathom) 55%, #06222a);
+  border-radius: 28px 28px 28px 110px;
+  box-shadow: var(--shadow-lift);
+  padding: clamp(1.5rem, 5vw, 3.75rem);
+}
+.hero::after { /* coastline hairline along the bottom edge */
+  content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 6px;
+  background: linear-gradient(90deg, var(--signal) 0 18%, transparent 18%);
+  opacity: .9; pointer-events: none;
+}
+.hero-grid::before { background: radial-gradient(circle, rgba(255,200,61,.14), transparent 62%); }
+.hero h1 { font-weight: 800; font-variation-settings: 'wdth' 82; letter-spacing: -.03em; line-height: 1.02; text-shadow: 0 2px 24px rgba(0,0,0,.25); }
+.hero .lead { color: #cfe6e2; }
+.hero .btn-primary { background: var(--signal); border-color: var(--signal); color: var(--fathom); box-shadow: 0 10px 22px -10px rgba(255,200,61,.7); }
+.hero .btn-primary:hover { background: #ffd666; border-color: #ffd666; color: var(--fathom); }
+.hero .ways-in .btn-primary { background: var(--signal); color: var(--fathom); }
+.hero .btn:not(.btn-primary) { border-color: rgba(255,255,255,.4); }
+.hero .ai-label, .hero-note, .facts li { color: #cfe6e2; }
+.guide-bubble { border-radius: 22px 22px 22px 6px; box-shadow: 0 18px 36px -14px rgba(0,0,0,.5); }
+.guide-bubble::after { left: 2.6rem; }
+.guide-stage::before { /* soft harbour glow behind the guide */
+  content: ""; position: absolute; inset: 18% 6% 0; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255,200,61,.22), transparent 70%); z-index: 0; pointer-events: none;
+}
+.guide-stage > * { position: relative; z-index: 1; }
+.one-sentence-row input { border-radius: 14px; border-color: transparent; box-shadow: 0 8px 22px -10px rgba(0,0,0,.5); }
+.key-card { border-radius: 20px; }
+
+/* ---------- Cards ---------- */
+.panel, .sample, .item, .note-item, .progress, .two-col > div, .how-card, .key-card {
+  border-radius: 20px 20px 20px 8px; border-color: var(--line);
+}
+.item { padding-left: 1.7rem; }
+.item::before { width: 6px; border-radius: 0 6px 6px 0; inset: 14px auto 14px 0; }
+.item.done { background: var(--fog); }
+.sample-chip { border-radius: 20px 20px 20px 8px; }
+.sample-chip:hover { border-color: var(--kelp); transform: translateY(-3px); }
+.sample-chip strong { font-variation-settings: 'wdth' 88; }
+
+/* ---------- The route: How it works, the Road ---------- */
+.how { position: relative; counter-reset: how; gap: 1.25rem; }
+.how-card { overflow: visible; }
+.how-card::after {
+  content: counter(how); top: -14px; right: auto; left: 1.1rem;
+  width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%;
+  background: var(--signal); color: var(--fathom); font-size: .95rem; line-height: 1;
+  box-shadow: 0 0 0 4px var(--bg);
+}
+@media (min-width: 48rem) {
+  .how::before { /* dashed route running through the step markers */
+    content: ""; position: absolute; left: 2rem; right: 2rem; top: 1px; border-top: 3px dashed var(--kelp); opacity: .55; z-index: 0;
+  }
+  .how { padding-top: 1px; margin-top: 1.6rem; }
+  .how-card { z-index: 1; }
+}
+.road { gap: 1.1rem; }
+.road-phase { background: var(--surface); border-radius: 18px 18px 18px 6px; border: 1px solid var(--line); border-top: 4px solid var(--kelp); box-shadow: var(--shadow); position: relative; }
+.road-phase h3 { font-variation-settings: 'wdth' 88; }
+
+/* ---------- Pills, chat ---------- */
+.pill { border-radius: 8px; font-weight: 700; }
+.chat-fab { background: var(--fathom); border-radius: 16px 16px 16px 6px; box-shadow: 0 14px 30px -10px rgba(10,45,54,.6); }
+.chat-fab:hover { background: var(--spruce-2); }
+.chat { border-top-left-radius: 24px; }
+
+@media (max-width: 40rem) {
+  .hero { border-radius: 22px 22px 22px 56px; }
+}
+
+/* ---------- One orchestrated moment: the route draws in on the landing hero ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .hero { animation: chart-rise .7s cubic-bezier(.2,.7,.2,1) both; }
+  .hero::after { transform-origin: left; animation: chart-route 1.4s .3s cubic-bezier(.3,.7,.2,1) both; }
+}
+@keyframes chart-rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes chart-route { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+.hero .ways-in li:not(:first-child) .btn-primary { background: rgba(255,255,255,.06); color: #fff; border: 1.5px solid rgba(255,255,255,.5); box-shadow: none; }
+.hero .ways-in li:not(:first-child) .btn-primary:hover { background: rgba(255,255,255,.16); color: #fff; }
+.hero .one-sentence-row .btn { background: var(--signal); border-color: var(--signal); color: var(--fathom); border-radius: 14px; }
+
+@media (max-width: 40rem) {
+  .brand { font-size: .95rem; gap: .45rem; flex: 1 1 100%; }
+  .brand span:last-child { white-space: nowrap; }
+  .site-head .wrap { row-gap: .6rem; }
+  .menu-btn, .lang-btn { flex: 1 1 0; justify-content: center; }
+}

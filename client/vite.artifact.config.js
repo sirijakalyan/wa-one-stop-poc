@@ -10,6 +10,7 @@ export default defineConfig({
     outDir: 'dist-preview',
     emptyOutDir: true,
     cssCodeSplit: false,
+    assetsInlineLimit: 1000000,
     lib: { entry: 'src/artifact/main.jsx', formats: ['iife'], name: 'WaPreview', fileName: () => 'preview.js' },
   },
 });
