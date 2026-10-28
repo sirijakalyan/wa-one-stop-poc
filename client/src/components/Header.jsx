@@ -22,9 +22,7 @@ export default function Header() {
     <header className="site-head">
       <div className="wrap">
         <Link to="/" className="brand">
-          <span className="brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="14" fill="#1f5fd6"/><path d="M8 27c4-7 8 1 12-4s8-5 12-1" stroke="#fff" strokeWidth="2.4" strokeLinecap="round"/><circle cx="29" cy="13" r="5" fill="#ffcf3f"/><circle cx="12" cy="13" r="2" fill="#ff7a59"/><circle cx="17" cy="9" r="1.5" fill="#2bbf94"/></svg>
-          </span>
+          <span className="brand-mark"><Icon name="shield" size={20} /></span>
           <span>WA Business One-Stop-Shop</span>
         </Link>
         <button type="button" className="menu-btn" aria-expanded={open} aria-controls="main-nav" onClick={() => setOpen((o) => !o)}>

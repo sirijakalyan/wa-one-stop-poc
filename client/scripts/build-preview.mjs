@@ -11,9 +11,11 @@ execSync('npx vite build --config vite.artifact.config.js', { cwd: root, stdio: 
 const js = readFileSync(path.join(root, 'dist-preview', 'preview.js'), 'utf8').replace(/<\/script/gi, '<\\/script');
 const css = readFileSync(path.join(root, 'dist-preview', 'style.css'), 'utf8');
 
-const html = `<meta charset="utf-8">
-<title>WA One-Stop Checklist Preview</title>
+const html = `<title>WA One-Stop Checklist Preview</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600;700;800&display=swap">
 <style>
 ${css}
 </style>
