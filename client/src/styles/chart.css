@@ -162,3 +162,24 @@ footer .api-status { color: #25385c; border-color: var(--line-strong); backgroun
   :root:not([data-theme="light"]) .site-head { background: rgba(255,255,255,.94); }
   :root:not([data-theme="light"]) h2::after { opacity: .9; }
 }
+
+/* ======== v3: Washington sunrise scene hero ======== */
+.hero {
+  background:
+    url('./scene.svg') center bottom / max(100%, 1500px) auto no-repeat,
+    radial-gradient(40rem 22rem at 20% 60%, rgba(255,214,150,.75), transparent 70%),
+    linear-gradient(180deg, #7db8f0 0%, #b9dafb 42%, #ffe9c9 78%, #ffe2b0 100%);
+  border: 0; border-radius: 40px; overflow: hidden;
+  padding-bottom: clamp(12rem, 27vw, 22rem);
+  box-shadow: 0 30px 60px -28px rgba(20,49,95,.55);
+}
+.hero h1 { font-size: clamp(2.6rem, 6vw, 4.6rem); color: #0f2748; }
+.hero .lead { color: #1d3556; font-size: 1.2rem; }
+.hero .privacy-note, .hero .ai-label, .hero .hero-note { color: #1d3556; }
+.hero .btn:not(.btn-primary), .hero .ways-in li:not(:first-child) .btn-primary { background: rgba(255,255,255,.85); }
+.hero .one-sentence label { color: #0f2748; }
+.guide-stage::before { background: radial-gradient(closest-side, rgba(255,255,255,.6), rgba(255,255,255,0) 72%); }
+@media (prefers-reduced-motion: no-preference) {
+  .hero { background-position: center bottom, center, center; }
+}
+@media (max-width: 40rem) { .hero { border-radius: 28px; padding-bottom: 9rem; } }
