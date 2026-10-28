@@ -167,7 +167,7 @@ async function withFakeFetch(status, fn) {
   globalThis.fetch = async (url, init) => { calls.push({ url, init }); return { status, ok: status < 300 }; };
   try { return await fn(calls); } finally { globalThis.fetch = real; }
 }
-const SG = { EMAIL_PROVIDER: 'sendgrid', SENDGRID_API_KEY: 'SG.test-key-not-real', EMAIL_FROM: 'WA One-Stop <reminders@example.test>' };
+const SG = { EMAIL_PROVIDER: 'sendgrid', SENDGRID_API_KEY: 'fake-sendgrid-key-for-tests', EMAIL_FROM: 'WA One-Stop <reminders@example.test>' };
 
 test('sendgrid mailer posts to the SendGrid API with the key in the header, the right recipient and a parsed sender', async () => {
   await withFakeFetch(202, async (calls) => {
@@ -176,7 +176,7 @@ test('sendgrid mailer posts to the SendGrid API with the key in the header, the 
     await m.send({ to: 'owner@example.com', subject: 'Hi', text: 'Body' });
     assert.equal(calls.length, 1);
     assert.equal(calls[0].url, 'https://api.sendgrid.com/v3/mail/send');
-    assert.equal(calls[0].init.headers.Authorization, 'Bearer SG.test-key-not-real');
+    assert.equal(calls[0].init.headers.Authorization, 'Bearer fake-sendgrid-key-for-tests');
     const body = JSON.parse(calls[0].init.body);
     assert.deepEqual(body.personalizations, [{ to: [{ email: 'owner@example.com' }] }]);
     assert.deepEqual(body.from, { email: 'reminders@example.test', name: 'WA One-Stop' });
@@ -196,7 +196,7 @@ test('sendgrid mailer: a refusal gives a safe message that never contains the ke
   await withFakeFetch(401, async () => {
     await assert.rejects(createMailer(SG).send({ to: 'a@b.co', subject: 's', text: 't' }), (err) => {
       assert.match(err.message, /SendGrid refused the message \(HTTP 401\)/);
-      assert.doesNotMatch(err.message, /SG\.test-key/);
+      assert.doesNotMatch(err.message, /fake-sendgrid-key/);
       return true;
     });
   });

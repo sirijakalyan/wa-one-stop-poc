@@ -1,0 +1,29 @@
+{
+  "retrievedOn": "2026-10-26",
+  "record": "Doc 11, source review 2026-10-26, figures re-read in full on the agency pages. These are agency estimates, not guaranteed dates.",
+  "times": [
+    {
+      "ruleId": "dor",
+      "label": "Online application",
+      "text": "approximately 10 business days",
+      "min": { "days": 10, "kind": "business" },
+      "note": "Add 2 to 3 weeks when city or state endorsements apply. By mail, up to six weeks.",
+      "sourceLabel": "DOR, Apply for a business license"
+    },
+    {
+      "ruleId": "lni-contractor",
+      "label": "Mailed application, processed and activated",
+      "text": "3 to 4 weeks after the application is received",
+      "min": { "days": 21, "kind": "calendar" },
+      "note": "The registration card arrives about 2 weeks later, at a later stage. Other L&I processing times are not recorded.",
+      "sourceLabel": "L&I, Register as a Contractor"
+    }
+  ],
+  "simulation": {
+    "ruleId": "dor",
+    "label": "Online application",
+    "text": "approximately 15 business days",
+    "min": { "days": 15, "kind": "business" },
+    "note": "Made-up change for the demo. The real page has not changed."
+  }
+}

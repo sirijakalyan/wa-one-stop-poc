@@ -93,6 +93,9 @@ export const api = {
   saveCountySource: (county, entry) => request('PUT', `/api/county-sources/${encodeURIComponent(county)}`, entry),
   adminStatus: () => request('GET', '/api/admin/status'),
   chat: (message, conversation) => request('POST', '/api/chat', { message, conversation }),
+  intakeTurn: (body) => request('POST', '/api/intake/turn', body),
+  intakePlan: (card, simulate = false) => request('POST', '/api/intake/plan', { card, simulate }),
+  simulateRuleChange: (card) => request('POST', '/api/simulate/rule-change', { card }),
 };
 
 // Load data when a screen opens. reload() fetches again.

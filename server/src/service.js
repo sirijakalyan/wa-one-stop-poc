@@ -11,6 +11,7 @@ import { DISCLAIMER } from './disclaimer.js';
 import { evaluate, normalizeAnswers, suggestCategories, countyLabel } from './engine.js';
 import { SAMPLES } from './samples.js';
 import { answerQuestion } from './chat.js';
+import { intakeTurn, planFromCard, buildTimeline, blankCard, CARD_FIELDS, extractFacts } from './intake.js';
 
 const DEFAULT_VISITOR = 'public-demo';
 const EMAIL_RX = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/;
@@ -87,6 +88,8 @@ function safeEqual(a, b) {
 // options.publicUrl: base URL of this API, used in confirm and unsubscribe links.
 // options.countyHealthPages: { counties: [{ county, agency, url|null, note }] } candidate pages found by search. Never treated as verified.
 // options.foundLinks: { searchedOn, links: [{ ruleId, label, url, agency, note }] } extra pages found by search. Never treated as verified.
+// options.places: [[city, county]] pairs, used only to spot a city in what the owner says.
+// options.processingTimes: the agency times recorded in doc 11 (server/seed/processing_times.json). Nothing else is ever shown as a time.
 // options.llm: optional async ({ system, user }) => text, used only to rephrase grounded chat answers.
 export function createService(store, options = {}) {
   const loadRules = () => store.readRules();
@@ -549,6 +552,73 @@ export function createService(store, options = {}) {
     const checklist = cl ? await buildChecklist(cl, rulesDoc) : null;
     const result = await answerQuestion({ message, conversation, rules: rulesDoc.rules, checklist, llm: options.llm });
     return { ok: true, ...result };
+  });
+
+
+  /* ---------- The talking guide ----------
+     The guide listens and takes notes in a card. Only confirmed card fields reach the rules engine. The server keeps no
+     conversation: the browser sends the card each turn, so a visitor can switch between chat and form and lose nothing. */
+  const QUESTION_RX = /\?\s*$|^\s*(do|does|did|how|what|when|where|why|can|could|should|is|are|will|which)\b/i;
+  const cardOf = (body) => (body?.card && typeof body.card === 'object' ? body.card : blankCard());
+
+  route('POST', '/api/intake/turn', async ({ body, ctx }) => {
+    const message = String(body?.message ?? '').trim();
+    if (message.length > 500) fail('Keep each message under 500 characters.');
+    const card = cardOf(body);
+    const input = { card, message, action: body?.action, field: body?.field, value: body?.value, asking: body?.asking };
+    const places = options.places || [];
+    // A question with no business details in it goes to the grounded helper, which answers only from the app's own rules and guides.
+    if (message && !body?.action && QUESTION_RX.test(message) && !Object.keys(extractFacts(message, places)).length) {
+      const rulesDoc = await loadRules();
+      const cl = await store.getChecklist(visitorOf(ctx));
+      const checklist = cl ? await buildChecklist(cl, rulesDoc) : null;
+      const answered = await answerQuestion({ message, conversation: [], rules: rulesDoc.rules, checklist, llm: options.llm });
+      const turn = intakeTurn({ ...input, message: '' }, { places });
+      return { ok: true, ...turn, reply: answered.answer, answer: { links: answered.links || [], matched: answered.matched || [] }, followUp: turn.ask?.question || '' };
+    }
+    return { ok: true, ...intakeTurn(input, { places }) };
+  });
+
+  route('POST', '/api/intake/plan', async ({ body }) => {
+    const rulesDoc = await loadRules();
+    const card = cardOf(body);
+    const plan = planFromCard(card, rulesDoc.rules);
+    const timeline = buildTimeline(plan, rulesDoc.phases, options.processingTimes, new Date(), { simulate: Boolean(body?.simulate) });
+    return { ok: true, plan, timeline, complete: plan.complete, answers: plan.answers };
+  });
+
+  // Public on purpose: the reviewer must see a rule change without the admin key. It changes no stored rule. It writes one
+  // alert, marked as a simulation, to the caller's own notifications and shows the timeline before and after.
+  route('POST', '/api/simulate/rule-change', async ({ body, ctx }) => {
+    const sim = options.processingTimes?.simulation;
+    if (!sim) fail('Simulation is not set up.', 404);
+    const rulesDoc = await loadRules();
+    const rule = rulesDoc.rules.find((r) => r.id === sim.ruleId);
+    const plan = planFromCard(cardOf(body), rulesDoc.rules);
+    const affected = plan.items.some((i) => i.id === sim.ruleId);
+    const before = options.processingTimes.times.find((t) => t.ruleId === sim.ruleId);
+    const timelineBefore = buildTimeline(plan, rulesDoc.phases, options.processingTimes, new Date());
+    const timelineAfter = buildTimeline(plan, rulesDoc.phases, options.processingTimes, new Date(), { simulate: true });
+    const title = `Simulation: ${rule?.title || sim.ruleId} changed`;
+    const notice = affected
+      ? `The source page for "${rule?.title}" now shows ${sim.text} for the ${sim.label.toLowerCase()}, up from ${before?.text}. This step is on your plan, so your earliest date moved.`
+      : `The source page for "${rule?.title}" changed. This step is not on your plan, so nothing moved for you.`;
+    let alert = null;
+    if (affected) {
+      alert = {
+        id: uuid(), type: 'rule-changed', simulated: true, read: false, createdAt: new Date().toISOString(), title,
+        body: `${notice} This is a made-up change to show how alerts work. No real page changed.`,
+      };
+      await store.addNotification(visitorOf(ctx), alert);
+    }
+    return {
+      ok: true, simulated: true, affected,
+      rule: { id: sim.ruleId, title: rule?.title || sim.ruleId, source: rule?.source || null },
+      before: { label: before?.label || sim.label, text: before?.text || 'not recorded' },
+      after: { label: sim.label, text: sim.text, note: sim.note || '' },
+      notice: { draft: true, text: notice, note: 'The guide drafts the notice. A person approves it before any owner sees it.' },
+      alert, timelineBefore, timelineAfter,
+    };
   });
 
   // Returns { status, body }. Never throws.

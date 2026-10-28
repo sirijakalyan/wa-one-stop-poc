@@ -52,7 +52,8 @@ export function normalizeAnswers(input = {}) {
 
 // Simulated activity suggestion: a plain keyword match. The owner confirms or edits it.
 export function suggestCategories(text = '') {
-  const t = String(text).toLowerCase();
+  // "subcontractors" and "independent contractors" are about who the owner pays, not a construction business.
+  const t = String(text).toLowerCase().replace(/\b(sub-?contractors?|independent contractors?|contract workers?)\b/g, ' ');
   const out = [];
   if (/restaurant|cafe|coffee|food|catering|bakery|kitchen|\bbar\b|truck|diner/.test(t)) out.push('food');
   if (/construct|contractor|remodel|roof|plumb|electric|carpent|framing|build|paint|concrete/.test(t)) out.push('construction');

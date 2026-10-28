@@ -144,3 +144,9 @@ test('a restaurant that is also a contractor (both types chosen) gets both steps
   const got = ids({ ...RESTAURANT_WITH_SUBS, cats: ['food', 'construction'] });
   assert.ok(got.includes('lni-contractor') && got.includes('health'));
 });
+
+test('"subcontractors" in a description never suggests construction contracting', async () => {
+  const { suggestCategories } = await import('../src/engine.js');
+  assert.deepEqual(suggestCategories('Neighborhood restaurant. We pay subcontractors and independent contractors.'), ['food']);
+  assert.deepEqual(suggestCategories('Residential remodeling and framing'), ['construction']);
+});

@@ -26,8 +26,7 @@ services:
     name: wa-onestop-ui
     runtime: static
     rootDir: client
-    # Vite lives in devDependencies; include them so the free static build can compile.
-    buildCommand: npm install --include=dev && npm run build
+    buildCommand: npm install && npm run build
     staticPublishPath: dist
     envVars:
       - key: VITE_API_BASE_URL

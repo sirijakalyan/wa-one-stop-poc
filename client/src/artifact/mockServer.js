@@ -11,6 +11,8 @@ import sourceReviews from '../../../server/seed/source_reviews.json';
 import countySources from '../../../server/seed/county_sources.json';
 import countyHealthPages from '../../../server/seed/county_health_candidates.json';
 import foundLinks from '../../../server/seed/found_links.json';
+import waPlaces from '../../../server/seed/wa_places.json';
+import processingTimes from '../../../server/seed/processing_times.json';
 
 const clone = (x) => JSON.parse(JSON.stringify(x));
 const fresh = () => ({ rules: clone(rules), users: clone(users), checklists: clone(checklists), notifications: clone(notifications), source_reviews: clone(sourceReviews), county_sources: clone(countySources) });
@@ -32,7 +34,7 @@ export function createMemoryStore() {
 
 // Replace window.fetch for /api calls. Everything else goes to the real fetch.
 export function installMockServer() {
-  const service = createService(createMemoryStore(), { countyHealthPages, foundLinks });
+  const service = createService(createMemoryStore(), { countyHealthPages, foundLinks, places: waPlaces.places, processingTimes });
   const realFetch = globalThis.fetch ? globalThis.fetch.bind(globalThis) : null;
   globalThis.fetch = async (input, init = {}) => {
     const url = typeof input === 'string' ? input : input.url;

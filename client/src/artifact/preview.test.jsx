@@ -12,6 +12,14 @@ beforeEach(() => {
   installMockServer();
 });
 
+// The home page now starts the guide, so a quick saved checklist is made through the same API the questionnaire uses.
+const RESTAURANT = { structure: 'llc', desc: 'Neighborhood restaurant serving lunch and dinner', cats: ['food'], city: '', county: '', hiring: 'yes', subs: 'no', salestax: 'yes', income: 'yes', tradename: 'yes' };
+async function saveRestaurant(user) {
+  const r = await fetch('/api/checklist', { method: 'POST', body: JSON.stringify({ answers: RESTAURANT, label: 'Restaurant' }) });
+  expect((await r.json()).saved).toBe(true);
+  await user.click(screen.getByRole('link', { name: 'My checklist' }));
+}
+
 function renderApp() {
   return render(
     <MemoryRouter initialEntries={['/']}>
@@ -27,9 +35,8 @@ describe('in-page preview', () => {
     const user = userEvent.setup();
     renderApp();
 
-    // Landing page, sample card
-    const card = (await screen.findByRole('heading', { name: 'Restaurant', level: 3 })).closest('li');
-    await user.click(within(card).getByRole('button', { name: 'See this checklist' }));
+    // A saved restaurant checklist
+    await saveRestaurant(user);
 
     // Checklist from the real engine
     expect(await screen.findByRole('heading', { name: 'Sample checklist: Restaurant' })).toBeInTheDocument();
@@ -68,7 +75,7 @@ describe('in-page preview', () => {
   it('runs the questionnaire to a checklist and keeps the Secretary of State step out for a sole proprietor', async () => {
     const user = userEvent.setup();
     renderApp();
-    await user.click(screen.getByRole('link', { name: 'Start the questionnaire' }));
+    await user.click(screen.getByRole('link', { name: 'Use the step-by-step form' }));
     await user.click(screen.getByLabelText(/^Sole proprietor/));
     await user.click(screen.getByRole('button', { name: 'Next' })); // structure
     await user.click(screen.getByRole('button', { name: 'Next' })); // description left blank
@@ -87,8 +94,7 @@ describe('in-page preview', () => {
 
 describe('county in the questionnaire and edit-answers flow', () => {
   async function openRestaurant(user) {
-    const card = (await screen.findByRole('heading', { name: 'Restaurant', level: 3 })).closest('li');
-    await user.click(within(card).getByRole('button', { name: 'See this checklist' }));
+    await saveRestaurant(user);
     await screen.findByRole('heading', { name: 'Sample checklist: Restaurant' });
   }
   async function changeCounty(user, county) {
@@ -111,7 +117,7 @@ describe('county in the questionnaire and edit-answers flow', () => {
   it('asks for city and county, shows the entered county in the review, and keeps the city field', async () => {
     const user = userEvent.setup();
     renderApp();
-    await user.click(screen.getByRole('link', { name: 'Start the questionnaire' }));
+    await user.click(screen.getByRole('link', { name: 'Use the step-by-step form' }));
     await user.click(screen.getByLabelText(/^Limited liability company/));
     await user.click(screen.getByRole('button', { name: 'Next' }));
     await user.click(screen.getByRole('button', { name: 'Next' }));
@@ -132,7 +138,7 @@ describe('county in the questionnaire and edit-answers flow', () => {
   it('typing "bel" suggests cities; choosing Bellevue fills King County and the review shows both', async () => {
     const user = userEvent.setup();
     renderApp();
-    await user.click(screen.getByRole('link', { name: 'Start the questionnaire' }));
+    await user.click(screen.getByRole('link', { name: 'Use the step-by-step form' }));
     await user.click(screen.getByLabelText(/^Limited liability company/));
     await user.click(screen.getByRole('button', { name: 'Next' }));
     await user.click(screen.getByRole('button', { name: 'Next' }));
@@ -245,8 +251,7 @@ describe('chat panel', () => {
   it('uses the saved checklist for "my next step"', async () => {
     const user = userEvent.setup();
     renderApp();
-    const card = (await screen.findByRole('heading', { name: 'Restaurant', level: 3 })).closest('li');
-    await user.click(within(card).getByRole('button', { name: 'See this checklist' }));
+    await saveRestaurant(user);
     await screen.findByRole('heading', { name: 'Sample checklist: Restaurant' });
     const dialog = await openChat(user);
     await user.click(within(dialog).getByRole('button', { name: 'What is my next step?' }));

@@ -5,7 +5,7 @@ import { createStore } from './store.js';
 import { createService } from './service.js';
 import { createOllamaLlm } from './ollama.js';
 import { createMailer } from './mailer.js';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { SEED_DIR } from './store.js';
 import path from 'node:path';
 
@@ -35,9 +35,9 @@ function loadSeedJson(name, fallback) {
 }
 
 // Thin Express adapter. All API logic lives in service.js.
-export function createApp({ dataDir, store = createStore(dataDir), adminKey = process.env.ADMIN_KEY, llm = createOllamaLlm(), mailer = createMailer(), countyHealthPages = loadSeedJson('county_health_candidates.json', { counties: [] }), foundLinks = loadSeedJson('found_links.json', { links: [] }), publicUrl = process.env.PUBLIC_URL, corsOrigins } = {}) {
+export function createApp({ dataDir, store = createStore(dataDir), adminKey = process.env.ADMIN_KEY, llm = createOllamaLlm(), mailer = createMailer(), countyHealthPages = loadSeedJson('county_health_candidates.json', { counties: [] }), foundLinks = loadSeedJson('found_links.json', { links: [] }), publicUrl = process.env.PUBLIC_URL, corsOrigins, places = loadSeedJson("wa_places.json", { places: [] }).places, processingTimes = loadSeedJson('processing_times.json', { times: [] }), clientDist = process.env.CLIENT_DIST } = {}) {
   const production = process.env.NODE_ENV === 'production';
-  const service = createService(store, { adminKey: adminKey || undefined, adminLocked: production && !adminKey, llm, mailer, publicUrl, countyHealthPages, foundLinks });
+  const service = createService(store, { adminKey: adminKey || undefined, adminLocked: production && !adminKey, llm, mailer, publicUrl, countyHealthPages, foundLinks, places, processingTimes });
   const app = express();
   app.set('trust proxy', 1);
 
@@ -84,6 +84,13 @@ export function createApp({ dataDir, store = createStore(dataDir), adminKey = pr
       next(err);
     }
   });
+
+  // Optional: serve the built client from this server so a refresh or a shared link on any page opens the app, not "Not Found".
+  // Set CLIENT_DIST to the client's dist folder. Unknown /api paths still answer with JSON, never with the page.
+  if (clientDist && existsSync(path.join(clientDist, 'index.html'))) {
+    app.use(express.static(clientDist, { index: false, maxAge: '1h' }));
+    app.get(/^\/(?!api(\/|$)).*/, (req, res) => res.sendFile(path.resolve(clientDist, 'index.html')));
+  }
 
   // eslint-disable-next-line no-unused-vars
   app.use((err, req, res, next) => {

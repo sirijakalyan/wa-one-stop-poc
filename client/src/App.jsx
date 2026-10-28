@@ -1,6 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout.jsx';
 import Landing from './pages/Landing.jsx';
+import Guide from './pages/Guide.jsx';
 import Questionnaire from './pages/Questionnaire.jsx';
 import Checklist from './pages/Checklist.jsx';
 import Dashboard from './pages/Dashboard.jsx';
@@ -16,6 +17,7 @@ export default function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route index element={<Landing />} />
+        <Route path="guide" element={<Guide />} />
         <Route path="questionnaire" element={<Questionnaire />} />
         <Route path="checklist" element={<Checklist />} />
         <Route path="dashboard" element={<Dashboard />} />
