@@ -11,7 +11,7 @@ import { DISCLAIMER } from './disclaimer.js';
 import { evaluate, normalizeAnswers, suggestCategories, countyLabel } from './engine.js';
 import { SAMPLES } from './samples.js';
 import { answerQuestion } from './chat.js';
-import { intakeTurn, planFromCard, buildTimeline, blankCard, CARD_FIELDS, extractFacts } from './intake.js';
+import { intakeTurn, spokenConfirmation, planFromCard, buildTimeline, blankCard, CARD_FIELDS, extractFacts } from './intake.js';
 
 const DEFAULT_VISITOR = 'public-demo';
 const EMAIL_RX = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/;
@@ -574,16 +574,19 @@ export function createService(store, options = {}) {
     const message = String(body?.message ?? '').trim();
     if (message.length > 500) fail('Keep each message under 500 characters.');
     const card = cardOf(body);
-    const input = { card, message, action: body?.action, field: body?.field, value: body?.value, asking: body?.asking };
+    // "Yes that is right" said aloud counts as tapping the button, so it must be checked before anything else.
+    const spoken = !body?.action ? spokenConfirmation(card, message, body?.asking) : null;
+    const input = { card, message: spoken ? '' : message, action: spoken || body?.action, field: body?.field, value: body?.value, asking: body?.asking };
     const places = options.places || [];
-    const said = message && !body?.action;
+    const said = message && !body?.action && !spoken;
     const hasFacts = said && Object.keys(extractFacts(message, places)).length > 0;
     const question = said && ((QUESTION_RX.test(message) && !hasFacts) || STRICT_Q_RX.test(message) || MID_Q_RX.test(message));
-    const askGrounded = async (text) => {
+    const askGrounded = async (text, { keepOnFallback = false } = {}) => {
       const rulesDoc = await loadRules();
       const cl = await store.getChecklist(visitorOf(ctx));
       const checklist = cl ? await buildChecklist(cl, rulesDoc) : null;
       const answered = await answerQuestion({ message: text.replace(/\bstill\b/gi, ' ').replace(/\s+/g, ' ').trim(), conversation: [], rules: rulesDoc.rules, checklist, llm: options.llm });
+      if (keepOnFallback && answered.mode === 'fallback') return null;
       const turn = intakeTurn({ ...input, message: '' }, { places });
       return { ok: true, ...turn, reply: answered.answer, answer: { links: answered.links || [], matched: answered.matched || [] }, followUp: turn.ask?.question || '' };
     };
@@ -604,7 +607,11 @@ export function createService(store, options = {}) {
     if (said && turn.note === 'no-facts' && /\b(confused|don'?t understand|do not understand|lost|stuck|no idea)\b/i.test(message)) {
       return reply('No problem. Tell me, in your own words, what kind of business you want to start, for example "a food truck in Spokane". Or tap one of the answers below. You can also use the step-by-step form instead.');
     }
-    if (said && turn.note === 'no-facts' && !/^(yes|no|ok|okay|yeah|yep|nope|sure|what|huh)\b[\s!.?]*$/i.test(message)) return askGrounded(message);
+    // A free-text answer (a city) that was not understood stays a "did not catch that", unless the helper has a real topic for it.
+    if (said && turn.note === 'no-facts' && !/^(yes|no|ok|okay|yeah|yep|nope|sure|what|huh)\b[\s!.?]*$/i.test(message)) {
+      const g = await askGrounded(message, { keepOnFallback: true });
+      if (g && !(body?.asking === 'place' && !QUESTION_RX.test(message))) return g;
+    }
     // Some businesses need licenses this demo has no rules for. Say so now instead of staying silent.
     if (said && hasFacts && SPECIAL.test(message) && turn.reply) {
       turn.reply += ' One more thing: some businesses, such as those that sell alcohol or run child care, need special licenses from other agencies. This demo has no rules for those, so ask the agency.';

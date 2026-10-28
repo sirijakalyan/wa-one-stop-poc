@@ -351,3 +351,46 @@ test('API: how real people talk, typed or spoken, gets a sensible reply', async 
     await app.stop();
   }
 });
+
+test('API: saying "yes that is right" or "no that is wrong" aloud works like the buttons', async () => {
+  const app = await startApp();
+  try {
+    const call = async (body) => (await app.call('POST', '/api/intake/turn', body)).body;
+    const first = await call({ message: 'I wanted to start his LLC', card: blankCard() });
+    assert.equal(first.card.status.structure, 'heard');
+    for (const m of ['yes that is right', 'yeah', "that's right", "is that's right", 'correct', 'yes please', "yep that's correct", 'sounds good', 'okay']) {
+      const r = await call({ message: m, card: first.card });
+      assert.equal(r.card.status.structure, 'confirmed', m);
+      assert.doesNotMatch(r.reply, /don't have that|did not pick/i, m);
+    }
+    for (const m of ['no', "no that's wrong", 'not right', 'wrong']) {
+      const r = await call({ message: m, card: first.card });
+      assert.equal(r.card.status.structure, 'heard', `${m} must not confirm`);
+      assert.match(r.reply, /change/i, m);
+    }
+    const q = await call({ message: 'what is an LLC?', card: first.card });
+    assert.equal(q.card.status.structure, 'heard', 'a question is not a yes');
+    const yn = await call({ message: 'yes', card: { ...first.card, status: { ...first.card.status, structure: 'confirmed' } }, asking: 'hiring' });
+    assert.equal(yn.card.status.hiring, 'confirmed', 'a yes to a yes/no question is still an answer');
+  } finally {
+    await app.stop();
+  }
+});
+
+test('API: a city that was not understood is not answered with "I don\'t have that", and the business description is tidy', async () => {
+  const app = await startApp();
+  try {
+    const call = async (body) => (await app.call('POST', '/api/intake/turn', body)).body;
+    const r = await call({ message: 'the city was believe you', card: blankCard(), asking: 'place' });
+    assert.match(r.reply, /did not catch a Washington city/i);
+    assert.equal(r.card.status.place, undefined);
+    const a = await call({ message: 'wanted to start a food service', card: blankCard(), asking: 'activity' });
+    assert.equal(a.card.values.desc, 'food service');
+    const b = await call({ message: 'I want to open a food truck in Spokane', card: blankCard() });
+    assert.match(b.card.values.desc, /food truck/);
+    const c = await call({ message: 'seattle', card: blankCard(), asking: 'place' });
+    assert.equal(c.card.values.city, 'Seattle');
+  } finally {
+    await app.stop();
+  }
+});

@@ -82,6 +82,28 @@ const ACTIVITY_PHRASES = [
   'online store', 'daycare', 'gym', 'bookkeeping', 'plumber', 'electrician', 'roofer', 'carpenter', 'handyman', 'tutor', 'photographer', 'hair salon', 'nail salon',
 ];
 
+// "wanted to start a food service" is a story, not a description. Keep just the kind of business.
+export function cleanDesc(text) {
+  const t = String(text || '').trim().replace(/[.!?]+$/, '');
+  const c = t.replace(/^(?:(?:i|we)(?:'d| would| want| wanted| am| are| will| plan| planned)?\s*)?(?:(?:really |just )?(?:want|wanted|would like|like|plan|planning|going|trying|need|hope|hoping)\s+(?:to\s+)?)?(?:start|open|run|launch|begin|operate|set up|do|have|starting|opening|running)\s+(?:a|an|my|the|some)?\s*/i, '').trim();
+  return (c || t).slice(0, 120);
+}
+
+const CONFIRM_YES = new Set(['yes', 'yeah', 'yep', 'yup', 'sure', 'ok', 'okay', 'correct', 'right', 'exactly', 'absolutely', 'definitely', 'good', 'perfect', 'fine', 'huh']);
+const CONFIRM_FILLER = new Set(['that', "that's", 'thats', 'is', 'it', "it's", 'its', 'looks', 'sounds', 'great', 'please', 'thanks', 'thank', 'you', 'got', 'uh', 'um', 'mm', 'hmm', 'go', 'ahead', 'all', 'very', 'so', 'and', 'the', 'this', 'are', 'was', 'be']);
+const CONFIRM_NO = new Set(['no', 'nope', 'nah', 'wrong', 'incorrect', 'not', "isn't", 'isnt', "that's not", 'change', 'fix', 'mistake', 'wait']);
+// While a read-back is waiting ("I heard: LLC. Is that right?"), a spoken "yes that is right" or "no, that's wrong" counts like tapping the button.
+export function spokenConfirmation(rawCard, message, asking) {
+  if (asking) return null;
+  const card = cleanCard(rawCard);
+  if (!CARD_FIELDS.some((f) => card.status[f] === 'heard')) return null;
+  const words = String(message || '').toLowerCase().replace(/[^a-z' ]+/g, ' ').split(/\s+/).filter(Boolean);
+  if (!words.length || words.length > 8) return null;
+  if (words.some((w) => CONFIRM_NO.has(w))) return words.every((w) => CONFIRM_NO.has(w) || CONFIRM_FILLER.has(w) || CONFIRM_YES.has(w)) ? 'change' : null;
+  if (words.every((w) => CONFIRM_YES.has(w) || CONFIRM_FILLER.has(w)) && words.some((w) => CONFIRM_YES.has(w))) return 'confirm';
+  return null;
+}
+
 function activityPhrase(text) {
   const t = String(text).toLowerCase();
   const known = ACTIVITY_PHRASES.find((p) => new RegExp(`\\b${p}\\b`).test(t));
@@ -115,7 +137,7 @@ export function extractFacts(text, places) {
   const cats = categoriesFrom(t);
   if (cats.length) {
     found.cats = cats;
-    found.desc = (activityPhrase(raw) || raw).slice(0, 120);
+    found.desc = (activityPhrase(raw) || cleanDesc(raw)).slice(0, 120);
   }
 
   const explicitCounty = findCounty(raw, places);
@@ -169,10 +191,10 @@ export function parseDirect(field, text, places) {
   }
   if (field === 'activity') {
     const cats = categoriesFrom(t);
-    if (/food/.test(t) && !/construction/.test(t)) return { cats: ['food'], desc: raw.slice(0, 120) };
-    if (/construction/.test(t)) return { cats: ['construction'], desc: raw.slice(0, 120) };
-    if (/other|retail|service/.test(t) && !cats.length) return { cats: ['other'], desc: raw.slice(0, 120) };
-    return cats.length ? { cats, desc: raw.slice(0, 120) } : null;
+    if (/food/.test(t) && !/construction/.test(t)) return { cats: ['food'], desc: cleanDesc(raw) };
+    if (/construction/.test(t)) return { cats: ['construction'], desc: cleanDesc(raw) };
+    if (/other|retail|service/.test(t) && !cats.length) return { cats: ['other'], desc: cleanDesc(raw) };
+    return cats.length ? { cats, desc: cleanDesc(raw) } : null;
   }
   if (field === 'place') {
     if (/^(skip|later|no|none|not now|not sure|prefer not)/.test(t) || UNSURE_RX.test(t)) return { city: '', county: '', skipped: true };
@@ -338,7 +360,7 @@ export function intakeTurn({ card: rawCard, message, action, field, value, askin
     const merged = mergeHeard(card, found);
     card = merged.card;
     if (!direct && !merged.changed.length) {
-      return finish(card, asking ? "I did not catch that. Please tap one of the answers below or type it again." : 'I did not pick out a business detail from that. Tell me what you want to start, or answer the question below.', { ask: nextAskUnlessHeard(card), note: 'no-facts' });
+      return finish(card, asking === 'place' ? 'I did not catch a Washington city in that. Say or type the city again, or tap Skip for now.' : asking ? "I did not catch that. Please tap one of the answers below or type it again." : 'I did not pick out a business detail from that. Tell me what you want to start, or answer the question below.', { ask: nextAskUnlessHeard(card), note: 'no-facts' });
     }
   } else {
     return finish(card, nextAsk(card)?.question || 'Your card is complete.', { ask: nextAsk(card) });
