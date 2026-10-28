@@ -560,8 +560,14 @@ export function createService(store, options = {}) {
      conversation: the browser sends the card each turn, so a visitor can switch between chat and form and lose nothing. */
   // Spoken questions rarely end in a question mark and often start with filler, so look for question words and requests anywhere.
   // A real question, even if it mentions a detail ("Do I need a permit for a food truck?"), is answered and never taken as a statement about the business.
-  const STRICT_Q_RX = /\?\s*$|^\s*(?:(?:so|ok|okay|see|well|hi|hello|hey|um|uh)[\s,]+)*(do|does|did|how|what|when|where|why|can|could|should|is|are|which)\b/i;
-  const QUESTION_RX = /\?\s*$|^\s*(?:(?:so|ok|okay|see|well|hi|hello|hey|um|uh)[\s,]+)*(do|does|did|how|what|when|where|why|can|could|should|is|are|will|which|explain|show|list|give)\b|\b(tell me|show me|explain|what are|what is|what do i|how do i|how to|the steps|which steps|help me understand|want to know|not sure what)\b/i;
+  const NOT = String.raw`(?!\s+(?:not|n't)\b)`;
+  const STRICT_Q_RX = new RegExp(String.raw`\?\s*$|^\s*(?:(?:so|ok|okay|see|well|hi|hello|hey|um|uh|and)[\s,]+)*(do|does|did|how|what|whats|when|where|why|can|could|should|is|are|which)\b${NOT}`, 'i');
+  // A question that starts with a statement ("I dont have employees, do I still need workers comp").
+  const MID_Q_RX = /\b(do i|do we|can i|can u|can you|am i|is it|is that|is this|are you|should i|will i|would i|what do i|what should i|what will i|how much|how long|how many|how do i)\b(?!\s+not\b)/i;
+  const QUESTION_RX = new RegExp(STRICT_Q_RX.source + String.raw`|^\s*(?:(?:so|ok|okay|see|well)[\s,]+)*(will|explain|show|list|give)\b|\b(tell me|show me|explain|what are|what is|the steps|which steps|help me understand|want to know|not sure what|how to)\b`, 'i');
+  const AI_Q = /\b(are you|r u|you)\s+(a\s+|an\s+)?(real|human|person|robot|bot|ai|machine|chatgpt)\b/i;
+  const OFFICIAL_Q = /\b(is|are) (this|it|you|the app|the site)\b[^.?!]{0,20}\b(official|government|legit|legal advice)\b|\bofficial (site|website|app|advice)\b/i;
+  const SPECIAL = /\b(alcohol|liquor|beer|wine|spirits|cannabis|marijuana|tobacco|vape|firearms?|guns?|daycare|day care|child ?care|cosmetolog\w*|barber\w*|hair salon|nail salon|taxi|trucking|real estate|insurance agent|pharmacy|clinic|medical)\b/i;
   const cardOf = (body) => (body?.card && typeof body.card === 'object' ? body.card : blankCard());
 
   route('POST', '/api/intake/turn', async ({ body, ctx }) => {
@@ -570,16 +576,40 @@ export function createService(store, options = {}) {
     const card = cardOf(body);
     const input = { card, message, action: body?.action, field: body?.field, value: body?.value, asking: body?.asking };
     const places = options.places || [];
-    // A question with no business details in it goes to the grounded helper, which answers only from the app's own rules and guides.
-    if (message && !body?.action && ((QUESTION_RX.test(message) && !Object.keys(extractFacts(message, places)).length) || STRICT_Q_RX.test(message))) {
+    const said = message && !body?.action;
+    const hasFacts = said && Object.keys(extractFacts(message, places)).length > 0;
+    const question = said && ((QUESTION_RX.test(message) && !hasFacts) || STRICT_Q_RX.test(message) || MID_Q_RX.test(message));
+    const askGrounded = async (text) => {
       const rulesDoc = await loadRules();
       const cl = await store.getChecklist(visitorOf(ctx));
       const checklist = cl ? await buildChecklist(cl, rulesDoc) : null;
-      const answered = await answerQuestion({ message, conversation: [], rules: rulesDoc.rules, checklist, llm: options.llm });
+      const answered = await answerQuestion({ message: text.replace(/\bstill\b/gi, ' ').replace(/\s+/g, ' ').trim(), conversation: [], rules: rulesDoc.rules, checklist, llm: options.llm });
       const turn = intakeTurn({ ...input, message: '' }, { places });
       return { ok: true, ...turn, reply: answered.answer, answer: { links: answered.links || [], matched: answered.matched || [] }, followUp: turn.ask?.question || '' };
+    };
+    const reply = async (text) => {
+      const turn = intakeTurn({ ...input, message: '' }, { places });
+      return { ok: true, ...turn, reply: text, answer: { links: [], matched: [] }, followUp: turn.ask?.question || '' };
+    };
+    // A question goes to the grounded helper, which answers only from the app's own rules and guides, and never changes the card.
+    if (question) {
+      if (AI_Q.test(message)) return reply('I am an AI guide, not a person. I take notes and explain steps from the written rules in this app. The rules decide what applies to you, and you confirm every fact.');
+      if (OFFICIAL_Q.test(message)) return reply('No. This is a demo, not an official government site, and it is not legal advice. Each step links to the agency\'s own page, so confirm there before you apply.');
+      const nothingYet = !Object.values(card.status || {}).includes('confirmed');
+      if (nothingYet && /\b(first|next)\b/i.test(message) && /\b(what|whats|which)\b/i.test(message)) return askGrounded('How do I get started?');
+      return askGrounded(message);
     }
-    return { ok: true, ...intakeTurn(input, { places }) };
+    const turn = intakeTurn(input, { places });
+    // Not a business detail and not an answer to the question: the owner may be talking, not answering, so try the grounded helper.
+    if (said && turn.note === 'no-facts' && /\b(confused|don'?t understand|do not understand|lost|stuck|no idea)\b/i.test(message)) {
+      return reply('No problem. Tell me, in your own words, what kind of business you want to start, for example "a food truck in Spokane". Or tap one of the answers below. You can also use the step-by-step form instead.');
+    }
+    if (said && turn.note === 'no-facts' && !/^(yes|no|ok|okay|yeah|yep|nope|sure|what|huh)\b[\s!.?]*$/i.test(message)) return askGrounded(message);
+    // Some businesses need licenses this demo has no rules for. Say so now instead of staying silent.
+    if (said && hasFacts && SPECIAL.test(message) && turn.reply) {
+      turn.reply += ' One more thing: some businesses, such as those that sell alcohol or run child care, need special licenses from other agencies. This demo has no rules for those, so ask the agency.';
+    }
+    return { ok: true, ...turn };
   });
 
   route('POST', '/api/intake/plan', async ({ body }) => {

@@ -137,6 +137,18 @@ export function topicList(rules) {
 
 // Topics this demo has no rule or guide for. Saying so is better than matching a nearby rule by a shared word like "register".
 const OUT_OF_SCOPE = /\b(trade ?marks?|patents?|copyrights?|visas?|immigration|green card|annual report|weather|stock|invest(ing|ment)?|bankrupt(cy)?|divorce|lawsuit|sue)\b/i;
+const OTHER_STATE = /\b(oregon|idaho|california|texas|new york|florida|alaska|nevada|montana|other states?|another state|outside (of )?washington)\b/i;
+const COST_TOTAL = /\bhow much\b[^.?!]{0,25}\b(all (of )?(this|it)|everything|in total|total|altogether|overall|starting|to start|the whole)\b|\b(total|overall) cost\b|\bhow much will (this|it|all)\b/i;
+const TIME_TOTAL = /\bhow long\b[^.?!]{0,30}\b(until|before|till|to) (i can )?(open|start|launch|get going|finish)\b|\bhow long (will|does) (all (of )?(this|it)|this whole|everything|the whole)\b|\bhow soon\b/i;
+function costTotalAnswer() {
+  return { answer: "I can't give a total. DOR says its license application fee varies and each endorsement has its own fee, and DOR explains how to work out the fee. This demo has no verified fee amounts for the other steps, so I won't guess. Check each step's agency page for its current fee.", links: [], matched: [], mode: 'grounded', suggestions: ['How much is the business license fee?', 'How do I get started?'] };
+}
+function timeTotalAnswer() {
+  return { answer: "I can't promise an opening date. The only times recorded here are: DOR says online business license applications take about 10 business days, and L&I contractor registration by mail takes 3 to 4 weeks. The agencies do not publish a time for the other steps. Your road to opening day shows these, and marks everything else as time not published.", links: [], matched: [], mode: 'grounded', suggestions: ['How do I get started?', 'What is my next step?'] };
+}
+function otherStateAnswer() {
+  return { answer: 'This demo covers Washington State only. I have no rules for other states. Please check with that state\'s own business agencies.', links: [], matched: [], mode: 'fallback', suggestions: ['How do I get started?', 'Do I need a business license?'] };
+}
 function outOfScope() {
   return {
     answer: "That is outside what this demo covers. I only use the written rules and guides in this app, and none of them cover that topic. Please ask the relevant agency, or try the Sources page. I can help with the business license, Secretary of State filing, contractor registration, workers' compensation, employer taxes, new hire reporting and county health permits.",
@@ -402,7 +414,7 @@ function guideAdvance(conversation, rules) {
 
 // ---- Extra conversation intents (capabilities, limits, progress, pending, hiring, repeat) ----
 const CAPS = /\bwhat can you (help|do)\b|\bhow can you help\b|\bwhat do you do\b|\bwhat are you\b/i;
-const SUBMIT_FOR_ME = /\b(submit|file|apply|register|sign me up|sign up|pay|fill (it |this |that )?(in|out)|send)\b.{0,40}\bfor me\b|\b(can|could|will|would) you (submit|file|apply|register|pay|send|do (it|that|this) for me)\b/i;
+const SUBMIT_FOR_ME = /\b(fill|complete)\b[^.?!]{0,30}\bfor me\b|\bcan (u|you)\b[^.?!]{0,15}\b(fill|submit|apply|file|register)\b|\b(submit|file|apply|register|sign me up|sign up|pay|fill (it |this |that )?(in|out)|send)\b.{0,40}\bfor me\b|\b(can|could|will|would) you (submit|file|apply|register|pay|send|do (it|that|this) for me)\b/i;
 const GUARANTEE = /\b(guarantee|guaranteed|promise|100 ?%|every legal requirement|fully compliant|legally safe|sure i('m| am) (compliant|legal)|legal advice|lawyer|attorney)\b|\bmeets? (all|every) (legal )?requirement/i;
 const WHICH = /\b(which (one|should i|do i)|what('s| is) the difference|which is (better|first|right|correct))\b/i;
 const REPEAT = /\b(explain|repeat|say|tell me|show)\b.{0,25}\b(again|once more)\b|\bagain\b|\bi (don'?t|do not) (understand|get)\b|\bwhat do you mean\b|\bcan you (clarify|rephrase)\b|^explain (that|this|it)( step)?[\s?.!]*$/i;
@@ -563,6 +575,9 @@ export async function answerQuestion({ message, conversation = [], rules, checkl
   if (THANKS.test(message.trim())) return { answer: 'You are welcome. Ask me about any step, its fees or timing, or say "what is my next step?" anytime.', links: [], matched: [], mode: 'grounded', suggestions: ['What is my next step?', 'How do I get started?'] };
   if (BYE.test(message.trim())) return { answer: 'Good luck with your business. Confirm each requirement with the agency before you apply. I am here if you have more questions.', links: [], matched: [], mode: 'grounded' };
   if (OUT_OF_SCOPE.test(message)) return outOfScope();
+  if (OTHER_STATE.test(message)) return otherStateAnswer();
+  if (COST_TOTAL.test(message)) return costTotalAnswer();
+  if (TIME_TOTAL.test(message)) return timeTotalAnswer();
   if (CAPS.test(message)) return capabilitiesAnswer();
   if (SUBMIT_FOR_ME.test(message)) return limitAnswer('submit', rules, checklist, message);
   if (GUARANTEE.test(message)) return limitAnswer('guarantee', rules, checklist, message);
@@ -641,6 +656,14 @@ export async function answerQuestion({ message, conversation = [], rules, checkl
     const top = scoreRules(rules, message)[0];
     // A broad question gets the overview unless it clearly names one step.
     if (!top || top.score < 5 || START.test(message) || OVERVIEW.test(message)) return startAnswer(rules, checklist);
+  }
+
+  // A "what is X" question about a word none of the rules or guides use gets an honest "not covered", not the nearest rule.
+  if (/^\s*(what('?s| is| are)|whats|define|meaning of)\b/i.test(message)) {
+    const vocab = new Set(rules.flatMap((r) => [...tokens(ruleText(r)), ...(SYNONYMS[r.id] || []).map(stem)]));
+    const GENERIC = new Set(['business', 'number', 'kind', 'type', 'thing', 'mean', 'meaning', 'difference', 'new', 'small', 'step', 'steps']);
+    const unknown = fixTypos(tokens(message), vocab).filter((w) => !GENERIC.has(w) && !vocab.has(w));
+    if (unknown.length && !(scoreRules(rules, message)[0]?.score >= 6)) return fallback(rules);
   }
 
   let ranked = scoreRules(rules, message);

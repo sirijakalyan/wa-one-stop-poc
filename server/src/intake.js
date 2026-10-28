@@ -79,7 +79,7 @@ function moneyFrom(text) {
 const ACTIVITY_PHRASES = [
   'food truck', 'restaurant', 'coffee shop', 'cafe', 'bakery', 'catering', 'bar', 'brewery', 'remodeling', 'roofing', 'framing',
   'plumbing', 'electrical', 'landscaping', 'construction', 'cleaning', 'salon', 'barbershop', 'consulting', 'photography', 'retail shop',
-  'online store', 'daycare', 'gym', 'bookkeeping',
+  'online store', 'daycare', 'gym', 'bookkeeping', 'plumber', 'electrician', 'roofer', 'carpenter', 'handyman', 'tutor', 'photographer', 'hair salon', 'nail salon',
 ];
 
 function activityPhrase(text) {
@@ -128,7 +128,7 @@ export function extractFacts(text, places) {
   }
 
   const countMatch = /\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:more\s+)?(?:people|workers|employees|staff|helpers|cooks|servers|hires?|team members)\b/i.exec(raw);
-  if (/\b(no employees|without employees|not hiring|won'?t hire|don'?t (?:plan to )?hire|do not (?:plan to )?hire|no hiring|just me|by myself|on my own|solo|myself only)\b/i.test(t)) {
+  if (/\b(no employees|no staff|no workers|without employees|(?:don'?t|do not) have (?:any )?(?:employees|staff|workers)|not hiring|won'?t hire|don'?t (?:plan to )?hire|do not (?:plan to )?hire|no hiring|just me|by myself|on my own|solo|myself only)\b/i.test(t)) {
     found.hiring = 'no';
   } else if (/\b(hire|hiring|employees?|staff|workers?|team members)\b/i.test(t) || countMatch) {
     found.hiring = 'yes';
@@ -375,7 +375,7 @@ function finishTurn(card, ack) {
   return finish(card, '', { ack, ask: nextAsk(card) });
 }
 
-function finish(card, reply, { ask = null, ack = '', chips = null } = {}) {
+function finish(card, reply, { ask = null, ack = '', chips = null, note = '' } = {}) {
   const complete = isComplete(card);
   if (complete) {
     return {
@@ -385,7 +385,7 @@ function finish(card, reply, { ask = null, ack = '', chips = null } = {}) {
     };
   }
   const text = reply || [ack, ask?.question].filter(Boolean).join(' ');
-  return { card, reply: text, ask: ask || null, chips: chips ?? ask?.chips ?? [], awaiting: ask ? 'answer' : null, complete: false };
+  return { card, reply: text, ask: ask || null, chips: chips ?? ask?.chips ?? [], awaiting: ask ? 'answer' : null, complete: false, ...(note ? { note } : {}) };
 }
 
 // ---- Plan and timeline ---------------------------------------------------------------------------------------------

@@ -311,3 +311,43 @@ test('API: real questions get grounded answers, and out-of-scope ones are said t
     await app.stop();
   }
 });
+
+test('API: how real people talk, typed or spoken, gets a sensible reply', async () => {
+  const app = await startApp();
+  try {
+    const ask = async (message, extra = {}) => (await app.call('POST', '/api/intake/turn', { message, card: blankCard(), asking: 'structure', ...extra })).body;
+    const cases = [
+      ['hi', /answer questions/i, /did not catch/i],
+      ['thanks', /welcome/i, /did not catch/i],
+      ['i wanna start a business', /Secretary of State/i, /did not catch/i],
+      ['i need a business licence', /business license/i, /did not catch/i],
+      ['im confused', /No problem/i, /did not catch/i],
+      ['whats the first thing i should do', /Secretary of State/i, /No business is selected/i],
+      ['what should i do next', /Secretary of State/i, /No business is selected/i],
+      ['i dont have any employees do i still need workers comp', /workers' compensation/i, /No business is selected/i],
+      ['how much will all this cost me', /can't give a total/i, /don't have that/i],
+      ['how long until i can open', /10 business days/i, /don't have that/i],
+      ['can u fill the forms for me', /can't submit/i, /don't have that/i],
+      ['are you a real person', /AI guide/i, /Register as a contractor/i],
+      ['is this official', /not an official/i, /Wizard/i],
+      ['does this work in oregon', /Washington State only/i, /don't have that/i],
+      ['what is a seasonal business', /don't have that/i, /File your business entity/i],
+      ['what is a UBI number', /Unified Business Identifier/i, /don't have that/i],
+      ['i am a plumber what do i need', /contractor/i, /I heard/],
+    ];
+    for (const [q, yes, no] of cases) {
+      const r = await ask(q);
+      assert.match(r.reply, yes, q);
+      assert.doesNotMatch(r.reply, no, q);
+    }
+    for (const q of ['yes', 'ok']) assert.match((await ask(q)).reply, /did not catch/i, `${q}: a bare word is not a question`);
+    const a = await ask('LLC');
+    assert.equal(a.card.values.structure, 'llc');
+    const b = await ask('i want to open a bakery in Tacoma and i dont have any employees', { asking: null });
+    assert.equal(b.card.values.hiring, 'no');
+    const c = await ask('i want to sell alcohol at my restaurant', { asking: null });
+    assert.match(c.reply, /special licenses/i);
+  } finally {
+    await app.stop();
+  }
+});
