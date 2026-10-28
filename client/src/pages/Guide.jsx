@@ -10,7 +10,7 @@ import GuideArt from '../components/GuideArt.jsx';
 import ExternalLink from '../components/ExternalLink.jsx';
 import Icon from '../components/Icon.jsx';
 import { ErrorNote } from '../components/Parts.jsx';
-import { canListen, canSpeak, createListener, listenErrorText, speak, stopSpeaking } from '../voice.js';
+import { canListen, canSpeak, createListener, listenErrorText, speak, speakable, stopSpeaking } from '../voice.js';
 import { answersFromCard, confirmedCount, FIELD_LABELS } from '../guideCard.js';
 
 const GREETING = { id: 'hello', role: 'guide', text: "Hi, I'm here to help you start your Washington business. Tell me what you want to do, in your own words." };
@@ -96,7 +96,7 @@ export default function Guide() {
       if (messages[i].role !== 'guide') continue;
       speakingCount.current += 1;
       setSpeaking(true);
-      speak(messages[i].text, {
+      speak(speakable(messages[i].text), {
         onEnd: () => {
           speakingCount.current = Math.max(0, speakingCount.current - 1);
           if (!speakingCount.current) setSpeaking(false);
@@ -111,7 +111,8 @@ export default function Guide() {
     const l = listenerRef.current;
     if (micOn && !speaking && !busy) { l?.start(); setListening(true); } else { l?.stop(); setListening(false); }
   }, [micOn, speaking, busy, tick]);
-  useEffect(() => () => { stopSpeaking(); listenerRef.current?.stop(); }, []);
+  // On leaving the page, stop talking and listening. Resetting the counters also makes React's dev double-mount start the greeting again after its cancel.
+  useEffect(() => () => { stopSpeaking(); listenerRef.current?.stop(); spokenIdx.current = 0; speakingCount.current = 0; }, []);
 
   function toggleMic() {
     setVoiceMsg('');

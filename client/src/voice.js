@@ -12,6 +12,17 @@ function pickVoice() {
   return en.find((v) => /natural|online|google|samantha|aria|jenny/i.test(v.name)) || en[0] || voices.find((v) => /^en/i.test(v.lang)) || null;
 }
 
+// What gets read aloud is shorter than what is on screen: no agency names in brackets, no "source checked" footers, at most about
+// three sentences. The full text stays on screen and in the captions, so nothing is lost.
+export function speakable(text, max = 340) {
+  const lines = String(text || '').split(/\n+/).map((l) => l.trim()).filter((l) => l && !/^(source checked|these are the agency|not yet approved|confirm with the agency|related steps|steps:|\d+\.|-\s)/i.test(l));
+  let t = lines.join(' ').replace(/\s*\([^)]*\)/g, '').replace(/\s+/g, ' ').replace(/\bL&I\b/g, 'L and I').replace(/\bDOR\b/g, 'D O R').replace(/\bUBI\b/g, 'U B I').trim();
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max);
+  const end = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('? '), cut.lastIndexOf('! '));
+  return (end > 80 ? cut.slice(0, end + 1) : cut.replace(/\s+\S*$/, '') + '.').trim();
+}
+
 // Speak one line. Lines queue up, so a reply and its follow-up question are read in order.
 export function speak(text, { onStart, onEnd } = {}) {
   if (!canSpeak() || !text) return;
