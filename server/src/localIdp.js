@@ -1,6 +1,7 @@
 // Identity provider kept in the app's own store (demo, local development and the in-page preview).
 // The AWS version is in cognito.js. Both give service.js the same small interface.
 // No Node imports here: this file also runs inside the browser preview.
+import { renderEmail } from './emailTemplate.js';
 import { hashPassword, verifyPassword, randomToken, sha256, normalizeEmail, validEmail, passwordProblem, AuthError } from './auth.js';
 
 const SESSION_MS = 30 * 24 * 3600 * 1000;
@@ -77,7 +78,13 @@ export function createLocalIdp({ store, adminEmails = [], mailer = null, publicU
       const link = `${publicUrl}/reset-password?token=${token}`;
       if (mailer) {
         try {
-          await mailer.send({ to: a.email, subject: 'Reset your password', text: `Hello ${a.name},\n\nUse this link to choose a new password. It works for one hour and only once:\n${link}\n\nIf you did not ask for this, ignore this email. Your password stays the same.\n\n${footer}` });
+          const m = renderEmail({
+            heading: 'Choose a new password',
+            paragraphs: [`Hello ${a.name},`, 'We got a request to reset the password for your account. The link below works once and expires in one hour.'],
+            button: { label: 'Choose a new password', url: link },
+            note: 'If you did not ask for this, ignore this email. Your password stays the same.',
+          });
+          await mailer.send({ to: a.email, subject: 'Reset your password', text: m.text, html: m.html });
         } catch (err) {
           console.error('reset email failed:', err.message);
         }

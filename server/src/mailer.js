@@ -4,7 +4,7 @@
 //                          Needs SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS. EMAIL_FROM defaults to SMTP_USER.
 //   EMAIL_PROVIDER=sendgrid sends through SendGrid. Needs SENDGRID_API_KEY and EMAIL_FROM (a sender you verified in SendGrid).
 //   EMAIL_PROVIDER=resend  sends through Resend (https://resend.com). Needs RESEND_API_KEY and EMAIL_FROM.
-// Add another provider by returning { mode, send({ to, subject, text }) } from createMailer.
+// Add another provider by returning { mode, send({ to, subject, text, html }) } from createMailer. html is optional.
 import nodemailer from 'nodemailer';
 
 export function createMailer(env = process.env) {
@@ -29,9 +29,9 @@ export function createMailer(env = process.env) {
     });
     return {
       mode: 'live',
-      async send({ to, subject, text }) {
+      async send({ to, subject, text, html }) {
         try {
-          await transport.sendMail({ from: env.EMAIL_FROM || env.SMTP_USER, to, subject, text });
+          await transport.sendMail({ from: env.EMAIL_FROM || env.SMTP_USER, to, subject, text, ...(html ? { html } : {}) });
         } catch (err) {
           // Never put the password or the full server reply in the error. The code is enough to find the cause.
           throw new Error(`SMTP send failed (${err.code || err.responseCode || 'error'}). Check SMTP_HOST, port, user and password in server/.env.`);
@@ -47,11 +47,16 @@ export function createMailer(env = process.env) {
     const sender = m ? { email: m[2], ...(m[1] ? { name: m[1].trim() } : {}) } : { email: env.EMAIL_FROM.trim() };
     return {
       mode: 'live',
-      async send({ to, subject, text }) {
+      async send({ to, subject, text, html }) {
         const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
           method: 'POST',
           headers: { Authorization: `Bearer ${env.SENDGRID_API_KEY}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ personalizations: [{ to: [{ email: to }] }], from: sender, subject, content: [{ type: 'text/plain', value: text }] }),
+          body: JSON.stringify({
+            personalizations: [{ to: [{ email: to }] }], from: sender, subject,
+            content: [{ type: 'text/plain', value: text }, ...(html ? [{ type: 'text/html', value: html }] : [])],
+            // Links in the email stay the real addresses (SendGrid would otherwise rewrite every link to a long tracking address), and no opens are tracked.
+            tracking_settings: { click_tracking: { enable: false, enable_text: false }, open_tracking: { enable: false } },
+          }),
         });
         // SendGrid answers 202 when it accepts the message. The key never appears in an error message.
         if (res.status !== 202) throw new Error(`SendGrid refused the message (HTTP ${res.status}). Check the key and that EMAIL_FROM is a verified sender.`);
@@ -63,11 +68,11 @@ export function createMailer(env = process.env) {
     if (!env.RESEND_API_KEY) throw new Error('EMAIL_PROVIDER=resend needs RESEND_API_KEY in server/.env');
     return {
       mode: 'live',
-      async send({ to, subject, text }) {
+      async send({ to, subject, text, html }) {
         const res = await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ from, to: [to], subject, text }),
+          body: JSON.stringify({ from, to: [to], subject, text, ...(html ? { html } : {}) }),
         });
         if (!res.ok) throw new Error(`Email provider refused the message (HTTP ${res.status}).`);
       },

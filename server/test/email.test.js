@@ -47,9 +47,13 @@ test('confirm link turns reminders on, due reminders send once, with unsubscribe
   const first = await service.runReminders();
   assert.equal(first.sent, 1);
   const mail = sent[before];
-  assert.match(mail.text, /Demo only, not official guidance/);
+  assert.doesNotMatch(mail.text + mail.html, /demo/i, 'no "demo" wording in the email');
+  assert.match(mail.text, /Please confirm every date and requirement with the agency/);
   assert.match(mail.text, /\/api\/email\/unsubscribe\?token=/);
-  assert.match(mail.subject, /in 3 days/);
+  assert.match(mail.html, /<a href="[^"]*\/api\/email\/unsubscribe\?token=[0-9a-f]+"[^>]*>Stop these emails<\/a>/);
+  assert.match(mail.html, /Open the official page/);
+  assert.match(mail.subject, /Action needed: renew .* in 3 days/);
+  assert.match(mail.text, /You need to renew ".+" in 3 days\./);
   // Same window again: nothing new is sent.
   assert.equal((await service.runReminders()).sent, 0);
   assert.equal(sent.length, before + 1);
@@ -219,4 +223,18 @@ test('SENDGRID_FROM_EMAIL and SENDGRID_FROM_NAME work without EMAIL_PROVIDER or 
     assert.equal(calls[0].url, 'https://api.sendgrid.com/v3/mail/send');
     assert.deepEqual(calls[0].body.from, { email: 'hr@example.com', name: 'WA Business One-Stop-Shop' });
   } finally { globalThis.fetch = realFetch; }
+});
+
+test('the SendGrid message carries an HTML part and turns link and open tracking off', async () => {
+  const calls = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => { calls.push({ url, body: JSON.parse(init.body) }); return { status: 202 }; };
+  try {
+    const m = createMailer({ SENDGRID_API_KEY: 'SG.test', SENDGRID_FROM_EMAIL: 'hr@example.com', SENDGRID_FROM_NAME: 'WA Business One-Stop-Shop' });
+    await m.send({ to: 'a@b.co', subject: 's', text: 'plain', html: '<p>rich</p>' });
+  } finally { globalThis.fetch = realFetch; }
+  const b = calls[0].body;
+  assert.deepEqual(b.content.map((c) => c.type), ['text/plain', 'text/html']);
+  assert.equal(b.tracking_settings.click_tracking.enable, false);
+  assert.equal(b.tracking_settings.open_tracking.enable, false);
 });

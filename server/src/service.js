@@ -1,3 +1,4 @@
+import { renderEmail, renderMessagePage, longDate } from './emailTemplate.js';
 import { normalizeEmail, AuthError } from './auth.js';
 import { createLocalIdp } from './localIdp.js';
 // Transport-neutral API. Express (server/src/app.js) and the in-browser preview
@@ -114,23 +115,31 @@ export function createService(store, options = {}) {
   const mailer = options.mailer || null;
   const publicUrl = String(options.publicUrl || 'http://localhost:3001').replace(/\/$/, '');
   const emailMode = mailer ? mailer.mode : 'off';
-  const FOOTER = 'Demo only, not official guidance. Confirm every date and requirement with the agency.';
+  const FOOTER = 'Please confirm every date and requirement with the agency before you act.';
   const linkTo = (kind, token) => `${publicUrl}/api/email/${kind}?token=${token}`;
 
   async function sendReminderEmail(to, token, rule, date, days) {
     const when = days === 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days`;
-    await mailer.send({
-      to,
-      subject: `Reminder: ${rule.title} renewal ${when}`,
-      text: [
-        `You entered ${date} as the renewal date for "${rule.title}".`,
-        `That is ${when}. Check the exact date and how to renew with the agency${rule.agency ? ` (${rule.agency})` : ''}.`,
-        rule.apply?.url ? `Official page: ${rule.apply.url}` : rule.source?.url ? `Official page: ${rule.source.url}` : '',
-        '',
-        FOOTER,
-        `Stop these emails: ${linkTo('unsubscribe', token)}`,
-      ].filter((l, i, a) => l || a[i - 1]).join('\n'),
+    const agency = rule.agency || '';
+    const page = rule.apply?.url || rule.source?.url || '';
+    const { text, html } = renderEmail({
+      heading: days === 0 ? 'Your renewal is due today' : 'Your renewal is coming up',
+      paragraphs: [
+        { text: `You need to renew "${rule.title}" ${when}.`, bold: [`"${rule.title}"`, when] },
+        `Please check the exact deadline and the renewal steps with the agency${agency ? ` (${agency})` : ''} so nothing lapses.`,
+      ],
+      facts: [
+        { label: 'What to renew', value: rule.title },
+        { label: 'Renewal date', value: longDate(date) },
+        { label: 'Time left', value: days === 0 ? 'Due today' : days === 1 ? '1 day' : `${days} days` },
+        ...(agency ? [{ label: 'Agency', value: agency }] : []),
+      ],
+      button: page ? { label: 'Open the official page', url: page } : undefined,
+      note: `This date is the one you entered in ${'WA Business One-Stop-Shop'}. ${FOOTER}`,
+      footer: 'You get this because renewal reminders are on for your account.',
+      footerLinks: [{ label: 'Stop these emails', url: linkTo('unsubscribe', token) }],
     });
+    await mailer.send({ to, subject: `Action needed: renew "${rule.title}" ${when}`, text, html });
   }
 
   // Sends reminders that are due. Safe to run often: each (rule, date, window) is sent once.
@@ -531,17 +540,15 @@ export function createService(store, options = {}) {
     const token = randomToken();
     await store.putSettings(v, { emailOptIn: true, email, emailConfirmed: false, emailToken: token });
     try {
-      await mailer.send({
-        to: email,
-        subject: 'Confirm your renewal reminder emails',
-        text: [
-          'Someone asked for renewal reminder emails from the WA Business One-Stop-Shop demo using this address.',
-          `Confirm: ${linkTo('confirm', token)}`,
-          'If this was not you, ignore this message. No reminders are sent until you confirm.',
-          `Stop: ${linkTo('unsubscribe', token)}`,
-          '', FOOTER,
-        ].join('\n'),
+      const conf = renderEmail({
+        heading: 'Confirm your renewal reminder emails',
+        paragraphs: ['Someone asked for renewal reminder emails from WA Business One-Stop-Shop using this address.', 'Reminders start only after you confirm.'],
+        button: { label: 'Confirm my email', url: linkTo('confirm', token) },
+        note: 'If this was not you, ignore this message and nothing will be sent.',
+        footer: FOOTER,
+        footerLinks: [{ label: 'Stop', url: linkTo('unsubscribe', token) }],
       });
+      await mailer.send({ to: email, subject: 'Confirm your renewal reminder emails', text: conf.text, html: conf.html });
     } catch (err) {
       console.error('[email] confirmation failed:', err.message);
       await store.putSettings(v, { emailOptIn: false, email: '', emailConfirmed: false, emailToken: '' });

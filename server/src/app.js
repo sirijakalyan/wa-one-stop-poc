@@ -1,3 +1,4 @@
+import { renderMessagePage } from './emailTemplate.js';
 import express from 'express';
 import cors from 'cors';
 import { DISCLAIMER } from './disclaimer.js';
@@ -75,7 +76,7 @@ export function createApp({ dataDir, store = createStore(dataDir), adminKey = pr
   });
 
   // Pages opened from links inside emails (confirm and unsubscribe). Plain HTML, no scripts.
-  const page = (title, message) => `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><body style="font-family:system-ui,sans-serif;max-width:32rem;margin:3rem auto;padding:0 1rem;line-height:1.5"><h1>${title}</h1><p>${message.replace(/[<>&]/g, '')}</p><p style="color:#555;font-size:.9rem">Demo only, not official guidance.</p></body>`;
+  const page = renderMessagePage;
   for (const [kind, title] of [['confirm', 'Reminder emails'], ['unsubscribe', 'Unsubscribe']]) {
     app.get(`/api/email/${kind}`, async (req, res, next) => {
       try {
