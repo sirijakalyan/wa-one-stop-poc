@@ -116,9 +116,20 @@ describe('questionnaire', () => {
 });
 
 describe('screens with no saved checklist', () => {
-  it('checklist and progress screens invite you to start', async () => {
+  it('old checklist and progress addresses open My business, which invites you to start', async () => {
     renderAt('/checklist');
-    await waitFor(() => expect(screen.getByText(/not built a checklist yet/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/appear here once you save a plan/i)).toBeInTheDocument());
+  });
+});
+
+describe('old addresses still work', () => {
+  it.each(['/dashboard', '/checklist'])('%s redirects to My business', async (path) => {
+    renderAt(path);
+    expect(await screen.findByRole('heading', { level: 1, name: /My business/ })).toBeInTheDocument();
+  });
+  it.each(['/guide', '/questionnaire', '/notifications', '/sources', '/admin'])('%s still opens', async (path) => {
+    renderAt(path);
+    expect(await screen.findByRole('heading', { level: 1 })).toBeInTheDocument();
   });
 });
 

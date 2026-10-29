@@ -7,7 +7,7 @@ import { Meter } from '../components/Parts.jsx';
 import CityCombobox, { countyForTypedCity } from '../components/CityCombobox.jsx';
 import { CATS, STRUCTURES, YN, YN_FIELDS, WA_COUNTIES, stepList } from '../questions.js';
 
-export default function Questionnaire() {
+export default function Questionnaire({ embedded = false } = {}) {
   const navigate = useNavigate();
   const t = useT();
   const { answers, setAnswers, label, setLabel, step, setStep, catsAuto, setCatsAuto } = useApp();
@@ -44,7 +44,7 @@ export default function Questionnaire() {
       setBusy(true);
       try {
         await api.saveChecklist(answers, label);
-        navigate('/checklist');
+        navigate('/my-business');
       } catch (e) {
         setErr(e.message);
       } finally {
@@ -158,7 +158,9 @@ export default function Questionnaire() {
 
   return (
     <div className="panel">
-      <h1 className="sr-only" tabIndex={-1}>{t('qn.h1')}</h1>
+      {embedded
+        ? <h2 className="sr-only" tabIndex={-1}>{t('qn.h1')}</h2>
+        : <h1 className="sr-only" tabIndex={-1}>{t('qn.h1')}</h1>}
       <p className="step-label">{t('qn.label', index + 1, list.length)}</p>
       <Meter percent={percent} label={t('qn.progress')} />
       <fieldset>

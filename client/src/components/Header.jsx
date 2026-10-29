@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, Link, useLocation } from 'react-router-dom';
 import { ROUTES } from '../routes.js';
 import Icon from './Icon.jsx';
+import NotificationBell from './NotificationBell.jsx';
 import { useLang, useT } from '../i18n.js';
 
 // Owner navigation only. On a phone the links sit behind a Menu button so the header stays one calm row.
@@ -29,6 +30,7 @@ export default function Header() {
           <Icon name={open ? 'close' : 'menu'} size={20} />
           <span>{open ? t('menu.close') : t('menu.open')}</span>
         </button>
+        <NotificationBell />
         <button type="button" className="lang-btn" lang={lang === 'es' ? 'en' : 'es'} aria-label={t('lang.switchTo')} onClick={() => setLang(lang === 'es' ? 'en' : 'es')}>
           <Icon name="globe" size={18} />
           <span className="lang-full">{t('lang.button')}</span>

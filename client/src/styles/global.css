@@ -665,3 +665,77 @@ footer .api-status { background: transparent; color: #a9bdd4; border-color: rgba
 @media (prefers-reduced-motion: reduce) {
   .art-wave, .art-blink, .plan-item.is-new { animation: none; }
 }
+
+/* ---------- v2.1: home workspace, My business, notification bell ---------- */
+/* Compact hero: the conversation is the page, so the banner stays short. */
+.guide-hero { padding: clamp(1.1rem, 3vw, 1.75rem); margin-bottom: 1.25rem; border-radius: 18px; background: linear-gradient(160deg, var(--navy-800), var(--navy-950)); }
+.guide-hero .hero-grid { grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); gap: 1.25rem 2rem; }
+.guide-hero .hero-grid::before { display: none; }
+.guide-hero h1 { font-size: clamp(1.7rem, 3.6vw, 2.4rem); margin-bottom: .5rem; }
+.guide-hero .lead { font-size: 1.02rem; margin: 0; }
+.guide-hero .guide-art { width: min(100%, 9.5rem); margin-top: 0; }
+.guide-hero .guide-bubble { padding: .65rem .9rem; max-width: 15rem; }
+.guide-hero .guide-bubble p { font-size: .95rem; }
+.guide-hero .ways-in { margin: 1rem 0 .4rem; }
+.guide-hero .ways-in .btn { min-height: 46px; font-size: .98rem; }
+.guide-hero .hero-note, .guide-hero .privacy-note { font-size: .86rem; margin-top: .5rem; }
+.guide-hero .one-sentence { margin-top: .9rem; }
+/* The chosen way in reads as selected without relying on colour alone: it gets a teal fill and a check mark. */
+.ways-in .btn.is-current, .hero .ways-in .btn-primary.is-current { background: var(--teal-500); border-color: var(--teal-500); color: #fff; box-shadow: 0 0 0 3px rgba(255,255,255,.35); }
+.ways-in .btn.is-current::before { content: "\2713"; margin-right: .45rem; font-weight: 800; }
+.workspace { margin: 0 0 2rem; scroll-margin-top: 1rem; border-radius: var(--radius-lg); }
+.workspace:focus { outline: none; }
+.workspace:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+.workspace:has(> .guide-page), .workspace:has(> form), .workspace:has(> .q-wrap), .workspace:has(> div) { background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); padding: clamp(.9rem, 2.5vw, 1.5rem); }
+.workspace-hint { margin: .75rem 0 0; text-align: center; }
+.guide-page.is-embedded { gap: .85rem; }
+.guide-page.is-embedded h2 { font-size: 1.25rem; margin: 0; }
+
+/* My business */
+.stat-row { list-style: none; margin: 1rem 0 .4rem; padding: 0; display: grid; gap: .75rem; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.stat-row li { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: .8rem 1rem; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: .1rem; }
+.stat-row strong { font-family: var(--font-display); font-size: 1.8rem; line-height: 1.1; color: var(--navy-900); }
+.stat-row span { color: var(--muted); font-size: .9rem; font-weight: 600; }
+.stat-row li:first-child { border-top: 3px solid var(--teal-500); }
+.stat-row li:nth-child(3) { border-top: 3px solid var(--pending-line); }
+
+/* Notification bell */
+.bell { position: relative; order: 3; }
+.lang-btn { order: 4; }
+.bell-btn { position: relative; display: inline-grid; place-items: center; width: 44px; height: 44px; border: 1.5px solid rgba(255,255,255,.35); border-radius: 99px; background: transparent; color: #fff; cursor: pointer; }
+.bell-btn:hover, .bell-btn[aria-expanded="true"] { background: rgba(255,255,255,.12); }
+.bell-badge { position: absolute; top: -5px; right: -5px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 99px; background: #ffd978; color: var(--navy-950); font-size: .75rem; font-weight: 800; display: grid; place-items: center; border: 2px solid var(--navy-900); }
+.bell-pop { position: absolute; right: 0; top: calc(100% + .6rem); width: min(23rem, calc(100vw - 2rem)); max-height: min(70vh, 30rem); overflow: auto; z-index: 30; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: var(--radius-lg); box-shadow: var(--shadow-lift); padding: .75rem .9rem; }
+.bell-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: .4rem; }
+.bell-x { display: inline-grid; place-items: center; width: 36px; height: 36px; border: 0; background: transparent; color: var(--muted); border-radius: 99px; cursor: pointer; }
+.bell-x:hover { background: var(--surface-2); }
+.bell-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
+.bell-list li { border: 1px solid var(--line); border-left: 4px solid var(--teal-500); border-radius: var(--radius); padding: .55rem .7rem; background: var(--surface); }
+.bell-list li.read { border-left-color: var(--line-strong); background: var(--surface-2); color: var(--muted); }
+.bell-list p { margin: .15rem 0; font-size: .92rem; }
+.bell-top { display: flex; gap: .35rem; flex-wrap: wrap; margin-bottom: .25rem; }
+.bell-all { display: block; margin-top: .7rem; font-weight: 650; }
+.bell-pop .linklike { background: none; border: 0; padding: .3rem 0; min-height: 44px; color: var(--link); font: inherit; font-weight: 650; text-decoration: underline; cursor: pointer; }
+.bell-pop :focus-visible { outline-color: var(--focus); }
+
+@media (max-width: 52rem) {
+  .guide-hero .hero-grid { grid-template-columns: minmax(0, 1fr); }
+  .guide-hero .guide-stage { flex-direction: row; align-items: center; gap: .8rem; }
+  .guide-hero .guide-art { width: 4.5rem; flex: none; margin: 0; order: -1; }
+  .guide-hero .ai-label { display: none; }
+  .guide-hero .guide-bubble::after { display: none; }
+  .stat-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bell-pop { position: fixed; left: 1rem; right: 1rem; top: 4.5rem; width: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .art-wave, .art-blink { animation: none; } }
+@media (max-width: 30rem) {
+  .site-head .wrap { flex-wrap: nowrap; gap: .4rem; }
+  .brand { font-size: .88rem; gap: .4rem; min-width: 0; flex: 1 1 auto; }
+  .brand > span:last-child { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.15; }
+  .menu-btn, .lang-btn { padding: 0 .6rem; flex: none; }
+  .lang-btn .lang-full { display: none; }
+  .lang-btn .lang-short { display: inline; }
+  .site-head nav { flex-basis: 100%; }
+  .site-head .wrap { flex-wrap: wrap; }
+  .site-head .wrap > .brand { flex-basis: 0; }
+}

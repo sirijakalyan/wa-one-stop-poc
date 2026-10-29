@@ -17,7 +17,7 @@ const RESTAURANT = { structure: 'llc', desc: 'Neighborhood restaurant serving lu
 async function saveRestaurant(user) {
   const r = await fetch('/api/checklist', { method: 'POST', body: JSON.stringify({ answers: RESTAURANT, label: 'Restaurant' }) });
   expect((await r.json()).saved).toBe(true);
-  await user.click(screen.getByRole('link', { name: 'My checklist' }));
+  await user.click(screen.getByRole('link', { name: 'My business' }));
 }
 
 function renderApp() {
@@ -30,6 +30,9 @@ function renderApp() {
   );
 }
 
+// The My business page shows a step in the summary and in the checklist; tests mean the checklist row.
+const checklistRow = (title) => screen.getAllByText(title).map((e) => e.closest('li')).find((li) => li && within(li).queryByLabelText('Mark as done'));
+
 describe('in-page preview', () => {
   it('builds the restaurant checklist, marks a step done, and shows a rule-change alert after an admin publishes', async () => {
     const user = userEvent.setup();
@@ -40,13 +43,13 @@ describe('in-page preview', () => {
 
     // Checklist from the real engine
     expect(await screen.findByRole('heading', { name: 'Sample checklist: Restaurant' })).toBeInTheDocument();
-    expect(screen.getByText('File your business entity with the Secretary of State')).toBeInTheDocument();
-    expect(screen.getByText('Check for a county health department permit')).toBeInTheDocument();
+    expect(checklistRow('File your business entity with the Secretary of State')).toBeTruthy();
+    expect(checklistRow('Check for a county health department permit')).toBeTruthy();
     expect(screen.queryByText('Register as a contractor with Labor & Industries')).not.toBeInTheDocument();
     expect(screen.getByText('0 of 8 steps marked done')).toBeInTheDocument();
 
     // Mark a step done
-    const sosItem = screen.getByText('File your business entity with the Secretary of State').closest('li');
+    const sosItem = checklistRow('File your business entity with the Secretary of State');
     await user.click(within(sosItem).getByLabelText('Mark as done'));
     expect(await screen.findByText('1 of 8 steps marked done')).toBeInTheDocument();
 
@@ -68,14 +71,21 @@ describe('in-page preview', () => {
     expect(await screen.findByText(/Published as version 2. Simulated notices queued: 1/)).toBeInTheDocument();
 
     // Notification appears
-    await user.click(screen.getByRole('link', { name: 'Notifications' }));
-    expect(await screen.findByText(/Rule changed: Apply for your Washington business license/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^Notifications, / }));
+    const bell = await screen.findByRole('region', { name: 'Notifications' });
+    expect(await within(bell).findByText(/Rule changed: Apply for your Washington business license/)).toBeInTheDocument();
+    // Marking read through the dropdown uses the same API and clears the unread count
+    await user.click(within(bell).getByRole('button', { name: 'Mark read' }));
+    expect(await screen.findByRole('button', { name: 'Notifications, none unread' })).toBeInTheDocument();
+    // The full notifications view is still reachable from the dropdown
+    await user.click(within(bell).getByRole('link', { name: /See all/ }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Simulated notifications' })).toBeInTheDocument();
   });
 
   it('runs the questionnaire to a checklist and keeps the Secretary of State step out for a sole proprietor', async () => {
     const user = userEvent.setup();
     renderApp();
-    await user.click(screen.getByRole('link', { name: 'Use the step-by-step form' }));
+    await user.click(screen.getByRole('button', { name: 'Use the step-by-step form' }));
     await user.click(screen.getByLabelText(/^Sole proprietor/));
     await user.click(screen.getByRole('button', { name: 'Next' })); // structure
     await user.click(screen.getByRole('button', { name: 'Next' })); // description left blank
@@ -87,7 +97,7 @@ describe('in-page preview', () => {
     }
     await user.click(screen.getByRole('button', { name: 'Build my checklist' }));
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Your personalized checklist' })).toBeInTheDocument());
-    expect(screen.getByText('Apply for your Washington business license')).toBeInTheDocument();
+    expect(checklistRow('Apply for your Washington business license')).toBeTruthy();
     expect(screen.queryByText('File your business entity with the Secretary of State')).not.toBeInTheDocument();
   });
 });
@@ -109,15 +119,15 @@ describe('county in the questionnaire and edit-answers flow', () => {
       await user.click(screen.getByRole('button', { name: 'Next' }));
     }
     await user.click(screen.getByRole('button', { name: 'Build my checklist' }));
-    await screen.findByRole('heading', { name: /checklist/i, level: 1 });
-    await screen.findByText('Check for a county health department permit');
+    await screen.findByRole('heading', { name: /checklist/i, level: 2 });
+    await waitFor(() => expect(checklistRow('Check for a county health department permit')).toBeTruthy());
   }
-  const healthItem = () => screen.getByText('Check for a county health department permit').closest('li');
+  const healthItem = () => checklistRow('Check for a county health department permit');
 
   it('asks for city and county, shows the entered county in the review, and keeps the city field', async () => {
     const user = userEvent.setup();
     renderApp();
-    await user.click(screen.getByRole('link', { name: 'Use the step-by-step form' }));
+    await user.click(screen.getByRole('button', { name: 'Use the step-by-step form' }));
     await user.click(screen.getByLabelText(/^Limited liability company/));
     await user.click(screen.getByRole('button', { name: 'Next' }));
     await user.click(screen.getByRole('button', { name: 'Next' }));
@@ -138,7 +148,7 @@ describe('county in the questionnaire and edit-answers flow', () => {
   it('typing "bel" suggests cities; choosing Bellevue fills King County and the review shows both', async () => {
     const user = userEvent.setup();
     renderApp();
-    await user.click(screen.getByRole('link', { name: 'Use the step-by-step form' }));
+    await user.click(screen.getByRole('button', { name: 'Use the step-by-step form' }));
     await user.click(screen.getByLabelText(/^Limited liability company/));
     await user.click(screen.getByRole('button', { name: 'Next' }));
     await user.click(screen.getByRole('button', { name: 'Next' }));

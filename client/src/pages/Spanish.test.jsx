@@ -43,7 +43,7 @@ describe('Spanish', () => {
     const ways = within(screen.getByRole('list', { name: 'Elija cómo empezar' }));
     expect(ways.getByRole('button', { name: 'Hablar con la guía' })).toBeInTheDocument();
     expect(ways.getByRole('button', { name: 'Escribir' })).toBeInTheDocument();
-    expect(ways.getByRole('link', { name: 'Usar el formulario paso a paso' })).toBeInTheDocument();
+    expect(ways.getByRole('button', { name: 'Usar el formulario paso a paso' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Inicio' })).toBeInTheDocument();
     expect(screen.getByRole('note')).toHaveTextContent(/Traducción preliminar al español, pendiente de revisión por una persona/);
     expect(document.documentElement.lang).toBe('es');

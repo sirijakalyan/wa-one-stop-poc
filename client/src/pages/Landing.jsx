@@ -1,29 +1,55 @@
-import { useCallback, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api, useLoad } from '../api.js';
 import { ErrorNote } from '../components/Parts.jsx';
 import Icon from '../components/Icon.jsx';
 import GuideArt from '../components/GuideArt.jsx';
 import { SAMPLES_ES, useT } from '../i18n.js';
+import { useApp } from '../AppContext.jsx';
+import { answersFromCard, confirmedCount } from '../guideCard.js';
+import { blankAnswers } from '../questions.js';
+import Guide from './Guide.jsx';
+import Questionnaire from './Questionnaire.jsx';
 
 const SAMPLE_ICON = { home: 'home', restaurant: 'utensils', contractor: 'hammer' };
 
 // Home: the guide itself, three equal ways in, and a one-sentence start.
 // What the owner types goes to the guide through the router's history state, never through the address bar.
 export default function Landing() {
-  const navigate = useNavigate();
   const t = useT();
+  const { guide, answers, setAnswers, setLabel, setStep, setCatsAuto } = useApp();
+  const [mode, setMode] = useState(null); // null | 'talk' | 'type' | 'form': the guide and the form both live on this page
+  const [startReq, setStartReq] = useState(null);
+  const workRef = useRef(null);
+  const reqId = useRef(0);
   const fetchSamples = useCallback(() => api.samples(), []);
   const { data, error } = useLoad(fetchSamples);
   const [sentence, setSentence] = useState('');
   const samples = data?.samples ?? [];
 
-  const open = (state) => navigate('/guide', { state });
+  // Switching to the form carries over what the guide has confirmed, but only if the form is still empty.
+  function choose(next) {
+    if (next === 'form' && mode !== 'form' && confirmedCount(guide.card) > 0 && JSON.stringify(answers) === JSON.stringify(blankAnswers())) {
+      setAnswers(answersFromCard(guide.card));
+      setLabel('');
+      setCatsAuto(false);
+      setStep(0);
+    }
+    setMode(next);
+  }
+  const send = (text, next = 'type') => {
+    reqId.current += 1;
+    setStartReq({ text, id: `req${reqId.current}` });
+    setMode(next === 'talk' ? 'talk' : 'type');
+  };
   function startWithSentence(e) {
     e.preventDefault();
     const text = sentence.trim();
-    if (text) open({ start: text, mode: 'type' });
+    if (text) { send(text, mode === 'talk' ? 'talk' : 'type'); setSentence(''); }
   }
+  useEffect(() => {
+    if (mode) workRef.current?.focus({ preventScroll: false });
+  }, [mode]);
 
   return (
     <>
@@ -45,13 +71,13 @@ export default function Landing() {
 
             <ul className="ways-in" aria-label={t('home.ways')}>
               <li>
-                <button type="button" className="btn btn-primary" onClick={() => open({ mode: 'talk' })}>{t('home.talk')}</button>
+                <button type="button" className={`btn btn-primary${mode === 'talk' ? ' is-current' : ''}`} aria-pressed={mode === 'talk'} onClick={() => choose('talk')}>{t('home.talk')}</button>
               </li>
               <li>
-                <button type="button" className="btn btn-primary" onClick={() => open({ mode: 'type' })}>{t('home.type')}</button>
+                <button type="button" className={`btn btn-primary${mode === 'type' ? ' is-current' : ''}`} aria-pressed={mode === 'type'} onClick={() => choose('type')}>{t('home.type')}</button>
               </li>
               <li>
-                <Link className="btn btn-primary" to="/questionnaire">{t('home.form')}</Link>
+                <button type="button" className={`btn btn-primary${mode === 'form' ? ' is-current' : ''}`} aria-pressed={mode === 'form'} onClick={() => choose('form')}>{t('home.form')}</button>
               </li>
             </ul>
             <p className="hero-note">{t('home.waysNote')}</p>
@@ -80,6 +106,12 @@ export default function Landing() {
         </div>
       </section>
 
+      <section className="workspace" id="workspace" ref={workRef} tabIndex={-1} aria-label={t('mode.title')}>
+        {mode === 'form' ? <Questionnaire embedded /> : null}
+        {mode === 'talk' || mode === 'type' ? <Guide embedded mode={mode} start={startReq} /> : null}
+        {!mode ? <p className="hint workspace-hint">{t('mode.pick')}</p> : <p className="hint workspace-hint">{t('mode.kept')}</p>}
+      </section>
+
       {t('draft.note') ? <p className="draft-note" role="note">{t('draft.note')}</p> : null}
       <h2 id="samples" tabIndex={-1} style={{ marginTop: 0 }}>{t('home.samplesTitle')}</h2>
       <p className="hint">{t('home.samplesHint')}</p>
@@ -87,7 +119,7 @@ export default function Landing() {
       <ul className="sample-chips">
         {samples.map((s) => (
           <li key={s.id}>
-            <button type="button" className="sample-chip" onClick={() => open({ sample: s.id, start: (t.lang === 'es' && SAMPLES_ES[s.id]?.story) || s.story, mode: 'type' })}>
+            <button type="button" className="sample-chip" onClick={() => send((t.lang === 'es' && SAMPLES_ES[s.id]?.story) || s.story, mode === 'talk' ? 'talk' : 'type')}>
               <span className="icon-tile"><Icon name={SAMPLE_ICON[s.id] || 'building'} size={22} /></span>
               <span>
                 <strong>{(t.lang === 'es' && SAMPLES_ES[s.id]?.title) || s.title}</strong>

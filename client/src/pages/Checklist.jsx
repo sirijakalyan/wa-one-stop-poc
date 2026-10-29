@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, useLoad } from '../api.js';
 import { useT } from '../i18n.js';
@@ -7,18 +7,21 @@ import ChecklistItem from '../components/ChecklistItem.jsx';
 import { Chips, ErrorNote, Loading, Meter } from '../components/Parts.jsx';
 import { blankAnswers, stepList } from '../questions.js';
 
-export default function Checklist() {
+// embedded: used inside the My business page, which already shows the title and the progress summary.
+export default function Checklist({ embedded = false, onChanged, onData } = {}) {
   const navigate = useNavigate();
   const t = useT();
   const { setAnswers, setLabel, setStep, setCatsAuto } = useApp();
   const fetchChecklist = useCallback(() => api.checklist(), [t.lang]); // eslint-disable-line react-hooks/exhaustive-deps
   const { data, error, loading, setData } = useLoad(fetchChecklist);
   const [actionError, setActionError] = useState('');
+  useEffect(() => { onData?.(data); }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function toggle(ruleId, done) {
     setActionError('');
     try {
       setData(await api.setDone(ruleId, done));
+      onChanged?.();
     } catch (e) {
       setActionError(e.message);
     }
@@ -46,6 +49,7 @@ export default function Checklist() {
   if (error) return <ErrorNote message={error} />;
 
   if (!data?.saved) {
+    if (embedded) return null;
     return (
       <div className="empty">
         <h1 tabIndex={-1}>{t('cl.title')}</h1>
@@ -76,7 +80,9 @@ export default function Checklist() {
     <>
       <div className="cl-head">
         <div>
-          <h1 tabIndex={-1}>{data.label ? t('cl.sample', data.label) : t('cl.title')}</h1>
+          {embedded
+            ? <h2 id="checklist-title">{data.label ? t('cl.sample', data.label) : t('cl.title')}</h2>
+            : <h1 tabIndex={-1}>{data.label ? t('cl.sample', data.label) : t('cl.title')}</h1>}
           <p className="hint">{t('cl.built')}</p>
           {t.lang === 'es' && <p className="draft-note">{t('enNote')}</p>}
           <p className="hint" data-testid="badge-legend">
@@ -86,14 +92,16 @@ export default function Checklist() {
         </div>
         <div className="row">
           <button type="button" className="btn btn-quiet btn-sm" onClick={editAnswers}>{t('cl.edit')}</button>
-          <Link className="btn btn-quiet btn-sm" to="/dashboard">{t('cl.progress')}</Link>
+          {!embedded && <Link className="btn btn-quiet btn-sm" to="/my-business">{t('cl.progress')}</Link>}
           <button type="button" className="btn btn-quiet btn-sm" onClick={startOver}>{t('cl.over')}</button>
         </div>
-        <div className="progress">
-          <p id="prog-text">{t('cl.steps', done, items.length)}</p>
-          <Meter percent={percent} labelledBy="prog-text" />
-          <p className="hint">{t('cl.simTrack')}</p>
-        </div>
+        {!embedded && (
+          <div className="progress">
+            <p id="prog-text">{t('cl.steps', done, items.length)}</p>
+            <Meter percent={percent} labelledBy="prog-text" />
+            <p className="hint">{t('cl.simTrack')}</p>
+          </div>
+        )}
       </div>
       <ErrorNote message={actionError} />
 

@@ -37,7 +37,7 @@ describe('home page', () => {
     const ways = within(screen.getByRole('list', { name: 'Choose how to start' }));
     expect(ways.getByRole('button', { name: 'Talk to me' })).toBeInTheDocument();
     expect(ways.getByRole('button', { name: 'Type instead' })).toBeInTheDocument();
-    expect(ways.getByRole('link', { name: 'Use the step-by-step form' })).toHaveAttribute('href', '/questionnaire');
+    expect(ways.getByRole('button', { name: 'Use the step-by-step form' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Start with this sentence' })).toBeDisabled();
     expect(screen.getByText(/do not ask for names, addresses or tax numbers/i)).toBeInTheDocument();
     // The three sample businesses are quick-start chips.

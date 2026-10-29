@@ -1,0 +1,70 @@
+import { useCallback, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { api, useLoad } from '../api.js';
+import { useT } from '../i18n.js';
+import Checklist from './Checklist.jsx';
+import { DashRenewals, DashSummary } from './Dashboard.jsx';
+import { ErrorNote, Loading, Simulated } from '../components/Parts.jsx';
+
+// One page for the saved checklist and the progress. It reuses the Checklist and Dashboard pieces and the same
+// API calls, so marking a step done saves exactly as before and the summary above refreshes from the server.
+export default function MyBusiness() {
+  const t = useT();
+  const fetchDash = useCallback(() => api.dashboard(), [t.lang]); // eslint-disable-line react-hooks/exhaustive-deps
+  const { data, error, loading, reload } = useLoad(fetchDash);
+  const [cl, setCl] = useState(null); // the checklist the Checklist piece loaded, used for the status counts
+  const [actionError, setActionError] = useState('');
+  const [savedId, setSavedId] = useState('');
+
+  async function saveRenewal(ruleId, date) {
+    setActionError('');
+    try {
+      await api.setRenewal(ruleId, date || null);
+      setSavedId(ruleId);
+      await reload();
+    } catch (e) {
+      setActionError(e.message);
+    }
+  }
+
+  if (loading && !data) return <Loading what={t('load.progress')} />;
+  if (error) return <ErrorNote message={error} />;
+
+  if (!data?.saved) {
+    return (
+      <div className="empty">
+        <h1 tabIndex={-1}>{t('mb.title')} <Simulated /></h1>
+        <p>{t('mb.empty')}</p>
+        <div className="row">
+          <Link className="btn btn-primary" to="/">{t('mb.startHome')}</Link>
+        </div>
+      </div>
+    );
+  }
+
+  const items = cl?.items || [];
+  const pending = items.filter((i) => i.verification?.status === 'pending').length;
+  const remaining = Math.max(0, data.total - data.done);
+
+  return (
+    <>
+      <h1 tabIndex={-1}>{t('mb.title')} <Simulated /></h1>
+      <p className="hint">{data.label ? t('pr.sample', data.label) : ''}{t('pr.self')}</p>
+      {t.lang === 'es' && <p className="draft-note">{t('enNote')}</p>}
+
+      <ul className="stat-row" aria-label={t('mb.stats')}>
+        <li><strong>{data.done}</strong><span>{t('mb.doneN')}</span></li>
+        <li><strong>{remaining}</strong><span>{t('mb.remaining')}</span></li>
+        <li><strong>{cl ? pending : '-'}</strong><span>{t('mb.pendingV')}</span></li>
+        <li><strong>{data.percent}%</strong><span>{t('mb.complete')}</span></li>
+      </ul>
+      <p className="hint" data-testid="mb-steps">{t('cl.steps', data.done, data.total)}</p>
+
+      <DashSummary data={data} />
+
+      <Checklist embedded onChanged={reload} onData={setCl} />
+
+      <DashRenewals data={data} onSave={saveRenewal} savedId={savedId} actionError={actionError} />
+    </>
+  );
+}

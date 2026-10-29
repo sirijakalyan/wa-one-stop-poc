@@ -22,7 +22,8 @@ const SAVE_RX = /^\s*(?:(?:ok|okay|yes|please|now|then|so)[\s,]+)*(?:save|keep|s
 const SAVE_ES = /^\s*(?:(?:ok|okay|s[ií]|por favor|ahora|entonces|bueno)[\s,]+)*(?:guardar|guarda|guarde|conservar|conserva)(?![\p{L}])|(?<![\p{L}])(?:guardar|guarda|guarde|conservar|abrir)(?![\p{L}])[^.?!]{0,20}(?<![\p{L}])(?:plan|lista)(?![\p{L}])/iu;
 
 // Main screen: the conversation on the left; the business card, the plan and the road to opening day fill in on the right.
-export default function Guide() {
+// embedded: shown inside the home page. mode and start come from the home page's Talk / Type switch and its sentence box.
+export default function Guide({ embedded = false, mode: modeProp, start: startProp } = {}) {
   const { guide, setGuide, setAnswers, setLabel, setStep, setCatsAuto } = useApp();
   const t = useT();
   const langRef = useRef(t.lang);
@@ -30,7 +31,8 @@ export default function Guide() {
   const FIELD_LABELS = t.card.fields;
   const location = useLocation();
   const navigate = useNavigate();
-  const [mode] = useState(location.state?.mode || 'type');
+  const [firstMode] = useState(location.state?.mode || 'type');
+  const mode = modeProp || firstMode;
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -52,6 +54,7 @@ export default function Guide() {
   const [listening, setListening] = useState(false);
   const [voiceMsg, setVoiceMsg] = useState('');
   const [tick, setTick] = useState(0);
+  const prevMode = useRef(mode);
   const spokenIdx = useRef(0);
   const voiceOnRef = useRef(false);
   const saveRef = useRef(() => {});
@@ -105,6 +108,18 @@ export default function Guide() {
   }, [refreshPlan, setGuide]);
 
   turnRef.current = turn;
+  // Switching Talk and Type on the home page: Talk turns the guide's voice on (the switch is the tap), Type turns voice and microphone off.
+  useEffect(() => {
+    if (prevMode.current === mode) return;
+    prevMode.current = mode;
+    if (mode === 'talk') { if (canSpeak()) setVoiceOn(true); } else {
+      stopSpeaking();
+      speakingCount.current = 0;
+      setSpeaking(false);
+      setMicOn(false);
+      setVoiceOn(false);
+    }
+  }, [mode]);
   // Switching language mid-conversation: stop talking, then say the current question again in the new language.
   voiceOnRef.current = voiceOn;
   const prevLang = useRef(t.lang);
@@ -188,14 +203,16 @@ export default function Guide() {
     if (!guideRef.current.messages.length) setGuide((g) => ({ ...g, messages: [GREETING] }));
     else refreshPlan(guideRef.current.card).catch(() => {});
   }, [refreshPlan, setGuide]);
+  const handledStart = useRef(null);
   useEffect(() => {
-    const start = location.state?.start;
-    if (start && !started.current) {
+    const req = startProp || (location.state?.start ? { text: location.state.start, id: 'location' } : null);
+    if (req && handledStart.current !== req.id) {
+      handledStart.current = req.id;
       started.current = true;
-      navigate(location.pathname, { replace: true, state: null });
-      turn({ message: start }, start);
+      if (location.state?.start) navigate(location.pathname, { replace: true, state: null });
+      turn({ message: req.text }, req.text);
     }
-  }, [location, navigate, turn]);
+  }, [location, navigate, turn, startProp]);
 
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
@@ -226,7 +243,7 @@ export default function Guide() {
     try {
       const a = view.plan?.answers || answersFromCard(guide.card);
       await api.saveChecklist(a, (guide.card.values.desc || 'My business').slice(0, 80));
-      navigate('/checklist');
+      navigate('/my-business');
     } catch (e) {
       setError(e.message);
       setBusy(false);
@@ -261,15 +278,17 @@ export default function Guide() {
   const planCount = view.plan?.items?.length || 0;
 
   return (
-    <div className="guide-page">
+    <div className={`guide-page${embedded ? " is-embedded" : ""}`}>
       <header className="guide-head">
         <GuideArt small />
         <div>
-          <h1 id="guide-title" tabIndex={-1}>{t('guide.title')}</h1>
+          {embedded
+            ? <h2 id="guide-title" tabIndex={-1}>{t('guide.title')}</h2>
+            : <h1 id="guide-title" tabIndex={-1}>{t('guide.title')}</h1>}
           <p className="ai-label"><Icon name="chat" size={16} /> {t('guide.ai')}</p>
           {t('draft.note') ? <p className="draft-note" role="note">{t('draft.note')}</p> : null}
         </div>
-        <button type="button" className="btn btn-quiet btn-sm" onClick={useForm}>{t('guide.useForm')}</button>
+        {!embedded && <button type="button" className="btn btn-quiet btn-sm" onClick={useForm}>{t('guide.useForm')}</button>}
       </header>
 
       <div className="guide-tabs" role="tablist" aria-label={t('guide.sections')}>
@@ -356,7 +375,7 @@ export default function Guide() {
       <div className={`guide-road${tab === 'plan' ? ' is-active' : ''}`} data-tab="plan">
         <SimulatePanel result={sim} onClose={endSimulation} />
         <Timeline timeline={view.timeline} simulated={Boolean(sim)} />
-        <p className="hint">{t('guide.checklistHint')} <Link to="/checklist">{t('guide.checklistLink')}</Link> {t('guide.checklistAfter')}</p>
+        <p className="hint">{t('guide.checklistHint')} <Link to="/my-business">{t('guide.checklistLink')}</Link> {t('guide.checklistAfter')}</p>
       </div>
     </div>
   );

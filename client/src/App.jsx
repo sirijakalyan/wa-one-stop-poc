@@ -1,10 +1,9 @@
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout.jsx';
 import Landing from './pages/Landing.jsx';
 import Guide from './pages/Guide.jsx';
 import Questionnaire from './pages/Questionnaire.jsx';
-import Checklist from './pages/Checklist.jsx';
-import Dashboard from './pages/Dashboard.jsx';
+import MyBusiness from './pages/MyBusiness.jsx';
 import Notifications from './pages/Notifications.jsx';
 import Admin from './pages/Admin.jsx';
 import Sources from './pages/Sources.jsx';
@@ -19,8 +18,10 @@ export default function App() {
         <Route index element={<Landing />} />
         <Route path="guide" element={<Guide />} />
         <Route path="questionnaire" element={<Questionnaire />} />
-        <Route path="checklist" element={<Checklist />} />
-        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="my-business" element={<MyBusiness />} />
+        {/* Old addresses keep working: bookmarks and links go to the combined page. */}
+        <Route path="checklist" element={<Navigate to="/my-business" replace />} />
+        <Route path="dashboard" element={<Navigate to="/my-business" replace />} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="admin" element={<Admin />} />
         <Route path="sources" element={<Sources />} />
