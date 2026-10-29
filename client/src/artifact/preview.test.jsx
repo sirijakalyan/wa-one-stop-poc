@@ -108,6 +108,9 @@ describe('county in the questionnaire and edit-answers flow', () => {
   }
   async function changeCounty(user, county) {
     await user.click(screen.getByRole('button', { name: 'Edit answers' }));
+    // Edit answers returns to the home page with the saved answers in "Your business"; the form opens at its review step
+    expect(await screen.findByText('Your business')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Use the step-by-step form' }));
     const row = (await screen.findByText('County')).closest('div').parentElement;
     await user.click(within(row).getByRole('button', { name: 'Change' }));
     const field = await screen.findByLabelText('County');

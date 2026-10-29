@@ -7,7 +7,7 @@ import { Meter } from '../components/Parts.jsx';
 import CityCombobox, { countyForTypedCity } from '../components/CityCombobox.jsx';
 import { CATS, STRUCTURES, YN, YN_FIELDS, WA_COUNTIES, stepList } from '../questions.js';
 
-export default function Questionnaire({ embedded = false, onSaved } = {}) {
+export default function Questionnaire({ embedded = false } = {}) {
   const navigate = useNavigate();
   const t = useT();
   const { answers, setAnswers, label, setLabel, step, setStep, catsAuto, setCatsAuto } = useApp();
@@ -44,8 +44,7 @@ export default function Questionnaire({ embedded = false, onSaved } = {}) {
       setBusy(true);
       try {
         await api.saveChecklist(answers, label);
-        if (onSaved) onSaved();
-        else navigate('/my-business');
+        navigate('/my-business');
       } catch (e) {
         setErr(e.message);
       } finally {

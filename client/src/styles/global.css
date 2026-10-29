@@ -1118,5 +1118,3 @@ body { background: radial-gradient(900px 380px at 85% -140px, rgba(25,167,160,.1
 @media (max-width: 63.99rem) { .home-hero-guide { display: none; } }
 .mb-side .panel h2, .mb-side h2 { font-size: 1rem; }
 .mb-side .big, .mb-side .overall-num { font-size: 1.6rem; }
-.edit-in-place { display: grid; gap: .75rem; justify-items: start; }
-.edit-in-place > .panel { width: 100%; max-width: none; }

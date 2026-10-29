@@ -20,7 +20,7 @@ export default function Landing() {
   const t = useT();
   const { guide, live, answers, setAnswers, setLabel, setStep, setCatsAuto } = useApp();
   const location = useLocation();
-  const [mode, setMode] = useState(location.state?.mode === 'form' ? 'form' : (canSpeak() ? 'talk' : 'type')); // 'talk' by default so the guide greets out loud; null | 'talk' | 'type' | 'form': the guide and the form both live on this page
+  const [mode, setMode] = useState(['form', 'type'].includes(location.state?.mode) ? location.state.mode : (canSpeak() ? 'talk' : 'type')); // 'talk' by default so the guide greets out loud; null | 'talk' | 'type' | 'form': the guide and the form both live on this page
   const [startReq, setStartReq] = useState(null);
   const workRef = useRef(null);
   const reqId = useRef(0);
