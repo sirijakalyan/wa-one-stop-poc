@@ -10,7 +10,7 @@ import { useApp } from '../AppContext.jsx';
 export default function Layout() {
   const { pathname } = useLocation();
   const t = useT();
-  const { user } = useApp();
+  const { user, requireLogin } = useApp();
   const mainRef = useRef(null);
   const first = useRef(true);
 
@@ -34,7 +34,7 @@ export default function Layout() {
         </div>
       </main>
       <Footer />
-      <ChatPanel />
+      {!(requireLogin && !user) && <ChatPanel />}
       <WakeNotice />
     </div>
   );

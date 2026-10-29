@@ -34,6 +34,14 @@ export function AppProvider({ children }) {
   // The signed-in account (null when signed out). Signed-out visitors can still use the guide.
   const [user, setUser] = useState(null);
   const [authReady, setAuthReady] = useState(() => !getSession());
+  // Whether the whole site needs an account (set by the server). null until the server has answered.
+  const [requireLogin, setRequireLogin] = useState(() => (typeof globalThis.__WA_REQUIRE_LOGIN__ === 'boolean' ? globalThis.__WA_REQUIRE_LOGIN__ : null));
+  useEffect(() => {
+    if (typeof globalThis.__WA_REQUIRE_LOGIN__ === 'boolean') return undefined; // already known (tests and the in-page preview set it)
+    let live = true;
+    api.authConfig().then((c) => { if (live) setRequireLogin(Boolean(c.requireLogin)); }).catch(() => { if (live) setRequireLogin(false); });
+    return () => { live = false; };
+  }, []);
   useEffect(() => {
     if (!getSession()) return undefined;
     let live = true;
@@ -55,8 +63,8 @@ export function AppProvider({ children }) {
     setGuide({ messages: [], card: blankCard(), ask: null, awaiting: null, complete: false });
   };
   const value = useMemo(
-    () => ({ user, authReady, signIn, signOut, answers, setAnswers, label, setLabel, step, setStep, catsAuto, setCatsAuto, guide, setGuide, live, setLive }),
-    [user, authReady, answers, label, step, catsAuto, guide, live]
+    () => ({ user, authReady, requireLogin, signIn, signOut, answers, setAnswers, label, setLabel, step, setStep, catsAuto, setCatsAuto, guide, setGuide, live, setLive }),
+    [user, authReady, requireLogin, answers, label, step, catsAuto, guide, live]
   );
   return <LangContext.Provider value={langValue}><Ctx.Provider value={value}>{children}</Ctx.Provider></LangContext.Provider>;
 }

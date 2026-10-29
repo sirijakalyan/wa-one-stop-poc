@@ -13,7 +13,8 @@ export default function Header() {
   const { pathname } = useLocation();
   const { lang, setLang } = useLang();
   const t = useT();
-  const { user } = useApp();
+  const { user, requireLogin } = useApp();
+  const locked = Boolean(requireLogin) && !user; // the site needs an account: signed-out visitors only see sign in and sign up
   useEffect(() => { setOpen(false); }, [pathname]);
   useEffect(() => {
     if (!open) return undefined;
@@ -33,7 +34,7 @@ export default function Header() {
           <Icon name={open ? 'close' : 'menu'} size={20} />
           <span>{open ? t('menu.close') : t('menu.open')}</span>
         </button>
-        <NotificationBell />
+        {!locked && <NotificationBell />}
         <button type="button" className="lang-btn" lang={lang === 'es' ? 'en' : 'es'} aria-label={t('lang.switchTo')} onClick={() => setLang(lang === 'es' ? 'en' : 'es')}>
           <Icon name="globe" size={18} />
           <span className="lang-full">{t('lang.button')}</span>
@@ -42,7 +43,7 @@ export default function Header() {
         <div className="head-auth"><AccountMenu /></div>
         <nav id="main-nav" aria-label="Main" className={open ? 'is-open' : ''}>
           <ul>
-            {ROUTES.filter((r) => r.nav !== false).map((r) => (
+            {!locked && ROUTES.filter((r) => r.nav !== false).map((r) => (
               <li key={r.path}>
                 <NavLink to={r.path} end={r.path === '/'}>
                   {t(`nav.${r.path}`) === `nav.${r.path}` ? r.label : t(`nav.${r.path}`)}

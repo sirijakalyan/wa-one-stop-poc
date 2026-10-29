@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
@@ -448,5 +448,40 @@ describe('accounts and the admin users area', () => {
     expect(await screen.findByRole('heading', { name: /Sources and how this demo works/ })).toBeInTheDocument();
     await user.click(screen.getByRole('tab', { name: 'Rules and links' }));
     expect(await screen.findByRole('heading', { name: 'Rules management' })).toBeInTheDocument();
+  });
+});
+
+describe('the site needs an account (REQUIRE_LOGIN)', () => {
+  beforeEach(() => { globalThis.__WA_REQUIRE_LOGIN__ = true; });
+  afterEach(() => { globalThis.__WA_REQUIRE_LOGIN__ = false; });
+
+  it('opens on Sign in with no owner menu, then Home after sign up and sign in, and Sign in again after sign out', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'My business' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /Start your Washington business/ })).not.toBeInTheDocument();
+    await user.click(screen.getAllByRole('link', { name: 'Create account' })[0]);
+    await user.type(await screen.findByLabelText('Your name'), 'Ana');
+    await user.type(screen.getByLabelText('Email address'), 'ana@example.com');
+    await user.type(screen.getByLabelText('Password'), 'Passw0rdOK');
+    await user.type(screen.getByLabelText('Confirm password'), 'Passw0rdOK');
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeInTheDocument();
+    await user.type(screen.getByLabelText('Password'), 'Passw0rdOK');
+    await user.click(screen.getByRole('button', { name: 'Sign in' }));
+    expect(await screen.findByRole('heading', { name: /Start your Washington business/ })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Account: Ana/ }));
+    await user.click(screen.getByRole('menuitem', { name: 'Sign out' }));
+    expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /Start your Washington business/ })).not.toBeInTheDocument();
+  });
+
+  it('sends a signed-out visitor from a deep link to Sign in, and forgot password stays reachable', async () => {
+    const user = userEvent.setup();
+    render(<MemoryRouter initialEntries={['/my-business']}><AppProvider><App /></AppProvider></MemoryRouter>);
+    expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeInTheDocument();
+    await user.click(screen.getByRole('link', { name: 'Forgot your password?' }));
+    expect(await screen.findByRole('heading', { name: /Forgot your password|Reset/i })).toBeInTheDocument();
   });
 });

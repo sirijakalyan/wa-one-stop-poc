@@ -1221,3 +1221,5 @@ input[type="password"]:hover, input[type="search"]:hover { border-color: var(--n
 .site-head .acct-links .btn-primary { min-height: 40px; }
 .site-head .acct-links .btn { min-height: 40px; border-radius: 99px; padding-inline: 1rem; }
 .panel.wide { max-width: none; }
+
+.page-loading { padding: 3rem 0; text-align: center; color: var(--ink-soft, #5b6b7a); }

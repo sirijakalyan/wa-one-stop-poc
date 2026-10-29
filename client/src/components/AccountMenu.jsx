@@ -7,7 +7,7 @@ import Icon from './Icon.jsx';
 // Header account area. Signed out: Sign in and Create account. Signed in: the person's initial, with a small menu.
 export default function AccountMenu() {
   const t = useT();
-  const { user, signOut } = useApp();
+  const { user, signOut, requireLogin } = useApp();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -41,7 +41,7 @@ export default function AccountMenu() {
         <div className="acct-pop" role="menu">
           <p className="acct-id"><strong>{user.name}</strong><span>{user.email}</span></p>
           {user.role === 'admin' && <Link role="menuitem" to="/admin" onClick={() => setOpen(false)}>{t('auth.admin')}</Link>}
-          <button type="button" role="menuitem" onClick={async () => { setOpen(false); await signOut(); navigate('/'); }}>{t('auth.signOut')}</button>
+          <button type="button" role="menuitem" onClick={async () => { setOpen(false); await signOut(); navigate(requireLogin ? '/login' : '/', { replace: true }); }}>{t('auth.signOut')}</button>
         </div>
       )}
     </div>

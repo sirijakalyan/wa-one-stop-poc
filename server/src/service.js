@@ -263,7 +263,7 @@ export function createService(store, options = {}) {
     if (cl) await store.putChecklist(acctVisitor(user), cl); // the plan made before signing in becomes the account's plan
   }
 
-  route('GET', '/api/auth/config', async () => ({ ok: true, provider: idp.mode, needsCode: Boolean(idp.needsCode) }));
+  route('GET', '/api/auth/config', async () => ({ ok: true, provider: idp.mode, needsCode: Boolean(idp.needsCode), requireLogin: Boolean(options.requireLogin) }));
 
   route('POST', '/api/auth/signup', async ({ body, ctx }) => {
     const r = await viaIdp(() => idp.signup({ name: body?.name, email: body?.email, password: body?.password }));

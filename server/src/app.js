@@ -35,9 +35,9 @@ function loadSeedJson(name, fallback) {
 }
 
 // Thin Express adapter. All API logic lives in service.js.
-export function createApp({ dataDir, store = createStore(dataDir), adminKey = process.env.ADMIN_KEY, llm = createOllamaLlm(), mailer = createMailer(), countyHealthPages = loadSeedJson('county_health_candidates.json', { counties: [] }), foundLinks = loadSeedJson('found_links.json', { links: [] }), publicUrl = process.env.PUBLIC_URL, corsOrigins, places = loadSeedJson("wa_places.json", { places: [] }).places, processingTimes = loadSeedJson('processing_times.json', { times: [] }), clientDist = process.env.CLIENT_DIST, adminEmails = String(process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim()).filter(Boolean), demoResetLinks = process.env.DEMO_RESET_LINKS === 'true', idp } = {}) {
+export function createApp({ dataDir, store = createStore(dataDir), adminKey = process.env.ADMIN_KEY, llm = createOllamaLlm(), mailer = createMailer(), countyHealthPages = loadSeedJson('county_health_candidates.json', { counties: [] }), foundLinks = loadSeedJson('found_links.json', { links: [] }), publicUrl = process.env.PUBLIC_URL, corsOrigins, places = loadSeedJson("wa_places.json", { places: [] }).places, processingTimes = loadSeedJson('processing_times.json', { times: [] }), clientDist = process.env.CLIENT_DIST, adminEmails = String(process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim()).filter(Boolean), demoResetLinks = process.env.DEMO_RESET_LINKS === 'true', requireLogin = !['false', '0', 'no'].includes(String(process.env.REQUIRE_LOGIN || '').toLowerCase()), idp } = {}) {
   const production = process.env.NODE_ENV === 'production';
-  const service = createService(store, { adminKey: adminKey || undefined, adminLocked: production && !adminKey, llm, mailer, publicUrl, adminEmails, demoResetLinks, idp, countyHealthPages, foundLinks, places, processingTimes });
+  const service = createService(store, { adminKey: adminKey || undefined, adminLocked: production && !adminKey, llm, mailer, publicUrl, adminEmails, demoResetLinks, requireLogin, idp, countyHealthPages, foundLinks, places, processingTimes });
   const app = express();
   app.set('trust proxy', Number.isInteger(Number(process.env.TRUST_PROXY)) && process.env.TRUST_PROXY !== '' ? Number(process.env.TRUST_PROXY) : 1);
 

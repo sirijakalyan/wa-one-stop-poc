@@ -1,4 +1,6 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useApp } from './AppContext.jsx';
+import { useT } from './i18n.js';
 import Layout from './components/Layout.jsx';
 import Landing from './pages/Landing.jsx';
 import Guide from './pages/Guide.jsx';
@@ -12,12 +14,26 @@ import ForgotPassword from './pages/ForgotPassword.jsx';
 import ResetPassword from './pages/ResetPassword.jsx';
 import NotFound from './pages/NotFound.jsx';
 
+// When the server says the site needs an account, signed-out visitors only see the sign in, sign up and password pages.
+function RequireAccount() {
+  const { user, authReady, requireLogin } = useApp();
+  const t = useT();
+  const loc = useLocation();
+  if (requireLogin === null || !authReady) return <p className="page-loading" role="status">{t('auth.loading')}</p>;
+  if (requireLogin && !user) {
+    const from = loc.pathname === '/' ? undefined : `${loc.pathname}${loc.search}`;
+    return <Navigate to="/login" replace state={from ? { from } : undefined} />;
+  }
+  return <Outlet />;
+}
+
 // Layout wraps every route, including the not-found page, so the
 // demo disclaimer banner is present on every screen.
 export default function App() {
   return (
     <Routes>
       <Route element={<Layout />}>
+        <Route element={<RequireAccount />}>
         <Route index element={<Landing />} />
         <Route path="guide" element={<Guide />} />
         <Route path="questionnaire" element={<Questionnaire />} />
@@ -27,6 +43,7 @@ export default function App() {
         <Route path="dashboard" element={<Navigate to="/my-business" replace />} />
         <Route path="notifications" element={<Notifications />} />
         <Route path="admin" element={<Admin />} />
+        </Route>
         {/* Sources moved into Admin: it is an editing tool for content owners, not something owners need to read. */}
         <Route path="sources" element={<Navigate to="/admin" replace />} />
         <Route path="login" element={<Login />} />
