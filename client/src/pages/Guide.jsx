@@ -297,14 +297,19 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
   const focusedBusiness = useRef(false);
   useEffect(() => {
     if (location.state?.focus !== 'business' || focusedBusiness.current) return undefined;
-    const timer = setTimeout(() => {
-      focusedBusiness.current = true;
+    // The card can appear a moment late (sign-in check, saved answers loading), so keep looking for about 4 seconds.
+    let tries = 0;
+    const timer = setInterval(() => {
+      tries += 1;
       const el = document.getElementById('guide-side');
-      if (!el) return;
-      const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-      el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
-    }, 250);
-    return () => clearTimeout(timer);
+      if (el && el.getBoundingClientRect().height > 0) {
+        clearInterval(timer);
+        focusedBusiness.current = true;
+        const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+        el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+      } else if (tries > 26) clearInterval(timer);
+    }, 150);
+    return () => clearInterval(timer);
   }, [location.state]);
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
