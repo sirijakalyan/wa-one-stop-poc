@@ -1,15 +1,17 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { api, useLoad } from '../api.js';
 import { dateLocale, useT } from '../i18n.js';
 import { ErrorNote, Loading } from '../components/Parts.jsx';
 
-export default function Notifications() {
+// embedded: the same screen shown inside the header bell. onData reports the loaded list so the bell can show the unread count.
+export default function Notifications({ embedded = false, onData } = {}) {
   const t = useT();
   const fetchNotes = useCallback(() => api.notifications(), []);
   const { data, error, loading, reload } = useLoad(fetchNotes);
   const [actionError, setActionError] = useState('');
   const [info, setInfo] = useState('');
   const [email, setEmail] = useState('');
+  useEffect(() => { if (data) onData?.(data); }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function run(fn, message) {
     setActionError('');
@@ -48,9 +50,9 @@ export default function Notifications() {
 
   return (
     <>
-      <h1 tabIndex={-1}>{t('nt.title')}</h1>
+      {!embedded && <h1 tabIndex={-1}>{t('nt.title')}</h1>}
       {t.lang === 'es' && <p className="draft-note">{t('nt.note')}</p>}
-      <p className="lead">
+      <p className={embedded ? 'hint' : 'lead'}>
         {mode === 'live' && t('nt.live')}
         {mode === 'log' && t('nt.log')}
         {mode === 'off' && t('nt.off')}

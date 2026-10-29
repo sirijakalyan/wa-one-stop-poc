@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import Notifications from '../pages/Notifications.jsx';
 import { api } from '../api.js';
-import { dateLocale, useT } from '../i18n.js';
+import { useT } from '../i18n.js';
 import Icon from './Icon.jsx';
 
 // Bell with a dropdown in the header. It reads the same notifications as the full Notifications page and marks
@@ -11,15 +12,13 @@ export default function NotificationBell() {
   const { pathname } = useLocation();
   const [open, setOpen] = useState(false);
   const [data, setData] = useState(null);
-  const [error, setError] = useState('');
   const wrap = useRef(null);
 
   const load = useCallback(async () => {
     try {
       setData(await api.notifications());
-      setError('');
-    } catch (e) {
-      setError(e.message || 'error');
+    } catch {
+      /* keep the last count */
     }
   }, []);
 
@@ -37,18 +36,8 @@ export default function NotificationBell() {
     return () => { document.removeEventListener('keydown', onKey); document.removeEventListener('mousedown', onClick); };
   }, [open]);
 
-  async function markRead(id) {
-    try {
-      await api.markRead(id);
-      await load();
-    } catch (e) {
-      setError(e.message || 'error');
-    }
-  }
-
   const notes = data?.notifications ?? [];
   const unread = notes.filter((n) => !n.read).length;
-  const shown = notes.slice(0, 5);
 
   return (
     <div className="bell" ref={wrap}>
@@ -70,24 +59,7 @@ export default function NotificationBell() {
             <strong>{t('bell.title')}</strong>
             <button type="button" className="bell-x" aria-label={t('bell.close')} onClick={() => setOpen(false)}><Icon name="close" size={18} /></button>
           </div>
-          {!data && !error && <p className="hint" role="status">{t('bell.loading')}...</p>}
-          {error && !data && <p className="err" role="alert">{t('bell.error')}</p>}
-          {data && shown.length === 0 && <p className="hint">{t('bell.empty')}</p>}
-          <ul className="bell-list">
-            {shown.map((n) => (
-              <li key={n.id} className={n.read ? 'read' : ''}>
-                <div className="bell-top">
-                  <span className={`pill ${n.type === 'rule-changed' ? 'maybe' : 'agency'}`}>{n.type === 'rule-changed' ? t('nt.ruleChanged') : t('nt.renewal')}</span>
-                  {n.simulated !== false && <span className="pill agency">{t('pill.simulated')}</span>}
-                </div>
-                <strong>{n.title}</strong>
-                <p>{n.body}</p>
-                <time className="hint" dateTime={n.createdAt}>{new Date(n.createdAt).toLocaleString(dateLocale(t.lang))}</time>
-                {!n.read && <button type="button" className="linklike" onClick={() => markRead(n.id)}>{t('bell.markRead')}</button>}
-              </li>
-            ))}
-          </ul>
-          <Link className="bell-all" to="/notifications">{t('bell.viewAll')}</Link>
+          <Notifications embedded onData={setData} />
         </div>
       )}
     </div>

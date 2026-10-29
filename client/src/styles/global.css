@@ -739,3 +739,10 @@ footer .api-status { background: transparent; color: #a9bdd4; border-color: rgba
   .site-head .wrap { flex-wrap: wrap; }
   .site-head .wrap > .brand { flex-basis: 0; }
 }
+.bell-pop .panel { padding: .75rem; box-shadow: none; margin: .5rem 0; }
+.bell-pop h2 { font-size: 1.05rem; margin: .8rem 0 .4rem; }
+.bell-pop .notes { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
+.bell-pop .note-item { border: 1px solid var(--line); border-left: 4px solid var(--teal-500); border-radius: var(--radius); padding: .55rem .7rem; }
+.bell-pop .note-item h3 { font-size: .98rem; margin: .2rem 0; }
+.bell-pop .note-item.read { border-left-color: var(--line-strong); background: var(--surface-2); }
+.bell-pop .panel { border: 0; padding: 0; background: transparent; }

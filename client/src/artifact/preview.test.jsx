@@ -75,11 +75,10 @@ describe('in-page preview', () => {
     const bell = await screen.findByRole('region', { name: 'Notifications' });
     expect(await within(bell).findByText(/Rule changed: Apply for your Washington business license/)).toBeInTheDocument();
     // Marking read through the dropdown uses the same API and clears the unread count
-    await user.click(within(bell).getByRole('button', { name: 'Mark read' }));
+    await user.click(within(bell).getByRole('button', { name: 'Mark as read' }));
     expect(await screen.findByRole('button', { name: 'Notifications, none unread' })).toBeInTheDocument();
-    // The full notifications view is still reachable from the dropdown
-    await user.click(within(bell).getByRole('link', { name: /See all/ }));
-    expect(await screen.findByRole('heading', { level: 1, name: 'Simulated notifications' })).toBeInTheDocument();
+    // Everything lives in the dropdown: email setting and reminder button too
+    expect(within(bell).getByRole('button', { name: /simulated renewal reminder/i })).toBeInTheDocument();
   });
 
   it('runs the questionnaire to a checklist and keeps the Secretary of State step out for a sole proprietor', async () => {
