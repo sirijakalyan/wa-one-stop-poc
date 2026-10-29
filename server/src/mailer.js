@@ -8,7 +8,12 @@
 import nodemailer from 'nodemailer';
 
 export function createMailer(env = process.env) {
-  const provider = String(env.EMAIL_PROVIDER || 'log').toLowerCase();
+  // SENDGRID_FROM_EMAIL (+ optional SENDGRID_FROM_NAME) is accepted as a spelled-out form of EMAIL_FROM.
+  if (!env.EMAIL_FROM && env.SENDGRID_FROM_EMAIL) {
+    env = { ...env, EMAIL_FROM: env.SENDGRID_FROM_NAME ? `${env.SENDGRID_FROM_NAME} <${env.SENDGRID_FROM_EMAIL}>` : env.SENDGRID_FROM_EMAIL };
+  }
+  // A SendGrid key with no provider named means SendGrid.
+  const provider = String(env.EMAIL_PROVIDER || (env.SENDGRID_API_KEY ? 'sendgrid' : 'log')).toLowerCase();
   const from = env.EMAIL_FROM || 'WA One-Stop Demo <onboarding@resend.dev>';
 
   if (provider === 'smtp') {

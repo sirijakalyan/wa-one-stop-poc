@@ -206,3 +206,17 @@ test('sendgrid mailer refuses to start without a key or a verified sender addres
   assert.throws(() => createMailer({ EMAIL_PROVIDER: 'sendgrid', EMAIL_FROM: 'a@b.co' }), /SENDGRID_API_KEY/);
   assert.throws(() => createMailer({ EMAIL_PROVIDER: 'sendgrid', SENDGRID_API_KEY: 'x' }), /EMAIL_FROM/);
 });
+
+test('SENDGRID_FROM_EMAIL and SENDGRID_FROM_NAME work without EMAIL_PROVIDER or EMAIL_FROM', async () => {
+  const { createMailer } = await import('../src/mailer.js');
+  const calls = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => { calls.push({ url, body: JSON.parse(init.body) }); return { status: 202 }; };
+  try {
+    const m = createMailer({ SENDGRID_API_KEY: 'SG.test', SENDGRID_FROM_EMAIL: 'hr@example.com', SENDGRID_FROM_NAME: 'WA Business One-Stop-Shop' });
+    assert.equal(m.mode, 'live');
+    await m.send({ to: 'a@b.co', subject: 's', text: 't' });
+    assert.equal(calls[0].url, 'https://api.sendgrid.com/v3/mail/send');
+    assert.deepEqual(calls[0].body.from, { email: 'hr@example.com', name: 'WA Business One-Stop-Shop' });
+  } finally { globalThis.fetch = realFetch; }
+});
