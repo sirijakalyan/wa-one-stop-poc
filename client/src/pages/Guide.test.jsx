@@ -221,6 +221,22 @@ describe('voice', () => {
     expect(screen.getByRole('button', { name: /Microphone on/ })).toBeInTheDocument();
   });
 
+  it('talking over the guide stops it and takes what was said, but its own voice does not', async () => {
+    // A guide line that keeps playing until it is cancelled.
+    window.speechSynthesis.speak = vi.fn((u) => { spoken.push(u.text); setTimeout(() => u.onstart?.(), 0); });
+    renderAt('/');
+    await waitFor(() => expect(FakeRec.last?.started).toBe(true), { timeout: 4000 });
+    await waitFor(() => expect(screen.getByText(/The guide is speaking/)).toBeInTheDocument());
+    const cancels = window.speechSynthesis.cancel.mock.calls.length;
+    // Its own words coming back through the speakers are ignored.
+    FakeRec.last.onresult({ resultIndex: 0, results: [Object.assign([{ transcript: "I'm here to help you start your Washington business" }], { isFinal: false })] });
+    expect(window.speechSynthesis.cancel.mock.calls.length).toBe(cancels);
+    // The owner speaks over it.
+    FakeRec.last.onresult({ resultIndex: 0, results: [Object.assign([{ transcript: 'I want to open a bakery in Tacoma' }], { isFinal: true })] });
+    await waitFor(() => expect(window.speechSynthesis.cancel.mock.calls.length).toBeGreaterThan(cancels));
+    expect(await screen.findByText('I want to open a bakery in Tacoma')).toBeInTheDocument();
+  });
+
   it('reads each new guide reply aloud, but never the owner\'s own words', async () => {
     const user = userEvent.setup();
     renderAt({ pathname: '/guide', state: { mode: 'talk', start: STORY } });
