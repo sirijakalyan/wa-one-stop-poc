@@ -8,10 +8,9 @@ import { ErrorNote, Loading, Meter } from '../components/Parts.jsx';
 
 
 // The two blocks below are shared with the combined My business page, so both screens show the same numbers.
-export function DashSummary({ data }) {
+export function DashOverall({ data }) {
   const t = useT();
   return (
-    <div className="dash-grid">
         <section className="panel" aria-labelledby="overall">
           <h2 id="overall">{t('pr.overall')}</h2>
           <p id="overall-text" className="big">{t('pr.done', data.done, data.total)}</p>
@@ -23,8 +22,13 @@ export function DashSummary({ data }) {
             ))}
           </ul>
         </section>
+  );
+}
 
-        <section className="panel" aria-labelledby="next">
+export function DashNext({ data, className = 'panel' }) {
+  const t = useT();
+  return (
+        <section className={className} aria-labelledby="next">
           <h2 id="next">{t('pr.next')}</h2>
           {data.next ? (
             <>
@@ -45,7 +49,15 @@ export function DashSummary({ data }) {
             {t('pr.unread', data.unread)}
           </p>
         </section>
-      </div>
+  );
+}
+
+export function DashSummary({ data }) {
+  return (
+    <div className="dash-grid">
+      <DashOverall data={data} />
+      <DashNext data={data} />
+    </div>
   );
 }
 

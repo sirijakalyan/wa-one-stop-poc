@@ -53,6 +53,7 @@ const en = {
   'home.f3': 'We point you to the agency.', 'home.f3t': 'You apply with the Business Licensing Service and the Secretary of State. We do not apply for you.',
   'home.sources': 'See all sources',
   // Guide
+  'guide.freshHint': 'Your business details appear next to the conversation as you confirm them.',
   'guide.title': 'Your guide',
   'guide.ai': "You're talking to an AI guide. Written rules decide your plan; the guide only listens and asks.",
   'guide.useForm': 'Use the step-by-step form instead',
@@ -157,6 +158,7 @@ const es = {
   'home.f2': 'Cada paso muestra su fuente.', 'home.f2t': 'Cada paso enlaza a la página oficial de donde salió y dice si la fuente fue revisada.',
   'home.f3': 'Le indicamos la agencia.', 'home.f3t': 'Usted presenta su solicitud ante el Servicio de Licencias de Negocios y el Secretario de Estado. Nosotros no la presentamos por usted.',
   'home.sources': 'Ver todas las fuentes',
+  'guide.freshHint': 'Los datos de su negocio aparecen junto a la conversación a medida que los confirma.',
   'guide.title': 'Su guía',
   'guide.ai': 'Está hablando con una guía de IA. Las reglas escritas deciden su plan; la guía solo escucha y pregunta.',
   'guide.useForm': 'Usar el formulario paso a paso',

@@ -57,64 +57,66 @@ export default function Landing() {
 
   return (
     <>
-      <div className="home-split">
-      <section className="hero guide-hero" aria-labelledby="hero-title">
-        <div className="hero-grid">
-          <div className="guide-stage">
-            <div className={`guide-bubble${live.speaking ? ' is-speaking' : ''}${live.listening && !live.speaking ? ' is-listening' : ''}`} data-testid="greeting">
-              <p>{live.text && live.role === 'guide' ? live.text : t('home.greeting')}</p>
-              {(live.speaking || live.listening) && (
-                <p className="live-status" aria-hidden="true">
-                  <span className="bars"><i /><i /><i /><i /></span>
-                  {live.speaking ? t('voice.speakingShort') : t('voice.listening')}
-                </p>
+      <div className="home">
+        <section className="home-hero" aria-labelledby="hero-title">
+          <div className="home-hero-inner">
+            <div className="home-hero-copy">
+              <h1 id="hero-title" tabIndex={-1}>{t('home.title')}</h1>
+              <p className="home-lead">{t('home.lead')}</p>
+
+              <ul className="ways-in" aria-label={t('home.ways')}>
+                <li>
+                  <button type="button" className={`btn btn-primary${mode === 'talk' ? ' is-current' : ''}`} aria-pressed={mode === 'talk'} onClick={() => choose('talk')}><Icon name="mic" size={20} />{t('home.talk')}</button>
+                </li>
+                <li>
+                  <button type="button" className={`btn btn-primary${mode === 'type' ? ' is-current' : ''}`} aria-pressed={mode === 'type'} onClick={() => choose('type')}><Icon name="chat" size={20} />{t('home.type')}</button>
+                </li>
+                <li>
+                  <button type="button" className={`btn btn-primary${mode === 'form' ? ' is-current' : ''}`} aria-pressed={mode === 'form'} onClick={() => choose('form')}><Icon name="list" size={20} />{t('home.form')}</button>
+                </li>
+              </ul>
+
+              {mode === 'form' && (
+                <form className="one-sentence" onSubmit={startWithSentence}>
+                  <label htmlFor="one-sentence">{t('home.sentenceLabel')}</label>
+                  <div className="one-sentence-row">
+                    <input
+                      id="one-sentence"
+                      type="text"
+                      maxLength={300}
+                      autoComplete="off"
+                      placeholder={t('home.sentencePlaceholder')}
+                      value={sentence}
+                      onChange={(e) => setSentence(e.target.value)}
+                    />
+                    <button type="submit" className="btn btn-primary" disabled={!sentence.trim()} aria-label={t('home.sentenceGo')}>
+                      <Icon name="arrow" size={20} />
+                    </button>
+                  </div>
+                </form>
               )}
+              <p className="privacy-note">{t('home.privacy')}</p>
             </div>
-            <GuideArt />
-            <p className="ai-label"><Icon name="chat" size={16} /> {t('home.aiLabel')}</p>
-          </div>
 
-          <div className="hero-copy">
-            <h1 id="hero-title" tabIndex={-1}>{t('home.title')}</h1>
-
-            <ul className="ways-in" aria-label={t('home.ways')}>
-              <li>
-                <button type="button" className={`btn btn-primary${mode === 'talk' ? ' is-current' : ''}`} aria-pressed={mode === 'talk'} onClick={() => choose('talk')}><Icon name="mic" size={20} />{t('home.talk')}</button>
-              </li>
-              <li>
-                <button type="button" className={`btn btn-primary${mode === 'type' ? ' is-current' : ''}`} aria-pressed={mode === 'type'} onClick={() => choose('type')}><Icon name="chat" size={20} />{t('home.type')}</button>
-              </li>
-              <li>
-                <button type="button" className={`btn btn-primary${mode === 'form' ? ' is-current' : ''}`} aria-pressed={mode === 'form'} onClick={() => choose('form')}><Icon name="list" size={20} />{t('home.form')}</button>
-              </li>
-            </ul>
-
-            <form className="one-sentence" onSubmit={startWithSentence}>
-              <label htmlFor="one-sentence">{t('home.sentenceLabel')}</label>
-              <div className="one-sentence-row">
-                <input
-                  id="one-sentence"
-                  type="text"
-                  maxLength={300}
-                  autoComplete="off"
-                  placeholder={t('home.sentencePlaceholder')}
-                  value={sentence}
-                  onChange={(e) => setSentence(e.target.value)}
-                />
-                <button type="submit" className="btn btn-primary" disabled={!sentence.trim()} aria-label={t('home.sentenceGo')}>
-                  <Icon name="arrow" size={20} />
-                </button>
+            <div className="home-hero-guide" aria-hidden={!live.speaking && !live.listening ? undefined : undefined}>
+              <div className={`guide-bubble${live.speaking ? ' is-speaking' : ''}${live.listening && !live.speaking ? ' is-listening' : ''}`} data-testid="greeting">
+                <p className="greeting-text">{live.text && live.role === 'guide' ? live.text : t('home.greeting')}</p>
+                {(live.speaking || live.listening) && (
+                  <p className="live-status" aria-hidden="true">
+                    <span className="bars"><i /><i /><i /><i /></span>
+                    {live.speaking ? t('voice.speakingShort') : t('voice.listening')}
+                  </p>
+                )}
               </div>
-            </form>
-            <p className="privacy-note">{t('home.privacy')}</p>
+              <GuideArt />
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section className="workspace" id="workspace" ref={workRef} tabIndex={-1} aria-label={t('mode.title')}>
-        {mode === 'form' ? <Questionnaire embedded /> : null}
-        {mode === 'talk' || mode === 'type' ? <Guide embedded mode={mode} start={startReq} /> : null}
-      </section>
+        <section className="workspace" id="workspace" ref={workRef} tabIndex={-1} aria-label={t('mode.title')}>
+          {mode === 'form' ? <Questionnaire embedded /> : null}
+          {mode === 'talk' || mode === 'type' ? <Guide embedded mode={mode} start={startReq} /> : null}
+        </section>
       </div>
 
       {t('draft.note') ? <p className="draft-note" role="note">{t('draft.note')}</p> : null}

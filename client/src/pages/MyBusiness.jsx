@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { api, useLoad } from '../api.js';
 import { useT } from '../i18n.js';
 import Checklist from './Checklist.jsx';
-import { DashRenewals, DashSummary } from './Dashboard.jsx';
+import { DashNext, DashOverall, DashRenewals } from './Dashboard.jsx';
 import { ErrorNote, Loading, Simulated } from '../components/Parts.jsx';
 
 // One page for the saved checklist and the progress. It reuses the Checklist and Dashboard pieces and the same
@@ -62,6 +62,7 @@ export default function MyBusiness() {
 
       <div className="mb-split">
         <div className="mb-main">
+          <DashNext data={data} className="next-card" />
           <Checklist embedded onChanged={reload} onData={setCl} />
           <DashRenewals data={data} onSave={saveRenewal} savedId={savedId} actionError={actionError} />
         </div>
@@ -73,7 +74,7 @@ export default function MyBusiness() {
             <li className="st-pct"><Icon name="shield" size={20} /><strong>{data.percent}%</strong><span>{t('mb.complete')}</span></li>
           </ul>
           <p className="hint" data-testid="mb-steps">{t('cl.steps', data.done, data.total)}</p>
-          <DashSummary data={data} />
+          <DashOverall data={data} />
         </aside>
       </div>
     </>

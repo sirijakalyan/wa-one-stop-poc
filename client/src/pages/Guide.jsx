@@ -355,10 +355,12 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
 
   const chips = busy ? [] : guide.chips || [];
   const planCount = view.plan?.items?.length || 0;
+  // Before the owner has said anything, the home page shows a calm single conversation; the business card joins once there is something in it.
+  const fresh = embedded && messages.length <= 1 && confirmedCount(guide.card) === 0;
 
   return (
-    <div className={`guide-page${embedded ? " is-embedded" : ""}`}>
-      <header className="guide-head">
+    <div className={`guide-page${embedded ? " is-embedded" : ""}${fresh ? " is-fresh" : ""}`}>
+      <header className={`guide-head${embedded ? ' sr-only' : ''}`}>
         {!embedded && <GuideArt small />}
         <div>
           {embedded
@@ -380,6 +382,12 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
       <div className="guide-grid">
         <section id="guide-chat" className={`guide-chat${tab === 'chat' ? ' is-active' : ''}`} data-tab="chat" aria-labelledby="guide-chat-title">
           <h2 id="guide-chat-title" className="sr-only">{t('guide.tabChat')}</h2>
+          {embedded && (
+            <div className="chat-id">
+              <span className="chat-avatar"><Icon name="chat" size={18} /></span>
+              <div><strong>{t('guide.title')}</strong><span>{t('guide.ai')}</span></div>
+            </div>
+          )}
           <div className="chat-log" ref={logRef} role="log" aria-live="polite" aria-label={t('guide.log')}>
             {messages.map((m) => (
               <div key={m.id} className={`bubble ${m.role}`}>
@@ -432,10 +440,11 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
           <div className="voice-controls">
             <button type="button" className="btn btn-quiet btn-sm" onClick={muteToggle} aria-pressed={!voiceOn} disabled={!canSpeak()}>{voiceOn ? t('guide.mute') : t('guide.unmute')}</button>
             <button type="button" className="btn btn-quiet btn-sm" onClick={stopTalking}>{t('guide.stop')}</button>
-            <p className="voice-status" role="status">
+            <p className={`voice-status${voiceMsg ? ' is-note' : ''}`} role="status">
               {voiceMsg || (t.lang === 'es' && voiceOn && canSpeak() && !hasVoice(speechLang(t.lang)) ? t('voice.noEs') : speaking ? t('voice.speaking') : listening ? t('voice.listening') : !canSpeak() ? t('voice.cannotSpeak') : voiceOn ? t('voice.on') : t('voice.off'))}
             </p>
           </div>
+          {fresh && <p className="fresh-hint">{t('guide.freshHint')}</p>}
         </section>
 
         <section id="guide-side" className={`guide-side${tab === 'plan' ? ' is-active' : ''}`} data-tab="plan" aria-label={t('guide.sideLabel')}>

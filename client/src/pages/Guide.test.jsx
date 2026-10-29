@@ -39,7 +39,7 @@ describe('home page', () => {
     expect(ways.getByRole('button', { name: 'Talk to me' })).toBeInTheDocument();
     expect(ways.getByRole('button', { name: 'Type instead' })).toBeInTheDocument();
     expect(ways.getByRole('button', { name: 'Use the step-by-step form' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Start with this sentence' })).toBeDisabled();
+    expect(screen.getByLabelText('Tell the guide about your business, or answer its question')).toBeInTheDocument();
     expect(screen.getByText(/do not ask for names, addresses or tax numbers/i)).toBeInTheDocument();
     // The three sample businesses are quick-start chips.
     for (const name of ['Home-based service business', 'Restaurant', 'Construction contractor']) {
@@ -50,7 +50,9 @@ describe('home page', () => {
   it('keeps what the owner types out of the address bar', async () => {
     const user = userEvent.setup();
     renderAt('/');
+    await user.click(screen.getByRole('button', { name: 'Use the step-by-step form' }));
     await user.type(screen.getByLabelText('Describe your business in one sentence'), STORY);
+    expect(screen.getByRole('button', { name: 'Start with this sentence' })).toBeEnabled();
     await user.click(screen.getByRole('button', { name: 'Start with this sentence' }));
     // The sentence was sent to the guide as the first message.
     expect(await screen.findByRole('heading', { name: 'Your guide' })).toBeInTheDocument();
