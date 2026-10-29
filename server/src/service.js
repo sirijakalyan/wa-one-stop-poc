@@ -134,7 +134,7 @@ export function createService(store, options = {}) {
   const FOOTER = 'Please confirm every date and requirement with the agency before you act.';
   const linkTo = (kind, token) => `${publicUrl}/api/email/${kind}?token=${token}`;
 
-  async function sendReminderEmail(to, token, rule, date, days) {
+  async function sendReminderEmail(to, token, rule, date, days, business = '') {
     const when = days === 0 ? 'today' : days === 1 ? 'tomorrow' : `in ${days} days`;
     const agency = rule.agency || '';
     const page = rule.apply?.url || rule.source?.url || '';
@@ -145,6 +145,7 @@ export function createService(store, options = {}) {
         `Please check the exact deadline and the renewal steps with the agency${agency ? ` (${agency})` : ''} so nothing lapses.`,
       ],
       facts: [
+        ...(business ? [{ label: 'Business', value: business }] : []),
         { label: 'What to renew', value: rule.title },
         { label: 'Renewal date', value: longDate(date) },
         { label: 'Time left', value: days === 0 ? 'Due today' : days === 1 ? '1 day' : `${days} days` },
@@ -155,7 +156,7 @@ export function createService(store, options = {}) {
       footer: 'You get this because renewal reminders are on for your account.',
       footerLinks: [{ label: 'Stop these emails', url: linkTo('unsubscribe', token) }],
     });
-    await mailer.send({ to, subject: `Action needed: renew "${rule.title}" ${when}`, text, html });
+    await mailer.send({ to, subject: `Action needed: renew "${rule.title}"${business ? ` for ${business}` : ''} ${when}`, text, html });
   }
 
   // Sends reminders that are due. Safe to run often: each (rule, date, window) is sent once.
@@ -168,8 +169,9 @@ export function createService(store, options = {}) {
       if (onlyVisitor && sub.id !== onlyVisitor) continue;
       const all = (await store.listChecklists()).filter((c) => baseOf(c.id) === sub.id);
       const dates = [];
-      for (const cl of all) for (const [ruleId, date] of Object.entries(cl.renewals || {})) dates.push([ruleId, date, bizIdOf(cl.id)]);
-      for (const [ruleId, date, biz] of dates) {
+      // With more than one business, each email and notice says which business it is about.
+      for (const cl of all) for (const [ruleId, date] of Object.entries(cl.renewals || {})) dates.push([ruleId, date, bizIdOf(cl.id), all.length > 1 ? (cl.label || 'Your business') : '']);
+      for (const [ruleId, date, biz, bizName] of dates) {
         const rule = rulesDoc.rules.find((r) => r.id === ruleId);
         if (!rule || !/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
         result.checked += 1;
@@ -179,11 +181,11 @@ export function createService(store, options = {}) {
         const key = `${biz === 'main' ? '' : `${biz}|`}${ruleId}|${date}|${Math.min(...crossed)}`;
         if (await store.hasReminderSent(sub.id, key)) continue;
         try {
-          await sendReminderEmail(sub.email, sub.token, rule, date, days);
+          await sendReminderEmail(sub.email, sub.token, rule, date, days, bizName);
           await store.recordReminder(sub.id, key);
           await store.addNotification(sub.id, {
             id: uuid(), type: 'renewal', simulated: mailer.mode !== 'live', read: false, createdAt: new Date().toISOString(),
-            title: `Renewal reminder: ${rule.title}`,
+            title: `Renewal reminder: ${rule.title}${bizName ? ` (${bizName})` : ''}`,
             body: `Renewal date ${date}. ${mailer.mode === 'live' ? 'We emailed you this reminder.' : 'Demo mode: the email was written to the server log, not delivered.'} Check the date with the agency.`,
           });
           result.sent += 1;
