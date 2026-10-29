@@ -1121,3 +1121,18 @@ body { background: radial-gradient(900px 380px at 85% -140px, rgba(25,167,160,.1
 .guide-audio { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; margin: .5rem 0 .25rem; }
 .guide-audio .btn { gap: .4rem; }
 .guide-audio [aria-pressed="true"] { background: var(--teal-50); border-color: var(--teal-600); color: var(--teal-700); }
+
+/* ---- Renewal dates: a card of its own, with an entry point in the banner ---- */
+.mb-jump { display: inline-flex; align-items: center; gap: .45rem; margin-top: .85rem; padding: .4rem .85rem; border-radius: 10px; color: #fff; text-decoration: none; font-weight: 650; font-size: .9rem; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.28); transition: background .15s; }
+.mb-jump:hover { background: rgba(255,255,255,.2); }
+.mb-jump:focus-visible { outline: 2px solid #ffd978; outline-offset: 2px; }
+.renewals-card { position: relative; overflow: hidden; scroll-margin-top: 5rem; background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 1.25rem 1.4rem 1.1rem; box-shadow: var(--shadow-lift); }
+.renewals-card::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 4px; background: linear-gradient(90deg, var(--teal-600), #4a88d6); }
+.renewals-head { display: flex; gap: .9rem; align-items: flex-start; margin-bottom: .75rem; }
+.renewals-icon { flex: none; width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; color: var(--teal-700); background: var(--teal-50); border: 1px solid rgba(15,132,144,.25); }
+.renewals-head h2 { margin: 0 0 .2rem; font-size: 1.25rem; display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; }
+.renewals-head .hint { margin: 0; max-width: 60ch; }
+.chip-count { font-family: var(--font-body, inherit); font-size: .78rem; font-weight: 700; color: var(--teal-700); background: var(--teal-50); border: 1px solid rgba(15,132,144,.3); border-radius: 999px; padding: .15rem .6rem; }
+.renewals-card table { margin: 0; }
+.renewals-card tbody tr:hover { background: #f6fafb; }
+.renewals-card input.date { max-width: 14rem; }

@@ -54,6 +54,9 @@ export default function MyBusiness() {
           <h1 tabIndex={-1}>{t('mb.title')} <Simulated /></h1>
           <p className="mb-status">{data.label ? t('pr.sample', data.label) : ''}{t('pr.self')}</p>
           {t.lang === 'es' && <p className="draft-note">{t('enNote')}</p>}
+          <a className="mb-jump" href="#renewals" onClick={(e) => { e.preventDefault(); document.getElementById('renewals')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>
+            <Icon name="calendar" size={16} /> {t('pr.renewJump')}
+          </a>
         </div>
         <div className="ring" style={{ '--p': data.percent }} role="img" aria-label={`${data.percent}% ${t('mb.complete')}`}>
           <span><strong>{data.percent}%</strong><small>{t('mb.complete')}</small></span>

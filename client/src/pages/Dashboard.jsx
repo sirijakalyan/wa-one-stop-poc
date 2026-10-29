@@ -4,6 +4,7 @@ import { Simulated } from '../components/Parts.jsx';
 import { Link } from 'react-router-dom';
 import { api, useLoad } from '../api.js';
 import { useT } from '../i18n.js';
+import Icon from '../components/Icon.jsx';
 import { ErrorNote, Loading, Meter } from '../components/Parts.jsx';
 
 
@@ -65,12 +66,16 @@ export function DashSummary({ data }) {
 
 export function DashRenewals({ data, onSave, savedId, actionError }) {
   const t = useT();
+  const set = data.items.filter((i) => i.renewal).length;
   return (
-    <>
-      <h2>{t('pr.renew')}</h2>
-      <p className="hint">
-        {t('pr.renewHint')}
-      </p>
+    <section className="renewals-card" id="renewals" aria-labelledby="renewals-title">
+      <header className="renewals-head">
+        <span className="renewals-icon" aria-hidden="true"><Icon name="calendar" size={22} /></span>
+        <div>
+          <h2 id="renewals-title">{t('pr.renew')} <span className="chip-count" data-testid="renewals-count">{t('pr.renewSet', set, data.items.length)}</span></h2>
+          <p className="hint">{t('pr.renewHint')}</p>
+        </div>
+      </header>
       <ErrorNote message={actionError} />
       <div className="table-scroll">
         <table className="stack">
@@ -98,7 +103,7 @@ export function DashRenewals({ data, onSave, savedId, actionError }) {
           </tbody>
         </table>
       </div>
-    </>
+    </section>
   );
 }
 
