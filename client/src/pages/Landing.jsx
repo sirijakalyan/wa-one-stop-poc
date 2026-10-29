@@ -56,6 +56,7 @@ export default function Landing() {
 
   return (
     <>
+      <div className="home-split">
       <section className="hero guide-hero" aria-labelledby="hero-title">
         <div className="hero-grid">
           <div className="guide-stage">
@@ -115,6 +116,7 @@ export default function Landing() {
         <p className="hint workspace-hint">{t('home.lead')} {t('home.waysNote')}</p>
         <p className="privacy-note workspace-hint">{t('home.privacy')}</p>
       </section>
+      </div>
 
       {t('draft.note') ? <p className="draft-note" role="note">{t('draft.note')}</p> : null}
       <h2 id="samples" tabIndex={-1} style={{ marginTop: 0 }}>{t('home.samplesTitle')}</h2>

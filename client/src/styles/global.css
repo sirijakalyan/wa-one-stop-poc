@@ -787,3 +787,22 @@ footer .api-status { background: transparent; color: #a9bdd4; border-color: rgba
 .guide-hero .guide-bubble.is-speaking > p:first-child, .guide-hero .guide-bubble.is-listening > p:first-child { display: none; }
 .guide-hero .guide-bubble.is-speaking .live-status, .guide-hero .guide-bubble.is-listening .live-status { margin: 0; font-size: .95rem; }
 .guide-hero .guide-bubble { max-height: none; overflow: visible; }
+
+/* v2.3: intro on the left, the conversation beside it on the right (stacked on phones and tablets) */
+.home-split { display: grid; gap: 1rem; grid-template-columns: minmax(0, 1fr); margin-bottom: 1.5rem; }
+.home-split .guide-hero, .home-split .workspace { margin: 0; }
+@media (min-width: 64rem) {
+  .home-split { grid-template-columns: minmax(17rem, 21rem) minmax(0, 1fr); align-items: start; }
+  .home-split .guide-hero { position: sticky; top: 1rem; padding: 1.1rem; }
+  .home-split .guide-hero .hero-grid { grid-template-columns: minmax(0, 1fr); gap: .8rem; }
+  .home-split .guide-hero .guide-stage { flex-direction: column; align-items: stretch; gap: .5rem; }
+  .home-split .guide-hero .guide-art { display: block; order: 0; width: 6rem; align-self: center; }
+  .home-split .guide-hero .guide-bubble { max-width: none; width: 100%; }
+  .home-split .guide-hero .guide-bubble::after { display: block; left: 50%; margin-left: -10px; bottom: auto; top: 100%; margin-top: -10px; }
+  .home-split .guide-hero .ai-label { display: inline-flex; justify-content: center; }
+  .home-split .guide-hero h1 { font-size: 1.55rem; }
+  .home-split .guide-hero .ways-in { grid-template-columns: minmax(0, 1fr); margin-top: .4rem; }
+  .home-split .guide-hero .ways-in .btn { min-height: 46px; }
+  .home-split .guide-hero .one-sentence label { position: static; width: auto; height: auto; clip: auto; white-space: normal; }
+  .home-split .workspace { min-width: 0; }
+}
