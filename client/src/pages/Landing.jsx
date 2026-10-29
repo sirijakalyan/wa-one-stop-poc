@@ -79,13 +79,13 @@ export default function Landing() {
 
             <ul className="ways-in" aria-label={t('home.ways')}>
               <li>
-                <button type="button" className={`btn btn-primary${mode === 'talk' ? ' is-current' : ''}`} aria-pressed={mode === 'talk'} onClick={() => choose('talk')}>{t('home.talk')}</button>
+                <button type="button" className={`btn btn-primary${mode === 'talk' ? ' is-current' : ''}`} aria-pressed={mode === 'talk'} onClick={() => choose('talk')}><Icon name="mic" size={20} />{t('home.talk')}</button>
               </li>
               <li>
-                <button type="button" className={`btn btn-primary${mode === 'type' ? ' is-current' : ''}`} aria-pressed={mode === 'type'} onClick={() => choose('type')}>{t('home.type')}</button>
+                <button type="button" className={`btn btn-primary${mode === 'type' ? ' is-current' : ''}`} aria-pressed={mode === 'type'} onClick={() => choose('type')}><Icon name="chat" size={20} />{t('home.type')}</button>
               </li>
               <li>
-                <button type="button" className={`btn btn-primary${mode === 'form' ? ' is-current' : ''}`} aria-pressed={mode === 'form'} onClick={() => choose('form')}>{t('home.form')}</button>
+                <button type="button" className={`btn btn-primary${mode === 'form' ? ' is-current' : ''}`} aria-pressed={mode === 'form'} onClick={() => choose('form')}><Icon name="list" size={20} />{t('home.form')}</button>
               </li>
             </ul>
 

@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import Icon from '../components/Icon.jsx';
 import { Link } from 'react-router-dom';
 import { api, useLoad } from '../api.js';
 import { useT } from '../i18n.js';
@@ -48,9 +49,16 @@ export default function MyBusiness() {
 
   return (
     <>
-      <h1 tabIndex={-1}>{t('mb.title')} <Simulated /></h1>
-      <p className="hint">{data.label ? t('pr.sample', data.label) : ''}{t('pr.self')}</p>
-      {t.lang === 'es' && <p className="draft-note">{t('enNote')}</p>}
+      <header className="mb-banner">
+        <div>
+          <h1 tabIndex={-1}>{t('mb.title')} <Simulated /></h1>
+          <p className="mb-status">{data.label ? t('pr.sample', data.label) : ''}{t('pr.self')}</p>
+          {t.lang === 'es' && <p className="draft-note">{t('enNote')}</p>}
+        </div>
+        <div className="ring" style={{ '--p': data.percent }} role="img" aria-label={`${data.percent}% ${t('mb.complete')}`}>
+          <span><strong>{data.percent}%</strong><small>{t('mb.complete')}</small></span>
+        </div>
+      </header>
 
       <div className="mb-split">
         <div className="mb-main">
@@ -59,10 +67,10 @@ export default function MyBusiness() {
         </div>
         <aside className="mb-side" aria-label={t('mb.stats')}>
           <ul className="stat-row">
-            <li><strong>{data.done}</strong><span>{t('mb.doneN')}</span></li>
-            <li><strong>{remaining}</strong><span>{t('mb.remaining')}</span></li>
-            <li><strong>{cl ? pending : '-'}</strong><span>{t('mb.pendingV')}</span></li>
-            <li><strong>{data.percent}%</strong><span>{t('mb.complete')}</span></li>
+            <li className="st-done"><Icon name="checkCircle" size={20} /><strong>{data.done}</strong><span>{t('mb.doneN')}</span></li>
+            <li className="st-left"><Icon name="list" size={20} /><strong>{remaining}</strong><span>{t('mb.remaining')}</span></li>
+            <li className="st-pend"><Icon name="clock" size={20} /><strong>{cl ? pending : '-'}</strong><span>{t('mb.pendingV')}</span></li>
+            <li className="st-pct"><Icon name="shield" size={20} /><strong>{data.percent}%</strong><span>{t('mb.complete')}</span></li>
           </ul>
           <p className="hint" data-testid="mb-steps">{t('cl.steps', data.done, data.total)}</p>
           <DashSummary data={data} />
