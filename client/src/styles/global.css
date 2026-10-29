@@ -758,3 +758,32 @@ footer .api-status { background: transparent; color: #a9bdd4; border-color: rgba
 @keyframes bars { 0%, 100% { transform: scaleY(.25); } 50% { transform: scaleY(1); } }
 @media (prefers-reduced-motion: reduce) { .bars i { animation: none; transform: scaleY(.6); } }
 .guide-hero .guide-bubble { max-width: 15rem; max-height: 14rem; overflow: auto; }
+
+/* v2.2: the conversation sits right under a slim banner, so the owner sees it without scrolling */
+.guide-hero { padding: .9rem clamp(1rem, 2.5vw, 1.5rem); margin-bottom: .9rem; }
+.guide-hero .hero-grid { grid-template-columns: minmax(0, 17rem) minmax(0, 1fr); gap: .5rem 1.5rem; align-items: center; }
+.guide-hero h1 { font-size: clamp(1.4rem, 2.6vw, 1.9rem); margin: 0 0 .1rem; }
+.guide-hero .guide-art { width: 4.2rem; }
+.guide-hero .guide-stage { flex-direction: row; align-items: center; gap: .7rem; }
+.guide-hero .guide-art { order: -1; flex: none; margin: 0; }
+.guide-hero .guide-bubble { max-height: 7.5rem; padding: .5rem .75rem; }
+.guide-hero .guide-bubble p { font-size: .9rem; line-height: 1.35; }
+.guide-hero .guide-bubble::after { display: none; }
+.guide-hero .ai-label { display: none; }
+.guide-hero .ways-in { margin: .6rem 0 .3rem; }
+.guide-hero .ways-in .btn { min-height: 42px; font-size: .95rem; padding-block: .35rem; }
+.guide-hero .one-sentence { margin-top: .4rem; }
+.guide-hero .one-sentence label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.guide-hero .one-sentence-row input { min-height: 42px; }
+.workspace { margin-bottom: 1.25rem; }
+.workspace .workspace-hint { max-width: 48rem; margin-inline: auto; }
+.workspace .privacy-note { color: var(--muted); text-align: center; font-size: .85rem; }
+@media (max-width: 52rem) {
+  .guide-hero .hero-grid { grid-template-columns: minmax(0, 1fr); }
+  .guide-hero .guide-art { display: none; }
+  .guide-hero .guide-bubble { max-width: none; width: 100%; max-height: 6rem; }
+}
+/* While the guide talks or listens, the banner shows just that state; the words are in the conversation right below. */
+.guide-hero .guide-bubble.is-speaking > p:first-child, .guide-hero .guide-bubble.is-listening > p:first-child { display: none; }
+.guide-hero .guide-bubble.is-speaking .live-status, .guide-hero .guide-bubble.is-listening .live-status { margin: 0; font-size: .95rem; }
+.guide-hero .guide-bubble { max-height: none; overflow: visible; }

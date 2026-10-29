@@ -74,9 +74,6 @@ export default function Landing() {
 
           <div className="hero-copy">
             <h1 id="hero-title" tabIndex={-1}>{t('home.title')}</h1>
-            <p className="lead">
-              {t('home.lead')}
-            </p>
 
             <ul className="ways-in" aria-label={t('home.ways')}>
               <li>
@@ -89,7 +86,6 @@ export default function Landing() {
                 <button type="button" className={`btn btn-primary${mode === 'form' ? ' is-current' : ''}`} aria-pressed={mode === 'form'} onClick={() => choose('form')}>{t('home.form')}</button>
               </li>
             </ul>
-            <p className="hero-note">{t('home.waysNote')}</p>
 
             <form className="one-sentence" onSubmit={startWithSentence}>
               <label htmlFor="one-sentence">{t('home.sentenceLabel')}</label>
@@ -108,9 +104,6 @@ export default function Landing() {
                 </button>
               </div>
             </form>
-            <p className="privacy-note">
-              {t('home.privacy')}
-            </p>
           </div>
         </div>
       </section>
@@ -119,6 +112,8 @@ export default function Landing() {
         {mode === 'form' ? <Questionnaire embedded /> : null}
         {mode === 'talk' || mode === 'type' ? <Guide embedded mode={mode} start={startReq} /> : null}
         {!mode ? <p className="hint workspace-hint">{t('mode.pick')}</p> : <p className="hint workspace-hint">{t('mode.kept')}</p>}
+        <p className="hint workspace-hint">{t('home.lead')} {t('home.waysNote')}</p>
+        <p className="privacy-note workspace-hint">{t('home.privacy')}</p>
       </section>
 
       {t('draft.note') ? <p className="draft-note" role="note">{t('draft.note')}</p> : null}
