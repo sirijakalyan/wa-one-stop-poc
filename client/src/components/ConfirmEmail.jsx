@@ -4,7 +4,7 @@ import { useApp } from '../AppContext.jsx';
 import { useT } from '../i18n.js';
 
 // Shown after sign up with AWS Cognito, and when someone signs in before confirming. Enter the 6-digit code from the email.
-export default function ConfirmEmail({ email, password, onDone }) {
+export default function ConfirmEmail({ email, password, onDone, signInAfter = true }) {
   const t = useT();
   const { signIn } = useApp();
   const [code, setCode] = useState('');
@@ -17,8 +17,10 @@ export default function ConfirmEmail({ email, password, onDone }) {
     setErr(''); setNote(''); setBusy(true);
     try {
       await api.confirmEmail(email, code.trim());
-      const r = await api.login(email, password);
-      signIn(r.user, r.token, r.refreshToken);
+      if (signInAfter) {
+        const r = await api.login(email, password);
+        signIn(r.user, r.token, r.refreshToken);
+      }
       onDone();
     } catch (e2) {
       setErr(e2.message);
@@ -39,7 +41,7 @@ export default function ConfirmEmail({ email, password, onDone }) {
       </div>
       <p className="err" role="alert">{err}</p>
       {note && <p className="ok" role="status">{note}</p>}
-      <button type="submit" className="btn btn-primary auth-submit" disabled={busy || !code.trim()}>{busy ? t('auth.saving') : t('auth.confirmBtn')}</button>
+      <button type="submit" className="btn btn-primary auth-submit" disabled={busy || !code.trim()}>{busy ? t('auth.saving') : t(signInAfter ? 'auth.confirmBtn' : 'auth.confirmOnly')}</button>
       <p className="auth-alt"><button type="button" className="linklike" onClick={resend}>{t('auth.resend')}</button></p>
     </form>
   );

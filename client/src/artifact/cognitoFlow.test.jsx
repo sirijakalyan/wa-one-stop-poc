@@ -39,11 +39,16 @@ describe('sign in through AWS Cognito', () => {
     await user.click(screen.getByRole('button', { name: 'Create account' }));
     expect(await screen.findByRole('heading', { name: 'Check your email' })).toBeInTheDocument();
     await user.type(screen.getByLabelText('6-digit code'), '000000');
-    await user.click(screen.getByRole('button', { name: 'Confirm and sign in' }));
+    await user.click(screen.getByRole('button', { name: 'Confirm email' }));
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('That code is not right'));
     await user.clear(screen.getByLabelText('6-digit code'));
     await user.type(screen.getByLabelText('6-digit code'), '123456');
-    await user.click(screen.getByRole('button', { name: 'Confirm and sign in' }));
+    await user.click(screen.getByRole('button', { name: 'Confirm email' }));
+    // confirming does not sign in: Sign in opens next
+    expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Account: Ana Rivera/ })).not.toBeInTheDocument();
+    await user.type(screen.getByLabelText('Password'), 'Passw0rdOK');
+    await user.click(screen.getByRole('button', { name: 'Sign in' }));
     expect(await screen.findByRole('button', { name: /Account: Ana Rivera/ })).toBeInTheDocument();
   });
 
@@ -57,7 +62,9 @@ describe('sign in through AWS Cognito', () => {
     await user.type(screen.getByLabelText('Confirm password'), 'Passw0rdOK');
     await user.click(screen.getByRole('button', { name: 'Create account' }));
     await user.type(await screen.findByLabelText('6-digit code'), '123456');
-    await user.click(screen.getByRole('button', { name: 'Confirm and sign in' }));
+    await user.click(screen.getByRole('button', { name: 'Confirm email' }));
+    await user.type(await screen.findByLabelText('Password'), 'Passw0rdOK');
+    await user.click(screen.getByRole('button', { name: 'Sign in' }));
     await user.click(await screen.findByRole('button', { name: /Account: Ana/ }));
     await user.click(screen.getByRole('menuitem', { name: 'Sign out' }));
     await user.click((await screen.findAllByRole('link', { name: 'Sign in' }))[0]);

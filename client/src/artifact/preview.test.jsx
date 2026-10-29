@@ -319,11 +319,32 @@ describe('accounts and the admin users area', () => {
     await user.click(screen.getByRole('button', { name: 'Create account' }));
   }
 
+  // Sign up ends on the Sign in page. This signs in as well.
+  async function signUpIn(user, name, email, password = 'Passw0rdOK') {
+    await signUp(user, name, email, password);
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    await user.type(screen.getByLabelText('Password'), password);
+    await user.click(screen.getByRole('button', { name: 'Sign in' }));
+  }
+
+  it('after sign up the person is not signed in: Sign in opens with their email, then they sign in', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    await signUp(user, 'Ana', 'ana@example.com');
+    expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Your account is ready. Sign in to continue.');
+    expect(screen.getByLabelText('Email address')).toHaveValue('ana@example.com');
+    expect(screen.queryByRole('button', { name: /Account: Ana/ })).not.toBeInTheDocument();
+    await user.type(screen.getByLabelText('Password'), 'Passw0rdOK');
+    await user.click(screen.getByRole('button', { name: 'Sign in' }));
+    expect(await screen.findByRole('button', { name: /Account: Ana/ })).toBeInTheDocument();
+  });
+
   it('shows Sign in and Create account when signed out, and the name with a menu when signed in', async () => {
     const user = userEvent.setup();
     renderApp();
     expect(screen.getAllByRole('link', { name: 'Sign in' }).length).toBeGreaterThan(0);
-    await signUp(user, 'Ana Rivera', 'ana@example.com');
+    await signUpIn(user, 'Ana Rivera', 'ana@example.com');
     const btn = await screen.findByRole('button', { name: /Account: Ana Rivera/ });
     await user.click(btn);
     expect(screen.getByText('ana@example.com')).toBeInTheDocument();
@@ -349,7 +370,7 @@ describe('accounts and the admin users area', () => {
   it('signs in again with the right password and refuses the wrong one', async () => {
     const user = userEvent.setup();
     renderApp();
-    await signUp(user, 'Ana', 'ana@example.com');
+    await signUpIn(user, 'Ana', 'ana@example.com');
     await user.click(await screen.findByRole('button', { name: /Account: Ana/ }));
     await user.click(screen.getByRole('menuitem', { name: 'Sign out' }));
     await user.click((await screen.findAllByRole('link', { name: 'Sign in' }))[0]);
@@ -366,7 +387,7 @@ describe('accounts and the admin users area', () => {
   it('forgot password: shows the demo link, then sets a new password that works', async () => {
     const user = userEvent.setup();
     renderApp();
-    await signUp(user, 'Ana', 'ana@example.com');
+    await signUpIn(user, 'Ana', 'ana@example.com');
     await user.click(await screen.findByRole('button', { name: /Account: Ana/ }));
     await user.click(screen.getByRole('menuitem', { name: 'Sign out' }));
     await user.click((await screen.findAllByRole('link', { name: 'Sign in' }))[0]);
@@ -399,7 +420,7 @@ describe('accounts and the admin users area', () => {
     const user = userEvent.setup();
     renderApp();
     // an owner builds a plan and ticks a step
-    await signUp(user, 'Ana Rivera', 'ana@example.com');
+    await signUpIn(user, 'Ana Rivera', 'ana@example.com');
     await screen.findByRole('button', { name: /Account: Ana/ });
     await saveRestaurant(user);
     await screen.findByRole('heading', { name: 'Sample checklist: Restaurant' });
@@ -408,7 +429,7 @@ describe('accounts and the admin users area', () => {
     expect(screen.queryByRole('menuitem', { name: 'Admin' })).not.toBeInTheDocument();
     await user.click(screen.getByRole('menuitem', { name: 'Sign out' }));
     // the admin signs up with the configured admin email and opens the Users tab
-    await signUp(user, 'Boss', 'admin@example.com');
+    await signUpIn(user, 'Boss', 'admin@example.com');
     await user.click(await screen.findByRole('button', { name: /Account: Boss/ }));
     await user.click(screen.getByRole('menuitem', { name: 'Admin' }));
     expect(await screen.findByRole('heading', { name: 'Users' })).toBeInTheDocument();

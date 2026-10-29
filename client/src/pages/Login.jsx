@@ -11,7 +11,7 @@ export default function Login() {
   const { signIn } = useApp();
   const navigate = useNavigate();
   const { state } = useLocation();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(state?.email || '');
   const [password, setPassword] = useState('');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
@@ -51,6 +51,7 @@ export default function Login() {
         </div>
         <PasswordField id="login-password" label={t('auth.password')} value={password} onChange={setPassword} autoComplete="current-password" />
         <p className="auth-row"><Link to="/forgot-password">{t('auth.forgotLink')}</Link></p>
+        {state?.notice === 'created' && !err && <p className="ok" role="status">{t('auth.createdNotice')}</p>}
         <p className="err" role="alert">{err}</p>
         <button type="submit" className="btn btn-primary auth-submit" disabled={busy || !email || !password}>{busy ? t('auth.signingIn') : t('auth.signIn')}</button>
       </form>
