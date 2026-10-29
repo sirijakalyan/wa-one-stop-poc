@@ -20,6 +20,20 @@ export function visitorId() {
   }
 }
 
+// Which saved business this browser is looking at ('main' is the first one). Sent as ?biz= on the checklist, dashboard and chat calls.
+let memoryBiz = 'main';
+export function getBusiness() {
+  try { return localStorage.getItem('wa-biz') || memoryBiz; } catch { return memoryBiz; }
+}
+export function setBusiness(id) {
+  memoryBiz = id || 'main';
+  try { if (id && id !== 'main') localStorage.setItem('wa-biz', id); else localStorage.removeItem('wa-biz'); } catch { /* memory only */ }
+}
+// Set by "Edit answers": the next save replaces this business instead of adding a new one.
+let editingBiz = '';
+export const startEditing = (id) => { editingBiz = id || ''; };
+export const stopEditing = () => { editingBiz = ''; };
+
 // Admin key lives in sessionStorage only (cleared when the tab closes). It is never in the bundle.
 let memoryKey = '';
 export function getAdminKey() {
@@ -74,6 +88,8 @@ async function refreshSession() {
 }
 
 async function request(method, url, body, retried = false) {
+  const biz = getBusiness();
+  if (biz && biz !== 'main' && /^\/api\/(checklist|dashboard|chat)/.test(url) && !/[?&]biz=/.test(url)) url += `${url.includes('?') ? '&' : '?'}biz=${encodeURIComponent(biz)}`;
   if (apiLang === 'es' && !/[?&]lang=/.test(url) && !/^\/api\/(admin|rules|changes|county|source|demo)/.test(url)) url += `${url.includes('?') ? '&' : '?'}lang=es`;
   const headers = { 'content-type': 'application/json', 'x-visitor-id': visitorId() };
   const key = getAdminKey();
@@ -117,6 +133,19 @@ export const api = {
   suggest: (text) => request('POST', '/api/suggest', { text }),
   checklist: () => request('GET', '/api/checklist'),
   saveChecklist: (answers, label) => request('POST', '/api/checklist', { answers, label }),
+  businesses: () => request('GET', '/api/businesses'),
+  // Saves the answers as a business. After "Edit answers" it replaces that business. Otherwise it is added next to the ones already saved.
+  async saveBusiness(answers, label) {
+    let target = editingBiz;
+    if (!target) {
+      const have = (await request('GET', '/api/businesses').catch(() => ({ businesses: [] }))).businesses || [];
+      target = have.length ? 'new' : 'main';
+    }
+    const res = await request('POST', `/api/checklist?biz=${encodeURIComponent(target)}`, { answers, label });
+    editingBiz = '';
+    setBusiness(res.biz || 'main');
+    return res;
+  },
   deleteChecklist: () => request('DELETE', '/api/checklist'),
   setDone: (ruleId, done) => request('PATCH', '/api/checklist/done', { ruleId, done }),
   setRenewal: (ruleId, date) => request('PUT', '/api/checklist/renewal', { ruleId, date }),

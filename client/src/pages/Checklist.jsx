@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { api, useLoad } from '../api.js';
+import { api, getBusiness, setBusiness, startEditing, stopEditing, useLoad } from '../api.js';
 import { useT } from '../i18n.js';
 import { useApp } from '../AppContext.jsx';
 import ChecklistItem from '../components/ChecklistItem.jsx';
@@ -28,6 +28,7 @@ export default function Checklist({ embedded = false, onChanged, onData } = {}) 
     }
   }
   function editAnswers() {
+    startEditing(getBusiness());
     setAnswers({ ...blankAnswers(), ...data.answers, cats: [...data.answers.cats] });
     setLabel(data.label || '');
     setCatsAuto(false);
@@ -39,10 +40,12 @@ export default function Checklist({ embedded = false, onChanged, onData } = {}) 
   async function startOver() {
     try {
       await api.deleteChecklist();
+      stopEditing();
+      setBusiness('main');
       setAnswers(blankAnswers());
       setLabel('');
       setStep(0);
-      navigate('/');
+      navigate('/my-business');
     } catch (e) {
       setActionError(e.message);
     }

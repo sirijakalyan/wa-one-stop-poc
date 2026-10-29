@@ -1,7 +1,9 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Icon from '../components/Icon.jsx';
-import { Link } from 'react-router-dom';
-import { api, useLoad } from '../api.js';
+import { Link, useNavigate } from 'react-router-dom';
+import { api, getBusiness, setBusiness, stopEditing, useLoad } from '../api.js';
+import { useApp } from '../AppContext.jsx';
+import { blankCard } from '../guideCard.js';
 import { useT } from '../i18n.js';
 import Checklist from './Checklist.jsx';
 import { DashOverall, DashRenewals } from './Dashboard.jsx';
@@ -11,8 +13,28 @@ import { ErrorNote, Loading, Simulated } from '../components/Parts.jsx';
 // API calls, so marking a step done saves exactly as before and the summary above refreshes from the server.
 export default function MyBusiness() {
   const t = useT();
-  const fetchDash = useCallback(() => api.dashboard(), [t.lang]); // eslint-disable-line react-hooks/exhaustive-deps
+  const navigate = useNavigate();
+  const { setGuide } = useApp();
+  const [biz, setBiz] = useState(getBusiness());
+  const fetchList = useCallback(() => api.businesses(), []);
+  const { data: list, reload: reloadList } = useLoad(fetchList);
+  const fetchDash = useCallback(() => api.dashboard(), [t.lang, biz]); // eslint-disable-line react-hooks/exhaustive-deps
   const { data, error, loading, reload } = useLoad(fetchDash);
+  const businesses = list?.businesses || [];
+  // The business last looked at may have been removed (or belong to another account): fall back to the first one saved.
+  useEffect(() => {
+    if (businesses.length && !businesses.some((b) => b.id === biz)) pick(businesses[0].id);
+  }, [list]); // eslint-disable-line react-hooks/exhaustive-deps
+  function pick(id) {
+    setBusiness(id);
+    stopEditing();
+    setBiz(id);
+  }
+  function addBusiness() {
+    stopEditing();
+    setGuide({ messages: [], card: blankCard(), ask: null, awaiting: null, complete: false });
+    navigate('/', { state: { mode: 'type' } });
+  }
   const [cl, setCl] = useState(null); // the checklist the Checklist piece loaded, used for the status counts
   const [actionError, setActionError] = useState('');
   const [savedId, setSavedId] = useState('');
@@ -23,10 +45,28 @@ export default function MyBusiness() {
       await api.setRenewal(ruleId, date || null);
       setSavedId(ruleId);
       await reload();
+      reloadList();
     } catch (e) {
       setActionError(e.message);
     }
   }
+
+  const switcher = businesses.length > 0 && (
+    <nav className="biz-switch" aria-label={t('mb.yours')}>
+      <h2 className="biz-switch-title">{t('mb.yours')}</h2>
+      <ul>
+        {businesses.map((b) => (
+          <li key={b.id}>
+            <button type="button" className={`biz-pick${b.id === biz ? ' is-on' : ''}`} aria-current={b.id === biz ? 'true' : undefined} onClick={() => pick(b.id)} aria-label={t('mb.pick', b.label || t('mb.title'), b.percent)}>
+              <strong>{b.label || t('mb.title')}</strong>
+              <span>{b.done} / {b.total}</span>
+            </button>
+          </li>
+        ))}
+        <li><button type="button" className="biz-add" onClick={addBusiness}><Icon name="plus" size={16} /> {t('mb.add')}</button></li>
+      </ul>
+    </nav>
+  );
 
   if (loading && !data) return <Loading what={t('load.progress')} />;
   if (error) return <ErrorNote message={error} />;
@@ -49,6 +89,7 @@ export default function MyBusiness() {
 
   return (
     <>
+      {switcher}
       <header className="mb-banner">
         <div>
           <h1 tabIndex={-1}>{t('mb.title')} <Simulated /></h1>
@@ -65,7 +106,7 @@ export default function MyBusiness() {
 
       <div className="mb-split">
         <div className="mb-main">
-          <Checklist embedded onChanged={reload} onData={setCl} />
+          <Checklist key={biz} embedded onChanged={() => { reload(); reloadList(); }} onData={setCl} />
           <DashRenewals data={data} onSave={saveRenewal} savedId={savedId} actionError={actionError} />
         </div>
         <aside className="mb-side" aria-label={t('mb.stats')}>

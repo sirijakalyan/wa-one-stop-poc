@@ -339,7 +339,7 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
     setError('');
     try {
       const a = view.plan?.answers || answersFromCard(guide.card);
-      await api.saveChecklist(a, (guide.card.values.desc || 'My business').slice(0, 80));
+      await api.saveBusiness(a, (guide.card.values.desc || 'My business').slice(0, 80));
       navigate('/my-business');
     } catch (e) {
       setError(e.message);

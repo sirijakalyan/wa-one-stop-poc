@@ -1235,3 +1235,15 @@ input[type="password"]:hover, input[type="search"]:hover { border-color: var(--n
 .chat > .chat-log { min-height: 0; max-height: none; padding: 1rem; gap: .8rem; }
 .chat > .chat-form { flex: none; }
 #guide-side { scroll-margin-top: 4.5rem; }
+
+/* My business: the businesses this account has saved, with a button to add another */
+.biz-switch { margin: 0 0 1.1rem; }
+.biz-switch-title { margin: 0 0 .5rem; font-size: 1rem; color: var(--muted); font-weight: 650; }
+.biz-switch ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .6rem; }
+.biz-pick, .biz-add { display: inline-flex; align-items: center; gap: .6rem; min-height: 44px; padding: .5rem .95rem; border: 1.5px solid var(--line-strong); border-radius: 12px; background: var(--surface); color: var(--ink); font: inherit; cursor: pointer; text-align: left; max-width: 100%; }
+.biz-pick strong { font-weight: 650; overflow-wrap: anywhere; }
+.biz-pick span { color: var(--muted); font-size: .85rem; white-space: nowrap; }
+.biz-pick:hover, .biz-add:hover { border-color: var(--teal-500); background: var(--brand-soft); }
+.biz-pick.is-on { border-color: var(--navy-900); background: var(--navy-900); color: #fff; }
+.biz-pick.is-on span { color: #c7d8ec; }
+.biz-add { border-style: dashed; color: var(--teal-700, var(--ink)); font-weight: 650; }

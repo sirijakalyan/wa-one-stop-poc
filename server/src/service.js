@@ -110,6 +110,22 @@ export function createService(store, options = {}) {
     if (!isAdmin(ctx)) fail(options.adminKey ? 'Enter the admin key to change rules.' : 'Admin is locked. Set ADMIN_KEY on the server to enable it.', 403);
   };
   const visitorOf = (ctx) => ctx.visitor || DEFAULT_VISITOR;
+  // One account can keep several businesses. The first one lives under the visitor id itself ("main"), the others under
+  // "<visitor>~<id>". Routes pick one with ?biz=<id>; with no biz they use the main one, exactly as before.
+  const baseOf = (key) => String(key).split('~')[0];
+  const bizIdOf = (key) => (String(key).includes('~') ? String(key).split('~')[1] : 'main');
+  const bizId = () => Math.random().toString(36).slice(2, 8).padEnd(6, 'x');
+  function chKey(ctx, query, body) {
+    const biz = String(query?.biz || body?.biz || '');
+    if (!biz || biz === 'main') return visitorOf(ctx);
+    if (!/^[a-z0-9]{4,12}$/.test(biz)) fail('Unknown business.', 404);
+    return `${visitorOf(ctx)}~${biz}`;
+  }
+  async function businessesOf(visitor) {
+    const mine = (await store.listChecklists()).filter((c) => baseOf(c.id) === visitor);
+    mine.sort((a, b) => (b.id === visitor) - (a.id === visitor) || String(a.savedAt || '').localeCompare(String(b.savedAt || '')));
+    return mine;
+  }
   // The page language travels as ?lang=es (or lang in the body). It only changes the words shown, never what applies.
   const langIn = (query, body) => cleanLang(query?.lang || body?.lang);
   const mailer = options.mailer || null;
@@ -150,15 +166,17 @@ export function createService(store, options = {}) {
     const rulesDoc = await loadRules();
     for (const sub of await store.listEmailSubscribers()) {
       if (onlyVisitor && sub.id !== onlyVisitor) continue;
-      const cl = await store.getChecklist(sub.id);
-      for (const [ruleId, date] of Object.entries(cl?.renewals || {})) {
+      const all = (await store.listChecklists()).filter((c) => baseOf(c.id) === sub.id);
+      const dates = [];
+      for (const cl of all) for (const [ruleId, date] of Object.entries(cl.renewals || {})) dates.push([ruleId, date, bizIdOf(cl.id)]);
+      for (const [ruleId, date, biz] of dates) {
         const rule = rulesDoc.rules.find((r) => r.id === ruleId);
         if (!rule || !/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
         result.checked += 1;
         const days = Math.round((Date.parse(`${date}T00:00:00Z`) - startOfDay) / 86400000);
         const crossed = REMINDER_WINDOWS.filter((w) => days <= w);
         if (days < 0 || !crossed.length) continue;
-        const key = `${ruleId}|${date}|${Math.min(...crossed)}`;
+        const key = `${biz === 'main' ? '' : `${biz}|`}${ruleId}|${date}|${Math.min(...crossed)}`;
         if (await store.hasReminderSent(sub.id, key)) continue;
         try {
           await sendReminderEmail(sub.email, sub.token, rule, date, days);
@@ -333,7 +351,7 @@ export function createService(store, options = {}) {
 
   /* ---------- Admin: users ---------- */
   async function progressOf(a, rulesDoc) {
-    const cl = await store.getChecklist(acctVisitor(a));
+    const cl = (await businessesOf(acctVisitor(a)))[0];
     if (!cl) return { saved: false, label: '', done: 0, total: 0, percent: 0 };
     const built = await buildChecklist(cl, rulesDoc, 'en');
     const done = built.items.filter((i) => i.done).length;
@@ -354,7 +372,7 @@ export function createService(store, options = {}) {
     requireStrictAdmin(ctx);
     const a = await viaIdp(() => idp.getUser(params.id));
     if (!a) fail('User not found.', 404);
-    const cl = await store.getChecklist(acctVisitor(a));
+    const cl = (await businessesOf(acctVisitor(a)))[0] || null;
     const built = cl ? await buildChecklist(cl, await loadRules(), 'en') : null;
     return {
       ok: true,
@@ -395,46 +413,66 @@ export function createService(store, options = {}) {
   });
 
   route('GET', '/api/checklist', async ({ ctx, query }) => {
-    const cl = await store.getChecklist(visitorOf(ctx));
+    const key = chKey(ctx, query);
+    const cl = await store.getChecklist(key);
     if (!cl) return { ok: true, saved: false };
-    return { ok: true, ...(await buildChecklist(cl, await loadRules(), langIn(query))) };
+    return { ok: true, biz: bizIdOf(key), ...(await buildChecklist(cl, await loadRules(), langIn(query))) };
+  });
+
+  // Every business this person has saved, with progress, so My business can show them all.
+  route('GET', '/api/businesses', async ({ ctx, query }) => {
+    const rulesDoc = await loadRules();
+    const out = [];
+    for (const cl of await businessesOf(visitorOf(ctx))) {
+      const built = await buildChecklist(cl, rulesDoc, langIn(query));
+      const done = built.items.filter((i) => i.done).length;
+      out.push({ id: bizIdOf(cl.id), label: cl.label || '', savedAt: cl.savedAt || '', total: built.items.length, done, percent: built.items.length ? Math.round((done / built.items.length) * 100) : 0 });
+    }
+    return { ok: true, businesses: out };
   });
 
   route('POST', '/api/checklist', async ({ body, ctx, query }) => {
     const answers = normalizeAnswers(body?.answers);
     if (!answers.structure) fail('Choose a business structure first.');
     const label = typeof body?.label === 'string' ? body.label.slice(0, 80) : '';
-    const cl = { answers, label, done: {}, renewals: {}, savedAt: new Date().toISOString() };
-    await store.putChecklist(visitorOf(ctx), cl);
-    await track(ctx, 'plan-saved', label || 'Checklist saved');
-    return { ok: true, ...(await buildChecklist(cl, await loadRules(), langIn(query, body))) };
+    const asNew = String(query?.biz || body?.biz || '') === 'new';
+    let key = asNew ? `${visitorOf(ctx)}~${bizId()}` : chKey(ctx, query, body);
+    if (asNew && (await businessesOf(visitorOf(ctx))).length >= 20) fail('You can keep up to 20 businesses. Remove one to add another.');
+    // Saving over a business that already exists keeps its done marks and renewal dates for the answers that did not change.
+    const before = asNew ? null : await store.getChecklist(key);
+    const cl = { answers, label, done: before?.done || {}, renewals: before?.renewals || {}, savedAt: new Date().toISOString() };
+    await store.putChecklist(key, cl);
+    await track(ctx, asNew ? 'business-added' : 'plan-saved', label || 'Checklist saved');
+    return { ok: true, biz: bizIdOf(key), ...(await buildChecklist(cl, await loadRules(), langIn(query, body))) };
   });
 
-  route('DELETE', '/api/checklist', async ({ ctx }) => {
-    await store.deleteChecklist(visitorOf(ctx));
+  route('DELETE', '/api/checklist', async ({ ctx, query }) => {
+    await store.deleteChecklist(chKey(ctx, query));
     await track(ctx, 'plan-deleted', 'Started over');
     return { ok: true };
   });
 
   route('PATCH', '/api/checklist/done', async ({ body, ctx, query }) => {
-    const cl = await store.getChecklist(visitorOf(ctx));
+    const key = chKey(ctx, query, body);
+    const cl = await store.getChecklist(key);
     if (!cl) fail('No saved checklist.', 404);
     const { ruleId, done } = body || {};
     if (typeof ruleId !== 'string' || typeof done !== 'boolean') fail('ruleId and done are required.');
     cl.done[ruleId] = done;
-    await store.putChecklist(visitorOf(ctx), cl);
+    await store.putChecklist(key, cl);
     await track(ctx, done ? 'step-done' : 'step-undone', await ruleTitle(ruleId));
     return { ok: true, ...(await buildChecklist(cl, await loadRules(), langIn(query, body))) };
   });
 
   route('PUT', '/api/checklist/renewal', async ({ body, ctx, query }) => {
-    const cl = await store.getChecklist(visitorOf(ctx));
+    const key = chKey(ctx, query, body);
+    const cl = await store.getChecklist(key);
     if (!cl) fail('No saved checklist.', 404);
     const { ruleId, date } = body || {};
     if (typeof ruleId !== 'string') fail('ruleId is required.');
     if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) fail('Use a date like 2027-03-31.');
     if (date) cl.renewals[ruleId] = date; else delete cl.renewals[ruleId];
-    await store.putChecklist(visitorOf(ctx), cl);
+    await store.putChecklist(key, cl);
     await track(ctx, date ? 'renewal-set' : 'renewal-cleared', `${await ruleTitle(ruleId)}${date ? `: ${date}` : ''}`);
     // A signed-in person gets any reminder that is already due right away (the hourly check would send it later).
     if (date && ctx.account) { try { await runReminders(new Date(), visitorOf(ctx)); } catch (e) { console.error('[email] reminder failed:', e.message); } }
@@ -442,7 +480,7 @@ export function createService(store, options = {}) {
   });
 
   route('GET', '/api/dashboard', async ({ ctx, query }) => {
-    const cl = await store.getChecklist(visitorOf(ctx));
+    const cl = await store.getChecklist(chKey(ctx, query));
     const notes = await store.listNotifications(visitorOf(ctx));
     const unread = notes.filter((n) => !n.read).length;
     if (!cl) return { ok: true, saved: false, unread };
@@ -645,9 +683,12 @@ export function createService(store, options = {}) {
 
     // Queue one simulated notice for every visitor whose saved checklist includes this rule.
     let queued = 0;
+    const told = new Set();
     for (const cl of await store.listChecklists()) {
       if (!evaluate(doc.rules, cl.answers).items.some((i) => i.rule.id === rule.id)) continue;
-      await store.addNotification(cl.id, {
+      if (told.has(baseOf(cl.id))) continue;
+      told.add(baseOf(cl.id));
+      await store.addNotification(baseOf(cl.id), {
         id: uuid(), type: 'rule-changed', simulated: true, read: false, createdAt: new Date().toISOString(),
         title: `Rule changed: ${rule.title}`,
         body: `An agency content owner approved an update (${fields.map((f) => f.field).join(', ')}). Review this step in your checklist.`,
@@ -707,7 +748,7 @@ export function createService(store, options = {}) {
   });
 
   /* ---------- Chat: answers only from the rule records ---------- */
-  route('POST', '/api/chat', async ({ body, ctx }) => {
+  route('POST', '/api/chat', async ({ body, ctx, query }) => {
     const message = String(body?.message ?? '').trim();
     if (!message) fail('Type a question first.');
     if (message.length > 500) fail('Keep the question under 500 characters.');
@@ -716,7 +757,7 @@ export function createService(store, options = {}) {
       .slice(-8)
       .map((t) => ({ role: t.role, content: t.content.slice(0, 1000) }));
     const rulesDoc = await loadRules();
-    const cl = await store.getChecklist(visitorOf(ctx));
+    const cl = await store.getChecklist(chKey(ctx, query, body));
     const checklist = cl ? await buildChecklist(cl, rulesDoc) : null;
     const es = cleanLang(body?.lang) === 'es';
     const result = await answerQuestion({ message: es ? esToEn(message) : message, conversation: es ? [] : conversation, rules: rulesDoc.rules, checklist, llm: options.llm });
@@ -742,7 +783,7 @@ export function createService(store, options = {}) {
   const SPECIAL = /\b(alcohol|liquor|beer|wine|spirits|cannabis|marijuana|tobacco|vape|firearms?|guns?|daycare|day care|child ?care|cosmetolog\w*|barber\w*|hair salon|nail salon|taxi|trucking|real estate|insurance agent|pharmacy|clinic|medical)\b/i;
   const cardOf = (body) => (body?.card && typeof body.card === 'object' ? body.card : blankCard());
 
-  route('POST', '/api/intake/turn', async ({ body, ctx }) => {
+  route('POST', '/api/intake/turn', async ({ body, ctx, query }) => {
     const message = String(body?.message ?? '').trim();
     if (message.length > 500) fail('Keep each message under 500 characters.');
     const card = cardOf(body);
@@ -762,7 +803,7 @@ export function createService(store, options = {}) {
     // stays in English, and the answer says so, so nobody mistakes it for a reviewed translation.
     const askGrounded = async (text, { keepOnFallback = false } = {}) => {
       const rulesDoc = await loadRules();
-      const cl = await store.getChecklist(visitorOf(ctx));
+      const cl = await store.getChecklist(chKey(ctx, query, body));
       const checklist = cl ? await buildChecklist(cl, rulesDoc) : null;
       const q = (es ? esToEn(text) : text).replace(/\bstill\b/gi, ' ').replace(/\s+/g, ' ').trim();
       const answered = await answerQuestion({ message: q, conversation: [], rules: rulesDoc.rules, checklist, llm: options.llm });

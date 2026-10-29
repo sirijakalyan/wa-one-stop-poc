@@ -43,7 +43,7 @@ export default function Questionnaire({ embedded = false } = {}) {
     if (id === 'review') {
       setBusy(true);
       try {
-        await api.saveChecklist(answers, label);
+        await api.saveBusiness(answers, label);
         navigate('/my-business');
       } catch (e) {
         setErr(e.message);
