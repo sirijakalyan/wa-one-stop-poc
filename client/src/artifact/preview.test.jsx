@@ -310,11 +310,12 @@ describe('admin evidence panel', () => {
 const alertText = (re) => waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(re));
 
 describe('accounts and the admin users area', () => {
-  async function signUp(user, name, email, password = 'Passw0rdOK') {
+  async function signUp(user, name, email, password = 'Passw0rdOK', again) {
     await user.click(screen.getAllByRole('link', { name: 'Create account' })[0]);
     await user.type(await screen.findByLabelText('Your name'), name);
     await user.type(screen.getByLabelText('Email address'), email);
     await user.type(screen.getByLabelText('Password'), password);
+    await user.type(screen.getByLabelText('Confirm password'), again ?? password);
     await user.click(screen.getByRole('button', { name: 'Create account' }));
   }
 
@@ -335,6 +336,14 @@ describe('accounts and the admin users area', () => {
     renderApp();
     await signUp(user, 'Ana', 'ana@example.com', 'short');
     await alertText(/at least 8 characters/i);
+  });
+
+  it('asks to type the password twice and refuses when they differ', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    await signUp(user, 'Ana', 'ana@example.com', 'Passw0rdOK', 'Passw0rdNO');
+    await alertText('The two passwords do not match.');
+    expect(screen.queryByRole('button', { name: /Account: Ana/ })).not.toBeInTheDocument();
   });
 
   it('signs in again with the right password and refuses the wrong one', async () => {

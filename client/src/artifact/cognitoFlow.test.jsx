@@ -35,6 +35,7 @@ describe('sign in through AWS Cognito', () => {
     await user.type(await screen.findByLabelText('Your name'), 'Ana Rivera');
     await user.type(screen.getByLabelText('Email address'), 'ana@example.com');
     await user.type(screen.getByLabelText('Password'), 'Passw0rdOK');
+    await user.type(screen.getByLabelText('Confirm password'), 'Passw0rdOK');
     await user.click(screen.getByRole('button', { name: 'Create account' }));
     expect(await screen.findByRole('heading', { name: 'Check your email' })).toBeInTheDocument();
     await user.type(screen.getByLabelText('6-digit code'), '000000');
@@ -53,6 +54,7 @@ describe('sign in through AWS Cognito', () => {
     await user.type(await screen.findByLabelText('Your name'), 'Ana');
     await user.type(screen.getByLabelText('Email address'), 'ana@example.com');
     await user.type(screen.getByLabelText('Password'), 'Passw0rdOK');
+    await user.type(screen.getByLabelText('Confirm password'), 'Passw0rdOK');
     await user.click(screen.getByRole('button', { name: 'Create account' }));
     await user.type(await screen.findByLabelText('6-digit code'), '123456');
     await user.click(screen.getByRole('button', { name: 'Confirm and sign in' }));

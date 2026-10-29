@@ -14,6 +14,7 @@ export default function Signup() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [again, setAgain] = useState('');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -25,6 +26,7 @@ export default function Signup() {
   async function submit(e) {
     e.preventDefault();
     setErr('');
+    if (password !== again) return setErr(t('auth.mismatch'));
     setBusy(true);
     try {
       const r = await api.signup(name, email, password);
@@ -36,6 +38,7 @@ export default function Signup() {
     } finally {
       setBusy(false);
     }
+    return undefined;
   }
 
   if (confirming) {
@@ -53,8 +56,9 @@ export default function Signup() {
           <input id="su-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
         </div>
         <PasswordField id="su-password" label={t('auth.password')} value={password} onChange={setPassword} autoComplete="new-password" hint={t('auth.pwHint')} />
+        <PasswordField id="su-again" label={t('auth.confirmPw')} value={again} onChange={setAgain} autoComplete="new-password" />
         <p className="err" role="alert">{err}</p>
-        <button type="submit" className="btn btn-primary auth-submit" disabled={busy || !name || !email || !password}>{busy ? t('auth.creating') : t('auth.signUp')}</button>
+        <button type="submit" className="btn btn-primary auth-submit" disabled={busy || !name || !email || !password || !again}>{busy ? t('auth.creating') : t('auth.signUp')}</button>
       </form>
       <p className="auth-alt">{t('auth.haveAccount')} <Link to="/login" state={state}>{t('auth.signIn')}</Link></p>
       <p className="hint">{t('auth.optional')}</p>
