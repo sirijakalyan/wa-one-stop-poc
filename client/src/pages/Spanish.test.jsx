@@ -158,13 +158,12 @@ describe('Spanish', () => {
       const user = userEvent.setup();
       renderAt('/');
       await toSpanish(user);
-      await tap(user, 'Hablar con la guía');
-      await waitFor(() => expect(uttered.length).toBeGreaterThan(0));
-      expect(uttered[0].text).toMatch(/^Hola, estoy aquí para ayudarle/);
-      expect(uttered[0].lang).toBe('es-US');
-      expect(uttered[0].voice.name).toBe('Microsoft Sabina');
+      // Talk is the default: switching language repeats the greeting in Spanish and the microphone is already on.
+      await waitFor(() => expect(uttered.some((u) => /^Hola, estoy aquí para ayudarle/.test(u.text))).toBe(true));
+      const es = uttered.find((u) => /^Hola, estoy aquí para ayudarle/.test(u.text));
+      expect(es.lang).toBe('es-US');
+      expect(es.voice.name).toBe('Microsoft Sabina');
       expect(screen.getByRole('button', { name: 'Silenciar voz' })).toBeInTheDocument();
-      await user.click(await screen.findByRole('button', { name: /Micrófono apagado/ }));
       await waitFor(() => expect(FakeRec.last?.started).toBe(true));
       expect(FakeRec.last.lang).toBe('es-US');
     });

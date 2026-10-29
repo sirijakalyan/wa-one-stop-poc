@@ -5,6 +5,7 @@ import { ErrorNote } from '../components/Parts.jsx';
 import Icon from '../components/Icon.jsx';
 import GuideArt from '../components/GuideArt.jsx';
 import { SAMPLES_ES, useT } from '../i18n.js';
+import { canSpeak } from '../voice.js';
 import { useApp } from '../AppContext.jsx';
 import { answersFromCard, confirmedCount } from '../guideCard.js';
 import { blankAnswers } from '../questions.js';
@@ -18,7 +19,7 @@ const SAMPLE_ICON = { home: 'home', restaurant: 'utensils', contractor: 'hammer'
 export default function Landing() {
   const t = useT();
   const { guide, answers, setAnswers, setLabel, setStep, setCatsAuto } = useApp();
-  const [mode, setMode] = useState(null); // null | 'talk' | 'type' | 'form': the guide and the form both live on this page
+  const [mode, setMode] = useState(canSpeak() ? 'talk' : 'type'); // 'talk' by default so the guide greets out loud; null | 'talk' | 'type' | 'form': the guide and the form both live on this page
   const [startReq, setStartReq] = useState(null);
   const workRef = useRef(null);
   const reqId = useRef(0);
@@ -47,7 +48,9 @@ export default function Landing() {
     const text = sentence.trim();
     if (text) { send(text, mode === 'talk' ? 'talk' : 'type'); setSentence(''); }
   }
+  const firstMode = useRef(true);
   useEffect(() => {
+    if (firstMode.current) { firstMode.current = false; return; } // opening the page must not scroll or steal focus
     if (mode) workRef.current?.focus({ preventScroll: false });
   }, [mode]);
 

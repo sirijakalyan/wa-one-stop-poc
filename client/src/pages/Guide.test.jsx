@@ -205,12 +205,20 @@ describe('voice', () => {
   it('"Talk to me" has the guide speak its greeting aloud, with captions and Stop and Mute visible', async () => {
     const user = userEvent.setup();
     renderAt('/');
-    await user.click(screen.getByRole('button', { name: 'Talk to me' }));
+    // Talk is the default way in: the greeting is spoken without a tap.
+    expect(screen.getByRole('button', { name: 'Talk to me' })).toHaveAttribute('aria-pressed', 'true');
     await waitFor(() => expect(spoken[0]).toMatch(/^Hi, I'm here to help you start your Washington business/));
     expect(screen.getByTestId('captions')).toHaveTextContent(/Hi, I'm here to help/);
     expect(screen.getByRole('button', { name: 'Mute voice' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Microphone off/ })).toBeEnabled();
+    expect(screen.getByRole('button', { name: /Microphone (on|off)/ })).toBeEnabled();
+  });
+
+  it('opening the home page starts the microphone by itself once the greeting is done', async () => {
+    renderAt('/');
+    await waitFor(() => expect(spoken.length).toBeGreaterThan(0));
+    await waitFor(() => expect(FakeRec.last?.started).toBe(true), { timeout: 4000 });
+    expect(screen.getByRole('button', { name: /Microphone on/ })).toBeInTheDocument();
   });
 
   it('reads each new guide reply aloud, but never the owner\'s own words', async () => {

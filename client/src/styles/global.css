@@ -86,7 +86,7 @@ a:hover { color: var(--brand-strong); }
 .icon { flex: none; vertical-align: -.2em; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
-.wrap { width: 100%; max-width: 70rem; margin: 0 auto; padding-inline: max(20px, env(safe-area-inset-left, 0px)) max(20px, env(safe-area-inset-right, 0px)); }
+.wrap { width: 100%; max-width: none; margin: 0 auto; padding-inline: max(clamp(14px, 2vw, 32px), env(safe-area-inset-left, 0px)) max(clamp(14px, 2vw, 32px), env(safe-area-inset-right, 0px)); }
 .app { min-height: 100vh; display: flex; flex-direction: column; }
 main { flex: 1; width: 100%; padding-block: 2rem 4rem; }
 main, main > *, .panel, .two-col > * { min-width: 0; }

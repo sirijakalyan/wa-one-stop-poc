@@ -55,7 +55,10 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
   const [voiceMsg, setVoiceMsg] = useState('');
   const [tick, setTick] = useState(0);
   const prevMode = useRef(mode);
-  const spokenIdx = useRef(0);
+  const spokenIdx = useRef(guide.messages.length > 1 ? guide.messages.length : 0); // a returning visitor is not read the old conversation again
+  const greetHeard = useRef(false);
+  const [speakTick, setSpeakTick] = useState(0);
+  const autoMic = useRef(false);
   const voiceOnRef = useRef(false);
   const saveRef = useRef(() => {});
   const speakingCount = useRef(0);
@@ -133,7 +136,7 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
     refreshPlan(guideRef.current.card, false);
     if (guideRef.current.messages.length > 1) turnRef.current({}, null);
     // Only the greeting so far: say it again in the new language.
-    else spokenIdx.current = 0;
+    else { spokenIdx.current = 0; greetHeard.current = false; setSpeakTick((n) => n + 1); }
   }, [t.lang]);
   saveRef.current = save;
   cond.current = { micOn, speaking, busy };
@@ -147,6 +150,7 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
       setSpeaking(true);
       speak(speakable(messages[i].text, 340, langRef.current), {
         lang: speechLang(langRef.current),
+        onStart: () => { greetHeard.current = true; },
         onSilent: () => setVoiceMsg(t('voice.silent')),
         onEnd: () => {
           speakingCount.current = Math.max(0, speakingCount.current - 1);
@@ -155,7 +159,7 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
       });
     }
     spokenIdx.current = messages.length;
-  }, [messages, voiceOn]);
+  }, [messages, voiceOn, speakTick]);
 
   // Listen only while the microphone is on and the guide is neither speaking nor thinking, so it never hears itself.
   useEffect(() => {
@@ -165,9 +169,8 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
   // On leaving the page, stop talking and listening. Resetting the counters also makes React's dev double-mount start the greeting again after its cancel.
   useEffect(() => () => { stopSpeaking(); listenerRef.current?.stop(); spokenIdx.current = 0; speakingCount.current = 0; }, []);
 
-  function toggleMic() {
-    setVoiceMsg('');
-    if (!canListen()) { setVoiceMsg(t('voice.cannotListen')); return; }
+  function ensureListener() {
+    if (!canListen()) { setVoiceMsg(t('voice.cannotListen')); return false; }
     if (!listenerRef.current) {
       listenerRef.current = createListener({
         getLang: () => speechLang(langRef.current),
@@ -184,9 +187,41 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
         },
       });
     }
+    return true;
+  }
+  function toggleMic() {
+    setVoiceMsg('');
+    if (!ensureListener()) return;
     if (!micOn && canSpeak()) setVoiceOn(true);
     setMicOn(!micOn);
   }
+  // Talk mode opens with the greeting spoken and the microphone on, with no tap needed. If the browser holds the voice back
+  // until the page has been touched, the first tap or key press anywhere says the greeting. If it also holds the microphone
+  // back (no permission yet), the error text below the buttons says so and the microphone button still works.
+  useEffect(() => {
+    if (mode !== 'talk' || autoMic.current) return;
+    autoMic.current = true;
+    if (ensureListener()) setMicOn(true);
+  }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (mode !== 'talk' || !voiceOn) return undefined;
+    const unlock = () => {
+      if (greetHeard.current) return;
+      const first = guideRef.current.messages[0];
+      if (!first || guideRef.current.messages.length > 1) return;
+      stopSpeaking();
+      speakingCount.current = 1;
+      setSpeaking(true);
+      speak(speakable(first.text, 340, langRef.current), {
+        lang: speechLang(langRef.current),
+        onStart: () => { greetHeard.current = true; },
+        onEnd: () => { speakingCount.current = Math.max(0, speakingCount.current - 1); if (!speakingCount.current) setSpeaking(false); },
+      });
+    };
+    document.addEventListener('pointerdown', unlock, { once: true });
+    document.addEventListener('keydown', unlock, { once: true });
+    return () => { document.removeEventListener('pointerdown', unlock); document.removeEventListener('keydown', unlock); };
+  }, [mode, voiceOn]);
   function muteToggle() {
     if (voiceOn) { stopSpeaking(); speakingCount.current = 0; setSpeaking(false); }
     setVoiceOn(!voiceOn);
@@ -280,13 +315,13 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
   return (
     <div className={`guide-page${embedded ? " is-embedded" : ""}`}>
       <header className="guide-head">
-        <GuideArt small />
+        {!embedded && <GuideArt small />}
         <div>
           {embedded
             ? <h2 id="guide-title" tabIndex={-1}>{t('guide.title')}</h2>
             : <h1 id="guide-title" tabIndex={-1}>{t('guide.title')}</h1>}
           <p className="ai-label"><Icon name="chat" size={16} /> {t('guide.ai')}</p>
-          {t('draft.note') ? <p className="draft-note" role="note">{t('draft.note')}</p> : null}
+          {t('draft.note') && !embedded ? <p className="draft-note" role="note">{t('draft.note')}</p> : null}
         </div>
         {!embedded && <button type="button" className="btn btn-quiet btn-sm" onClick={useForm}>{t('guide.useForm')}</button>}
       </header>
@@ -299,8 +334,8 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
       </div>
 
       <div className="guide-grid">
-        <section id="guide-chat" className={`guide-chat${tab === 'chat' ? ' is-active' : ''}`} data-tab="chat" aria-labelledby="chat-title">
-          <h2 id="chat-title" className="sr-only">{t('guide.tabChat')}</h2>
+        <section id="guide-chat" className={`guide-chat${tab === 'chat' ? ' is-active' : ''}`} data-tab="chat" aria-labelledby="guide-chat-title">
+          <h2 id="guide-chat-title" className="sr-only">{t('guide.tabChat')}</h2>
           <div className="chat-log" ref={logRef} role="log" aria-live="polite" aria-label={t('guide.log')}>
             {messages.map((m) => (
               <div key={m.id} className={`bubble ${m.role}`}>
