@@ -808,7 +808,8 @@ footer .api-status { background: transparent; color: #a9bdd4; border-color: rgba
 }
 
 /* v2.4: one blue area for the whole home workspace; the chat and the business card are white cards on it */
-.home-split { background: linear-gradient(160deg, var(--navy-800), var(--navy-950)); border-radius: 18px; padding: clamp(.8rem, 2vw, 1.25rem); color: #fff; }
+.home-split { background: linear-gradient(160deg, var(--navy-800), var(--navy-950)); border-radius: 18px; padding: clamp(.8rem, 2vw, 1.25rem); }
+.home-split .workspace { color: var(--ink); }
 .home-split .guide-hero { background: transparent; box-shadow: none; padding: .25rem; border-radius: 0; }
 .home-split .workspace, .home-split .workspace:has(> .guide-page), .home-split .workspace:has(> form), .home-split .workspace:has(> div) { background: transparent; border: 0; box-shadow: none; padding: 0; }
 .home-split .workspace .guide-head h2, .home-split .workspace .guide-head p, .home-split .workspace .guide-head .ai-label { color: #fff; }
@@ -816,3 +817,10 @@ footer .api-status { background: transparent; color: #a9bdd4; border-color: rgba
 .home-split .workspace :focus-visible { outline-color: #ffd978; }
 .home-split .workspace .draft-note { color: var(--bar-fg); }
 @media (min-width: 64rem) { .home-split .guide-hero { position: static; } }
+/* On the home page there are no Chat/Plan tabs, so on phones both parts show one after the other. */
+@media (max-width: 52rem) {
+  .guide-page.is-embedded .guide-side[data-tab]:not(.is-active), .guide-page.is-embedded .guide-road[data-tab]:not(.is-active) { display: flex; }
+  .guide-page.is-embedded .guide-chat[data-tab]:not(.is-active) { display: flex; }
+}
+.home-split .guide-road .hint { color: #dbe7f5; }
+.home-split .guide-road .hint a { color: #fff; font-weight: 650; }

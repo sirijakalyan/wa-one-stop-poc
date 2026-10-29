@@ -370,12 +370,12 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
         {!embedded && <button type="button" className="btn btn-quiet btn-sm" onClick={useForm}>{t('guide.useForm')}</button>}
       </header>
 
-      <div className="guide-tabs" role="tablist" aria-label={t('guide.sections')}>
+      {!embedded && <div className="guide-tabs" role="tablist" aria-label={t('guide.sections')}>
         <button type="button" role="tab" id="tab-chat" aria-selected={tab === 'chat'} aria-controls="guide-chat" onClick={() => setTab('chat')}>{t('guide.tabChat')}</button>
         <button type="button" role="tab" id="tab-plan" aria-selected={tab === 'plan'} aria-controls="guide-side" onClick={() => setTab('plan')}>
           {t('guide.tabPlan')} <span className="tab-badge" aria-label={t('guide.steps', planCount)}>{planCount}</span>
         </button>
-      </div>
+      </div>}
 
       <div className="guide-grid">
         <section id="guide-chat" className={`guide-chat${tab === 'chat' ? ' is-active' : ''}`} data-tab="chat" aria-labelledby="guide-chat-title">
@@ -440,7 +440,7 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
 
         <section id="guide-side" className={`guide-side${tab === 'plan' ? ' is-active' : ''}`} data-tab="plan" aria-label={t('guide.sideLabel')}>
           <BusinessCard card={guide.card} onEdit={edit} disabled={busy} />
-          <PlanPanel plan={view.plan} newIds={newIds} onSimulate={simulate} simulating={Boolean(sim)} busy={busy} />
+          {!embedded && <PlanPanel plan={view.plan} newIds={newIds} onSimulate={simulate} simulating={Boolean(sim)} busy={busy} />}
           {guide.complete ? (
             <div className="save-box">
               <button type="button" className="btn btn-primary" onClick={save} disabled={busy}>{t('guide.save')}</button>
@@ -452,8 +452,8 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
       </div>
 
       <div className={`guide-road${tab === 'plan' ? ' is-active' : ''}`} data-tab="plan">
-        <SimulatePanel result={sim} onClose={endSimulation} />
-        <Timeline timeline={view.timeline} simulated={Boolean(sim)} />
+        {!embedded && <SimulatePanel result={sim} onClose={endSimulation} />}
+        {!embedded && <Timeline timeline={view.timeline} simulated={Boolean(sim)} />}
         <p className="hint">{t('guide.checklistHint')} <Link to="/my-business">{t('guide.checklistLink')}</Link> {t('guide.checklistAfter')}</p>
       </div>
     </div>
