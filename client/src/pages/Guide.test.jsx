@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import App from '../App.jsx';
 import { AppProvider } from '../AppContext.jsx';
+import { isEcho } from './Guide.jsx';
 import { installMockServer } from '../artifact/mockServer.js';
 
 // Through the real screens, the in-page API and the real rules engine.
@@ -171,6 +172,17 @@ describe('guide screen', () => {
 });
 
 // The browser's speech features are faked, so these tests check what the screen asks them to do.
+describe('echo check', () => {
+  it('treats a phrase from the guide as echo, but a short answer as the owner even if the word appears in the guide text', () => {
+    const line = 'You can pick Sole proprietor, LLC, Corporation or Partnership. How will your business be set up?';
+    expect(isEcho('How will your business be set up', line)).toBe(true);
+    expect(isEcho('how will your business', line)).toBe(true);
+    expect(isEcho('LLC', line)).toBe(false);
+    expect(isEcho('sole proprietor', line)).toBe(false);
+    expect(isEcho('I want an LLC please', line)).toBe(false);
+  });
+});
+
 describe('voice', () => {
   let spoken;
   class FakeRec {

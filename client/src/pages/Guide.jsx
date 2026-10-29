@@ -14,13 +14,19 @@ import { canListen, canSpeak, createListener, hasVoice, listenErrorText, speak, 
 import { answersFromCard, confirmedCount } from '../guideCard.js';
 import { speechLang, useT } from '../i18n.js';
 
-// True when what the microphone heard is mostly words from the guide's own line, i.e. the speakers, not the owner.
+// True when what the microphone heard is the guide's own voice coming back through the speakers. Single words are never
+// matched against a pile of words: "LLC" said by the owner must not count just because the guide's text contains "LLC".
+// One or two words are always the owner. A longer phrase is an echo when most of its word pairs appear in the guide's line.
 const words = (x) => String(x).toLowerCase().replace(/[^\p{L}\p{N}\s']/gu, ' ').split(/\s+/).filter(Boolean);
 export function isEcho(heard, spoken) {
   const h = words(heard);
   if (!h.length) return true;
-  const pool = new Set(words(spoken));
-  return h.filter((w) => pool.has(w)).length / h.length >= 0.6;
+  const sp = words(spoken);
+  if (h.length <= 2) return false; // an owner can answer with one or two words the guide just listed
+  const pairs = new Set(sp.slice(0, -1).map((w, i) => `${w} ${sp[i + 1]}`));
+  let hit = 0;
+  for (let i = 0; i < h.length - 1; i += 1) if (pairs.has(`${h[i]} ${h[i + 1]}`)) hit += 1;
+  return hit / (h.length - 1) >= 0.6;
 }
 const GREETING = { id: 'hello', role: 'guide', text: '' };
 let counter = 0;
@@ -65,6 +71,8 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
   const prevMode = useRef(mode);
   const spokenIdx = useRef(guide.messages.length > 1 ? guide.messages.length : 0); // a returning visitor is not read the old conversation again
   const greetHeard = useRef(false);
+  const lastSpeechEnd = useRef(0);
+  const guideHeard = () => speakingCount.current > 0 || Date.now() - lastSpeechEnd.current < 1500; // the tail of the guide's voice may still be in the air
   const spokenNow = useRef(''); // what the guide is saying now, so its own voice picked up by the microphone is not mistaken for the owner
   const [speakTick, setSpeakTick] = useState(0);
   const autoMic = useRef(false);
@@ -166,7 +174,7 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
         onSilent: () => setVoiceMsg(t('voice.silent')),
         onEnd: () => {
           speakingCount.current = Math.max(0, speakingCount.current - 1);
-          if (!speakingCount.current) setSpeaking(false);
+          if (!speakingCount.current) { lastSpeechEnd.current = Date.now(); setSpeaking(false); }
         },
       });
     }
@@ -193,14 +201,12 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
       listenerRef.current = createListener({
         getLang: () => speechLang(langRef.current),
         onInterim: (t) => {
-          if (speakingCount.current > 0) {
-            if (isEcho(t, spokenNow.current)) return;
-            interrupt(); // the owner is talking over the guide
-          }
+          if (guideHeard() && isEcho(t, spokenNow.current)) return;
+          interrupt(); // the owner is talking over the guide
           setText(t);
         },
         onFinal: (t) => {
-          if (speakingCount.current > 0 && isEcho(t, spokenNow.current)) return;
+          if (guideHeard() && isEcho(t, spokenNow.current)) return;
           interrupt();
           setText('');
           turnRef.current({ message: t }, t);
@@ -244,7 +250,7 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
       speak(speakable(first.text, 340, langRef.current), {
         lang: speechLang(langRef.current),
         onStart: () => { greetHeard.current = true; },
-        onEnd: () => { speakingCount.current = Math.max(0, speakingCount.current - 1); if (!speakingCount.current) setSpeaking(false); },
+        onEnd: () => { speakingCount.current = Math.max(0, speakingCount.current - 1); if (!speakingCount.current) { lastSpeechEnd.current = Date.now(); setSpeaking(false); } },
       });
     };
     document.addEventListener('pointerdown', unlock, { once: true });
