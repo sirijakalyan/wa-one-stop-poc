@@ -40,7 +40,12 @@ export function AppProvider({ children }) {
     api.me().then((r) => { if (live) setUser(r.user); if (live && !r.user) setSession(''); }).catch(() => {}).finally(() => { if (live) setAuthReady(true); });
     return () => { live = false; };
   }, []);
-  const signIn = (u, token) => { setSession(token); setUser(u); };
+  const signIn = (u, token, refreshToken) => { setSession(token, refreshToken); setUser(u); };
+  useEffect(() => {
+    const gone = () => { setUser(null); };
+    globalThis.addEventListener?.('wa-session-expired', gone);
+    return () => globalThis.removeEventListener?.('wa-session-expired', gone);
+  }, []);
   const signOut = async () => {
     try { await api.logout(); } catch { /* the token is dropped here either way */ }
     setSession('');

@@ -1,4 +1,5 @@
-import { hashPassword, verifyPassword, randomToken as secureToken, sha256, normalizeEmail, validEmail, passwordProblem } from './auth.js';
+import { normalizeEmail, AuthError } from './auth.js';
+import { createLocalIdp } from './localIdp.js';
 // Transport-neutral API. Express (server/src/app.js) and the in-browser preview
 // (client/src/artifact/mockServer.js) both call this same code, so the preview
 // runs the real rules engine and the real API logic.
@@ -245,108 +246,69 @@ export function createService(store, options = {}) {
   }
 
   /* ---------- Accounts ----------
-     Sign up, sign in, sign out and password reset. A session token is random, kept only as a SHA-256 hash, and lasts 30 days.
+     Who people are is handled by an identity provider (options.idp): the app's own store for the demo, or AWS Cognito.
      A signed-in account has its own saved plan (visitor id "acct-<id>"). Signed-out visitors can still use the guide. */
-  const SESSION_MS = 30 * 24 * 3600 * 1000;
-  const MAX_FAILS = 5;
-  const LOCK_MS = 15 * 60 * 1000;
   const adminEmails = (options.adminEmails || []).map(normalizeEmail);
-  const publicUser = (a) => ({ id: a.id, name: a.name, email: a.email, role: a.role });
+  const idp = options.idp || createLocalIdp({ store, adminEmails, mailer, publicUrl, demoResetLinks: options.demoResetLinks, footer: FOOTER });
   const acctVisitor = (a) => `acct-${a.id}`;
-  async function startSession(a) {
-    const token = secureToken();
-    const now = Date.now();
-    const sessions = [...(a.sessions || []).filter((x) => x.exp > now), { hash: await sha256(token), exp: now + SESSION_MS }].slice(-10);
-    await store.updateAccount(a.id, { sessions, lastLoginAt: new Date(now).toISOString(), failed: 0, lockedUntil: 0 });
-    return token;
+  const viaIdp = async (fn) => {
+    try { return await fn(); } catch (e) { if (e instanceof AuthError) fail(e.message, e.status); throw e; }
+  };
+  const publicUser = (a) => ({ id: a.id, name: a.name, email: a.email, role: a.role });
+  const nowIso = () => new Date().toISOString();
+  async function adoptPlan(ctx, user, onlyIfEmpty) {
+    if (!ctx.anonVisitor || ctx.anonVisitor === acctVisitor(user)) return;
+    if (onlyIfEmpty && (await store.getChecklist(acctVisitor(user)))) return;
+    const cl = await store.getChecklist(ctx.anonVisitor);
+    if (cl) await store.putChecklist(acctVisitor(user), cl); // the plan made before signing in becomes the account's plan
   }
 
+  route('GET', '/api/auth/config', async () => ({ ok: true, provider: idp.mode, needsCode: Boolean(idp.needsCode) }));
+
   route('POST', '/api/auth/signup', async ({ body, ctx }) => {
-    const name = String(body?.name || '').trim().slice(0, 80);
-    const email = normalizeEmail(body?.email);
-    if (!name) fail('Enter your name.');
-    if (!validEmail(email)) fail('Enter a valid email address.');
-    const problem = passwordProblem(body?.password);
-    if (problem) fail(problem);
-    const id = secureToken().slice(0, 24);
-    const acct = {
-      id, name, email, passHash: await hashPassword(String(body.password)), role: adminEmails.includes(email) ? 'admin' : 'user',
-      createdAt: new Date().toISOString(), lastLoginAt: '', sessions: [], failed: 0, lockedUntil: 0,
-    };
-    if (!(await store.createAccount(acct))) fail('An account with this email already exists. Sign in instead.', 409);
-    const token = await startSession(acct);
-    // The plan the visitor already built in this browser becomes the account's plan.
-    if (ctx.anonVisitor && ctx.anonVisitor !== acctVisitor(acct)) {
-      const cl = await store.getChecklist(ctx.anonVisitor);
-      if (cl) await store.putChecklist(acctVisitor(acct), cl);
-    }
-    await store.addEvent(acctVisitor(acct), { at: new Date().toISOString(), type: 'signup', detail: 'Account created' });
-    return { ok: true, token, user: publicUser(acct) };
+    const r = await viaIdp(() => idp.signup({ name: body?.name, email: body?.email, password: body?.password }));
+    if (r.needsConfirm) return { ok: true, needsConfirm: true, email: normalizeEmail(body?.email) };
+    await adoptPlan(ctx, r.user, false);
+    await store.addEvent(acctVisitor(r.user), { at: nowIso(), type: 'signup', detail: 'Account created' });
+    return { ok: true, token: r.token, refreshToken: r.refreshToken || '', user: r.user };
+  });
+
+  route('POST', '/api/auth/confirm', async ({ body }) => {
+    await viaIdp(() => idp.confirm({ email: normalizeEmail(body?.email), code: String(body?.code || '').trim() }));
+    return { ok: true, message: 'Your email is confirmed. You can sign in now.' };
+  });
+
+  route('POST', '/api/auth/resend', async ({ body }) => {
+    await viaIdp(() => idp.resend({ email: normalizeEmail(body?.email) }));
+    return { ok: true, message: 'If this account is waiting for confirmation, a new code is on its way.' };
   });
 
   route('POST', '/api/auth/login', async ({ body, ctx }) => {
-    const email = normalizeEmail(body?.email);
-    const bad = () => fail('The email or password is not right.', 401);
-    const a = validEmail(email) ? await store.findAccountByEmail(email) : null;
-    if (!a) { await hashPassword('timing'); return bad(); } // same work whether or not the account exists
-    if (a.lockedUntil > Date.now()) fail('Too many wrong passwords. Try again in 15 minutes or reset your password.', 429);
-    if (!(await verifyPassword(String(body?.password || ''), a.passHash))) {
-      const failed = (a.failed || 0) + 1;
-      await store.updateAccount(a.id, failed >= MAX_FAILS ? { failed: 0, lockedUntil: Date.now() + LOCK_MS } : { failed });
-      return bad();
-    }
-    const role = adminEmails.includes(email) && a.role !== 'admin' ? 'admin' : a.role;
-    if (role !== a.role) await store.updateAccount(a.id, { role });
-    const token = await startSession({ ...a, role });
-    // First sign-in on a new browser: adopt the plan made before signing in, only if the account has none.
-    if (ctx.anonVisitor && !(await store.getChecklist(acctVisitor(a)))) {
-      const cl = await store.getChecklist(ctx.anonVisitor);
-      if (cl) await store.putChecklist(acctVisitor(a), cl);
-    }
-    await store.addEvent(acctVisitor(a), { at: new Date().toISOString(), type: 'login', detail: 'Signed in' });
-    return { ok: true, token, user: publicUser({ ...a, role }) };
+    const r = await viaIdp(() => idp.login({ email: body?.email, password: body?.password }));
+    if (r.needsConfirm) return { ok: true, needsConfirm: true, email: normalizeEmail(body?.email) };
+    await adoptPlan(ctx, r.user, true);
+    await store.addEvent(acctVisitor(r.user), { at: nowIso(), type: 'login', detail: 'Signed in' });
+    return { ok: true, token: r.token, refreshToken: r.refreshToken || '', user: r.user };
+  });
+
+  route('POST', '/api/auth/refresh', async ({ body }) => {
+    const r = await viaIdp(() => idp.refresh({ refreshToken: String(body?.refreshToken || ''), email: body?.email }));
+    return { ok: true, token: r.token, user: r.user };
   });
 
   route('POST', '/api/auth/logout', async ({ ctx }) => {
-    if (ctx.account && ctx.sessionHash) {
-      await store.updateAccount(ctx.account.id, { sessions: (ctx.account.sessions || []).filter((x) => x.hash !== ctx.sessionHash) });
-    }
+    if (ctx.account) await idp.logout({ account: ctx.account, sessionHash: ctx.sessionHash, token: ctx.session });
     return { ok: true };
   });
 
   route('GET', '/api/auth/me', async ({ ctx }) => ({ ok: true, user: ctx.account ? publicUser(ctx.account) : null }));
 
-  // The answer is the same whether or not the email has an account, so nobody can use this to find out who is registered.
-  route('POST', '/api/auth/forgot', async ({ body }) => {
-    const email = normalizeEmail(body?.email);
-    const out = { ok: true, message: 'If an account uses this email, a reset link is on its way. It works for one hour.' };
-    if (!validEmail(email)) return out;
-    const a = await store.findAccountByEmail(email);
-    if (!a) return out;
-    if (a.resetSentAt && Date.now() - a.resetSentAt < 60_000) return out; // one email a minute
-    const token = secureToken();
-    await store.updateAccount(a.id, { resetHash: await sha256(token), resetExp: Date.now() + 3600_000, resetSentAt: Date.now() });
-    const link = `${publicUrl}/reset-password?token=${token}`;
-    if (mailer) {
-      try {
-        await mailer.send({ to: a.email, subject: 'Reset your password', text: `Hello ${a.name},\n\nUse this link to choose a new password. It works for one hour and only once:\n${link}\n\nIf you did not ask for this, ignore this email. Your password stays the same.\n\n${FOOTER}` });
-      } catch (err) {
-        console.error('reset email failed:', err.message);
-      }
-    }
-    // Only a deliberate demo setting (no email service) shows the link on screen. Never on a real server.
-    if (options.demoResetLinks) out.demoLink = `/reset-password?token=${token}`;
-    return out;
-  });
+  route('POST', '/api/auth/forgot', async ({ body }) => ({ ok: true, ...(await viaIdp(() => idp.forgot({ email: body?.email }))) }));
 
   route('POST', '/api/auth/reset', async ({ body }) => {
-    const problem = passwordProblem(body?.password);
-    if (problem) fail(problem);
-    const a = await store.findAccountByResetToken(await sha256(String(body?.token || '')));
-    if (!a) fail('This reset link has expired or was already used. Ask for a new one.', 400);
-    await store.updateAccount(a.id, { passHash: await hashPassword(String(body.password)), resetHash: '', resetExp: 0, sessions: [], failed: 0, lockedUntil: 0 });
-    await store.addEvent(acctVisitor(a), { at: new Date().toISOString(), type: 'password-reset', detail: 'Password changed' });
-    return { ok: true, message: 'Your password was changed. Sign in with the new password.' };
+    const r = await viaIdp(() => idp.reset({ token: body?.token, email: normalizeEmail(body?.email), code: String(body?.code || '').trim(), password: body?.password }));
+    if (r.id) await store.addEvent(`acct-${r.id}`, { at: nowIso(), type: 'password-reset', detail: 'Password changed' });
+    return { ok: true, message: r.message };
   });
 
   /* ---------- Admin: users ---------- */
@@ -360,7 +322,7 @@ export function createService(store, options = {}) {
   route('GET', '/api/admin/users', async ({ ctx }) => {
     requireStrictAdmin(ctx);
     const rulesDoc = await loadRules();
-    const accounts = await store.listAccounts();
+    const accounts = await viaIdp(() => idp.listUsers());
     const users = [];
     for (const a of accounts.slice(0, 500)) {
       const ev = await store.listEvents(acctVisitor(a), 1);
@@ -370,7 +332,7 @@ export function createService(store, options = {}) {
   });
   route('GET', '/api/admin/users/:id', async ({ params, ctx }) => {
     requireStrictAdmin(ctx);
-    const a = await store.getAccount(params.id);
+    const a = await viaIdp(() => idp.getUser(params.id));
     if (!a) fail('User not found.', 404);
     const cl = await store.getChecklist(acctVisitor(a));
     const built = cl ? await buildChecklist(cl, await loadRules(), 'en') : null;
@@ -385,12 +347,11 @@ export function createService(store, options = {}) {
     requireStrictAdmin(ctx);
     const role = body?.role;
     if (!['user', 'admin'].includes(role)) fail('Role must be user or admin.');
-    const a = await store.getAccount(params.id);
-    if (!a) fail('User not found.', 404);
-    if (ctx.account?.id === a.id && role !== 'admin') fail('You cannot remove your own admin role.');
-    await store.updateAccount(a.id, { role });
-    await store.addEvent(acctVisitor(a), { at: new Date().toISOString(), type: 'role-changed', detail: `Role set to ${role}${ctx.account ? ` by ${ctx.account.email}` : ' with the admin key'}` });
-    return { ok: true, user: publicUser({ ...a, role }) };
+    if (ctx.account?.id === params.id && role !== 'admin') fail('You cannot remove your own admin role.');
+    const u = await viaIdp(() => idp.setRole(params.id, role));
+    if (!u) fail('User not found.', 404);
+    await store.addEvent(acctVisitor(u), { at: nowIso(), type: 'role-changed', detail: `Role set to ${role}${ctx.account ? ` by ${ctx.account.email}` : ' with the admin key'}` });
+    return { ok: true, user: publicUser(u) };
   });
 
   route('GET', '/api/health', async () => ({ ok: true, service: 'wa-one-stop-poc-server', storage: store.kind || 'unknown' }));
@@ -884,12 +845,11 @@ export function createService(store, options = {}) {
   // Returns { status, body }. Never throws.
   async function handle(method, rawPath, body, ctx = {}) {
     // A valid session token turns the request into the account's own: its saved plan, notifications and role.
+    ctx = { ...ctx, anonVisitor: ctx.visitor };
     if (ctx.session) {
-      const hash = await sha256(ctx.session);
-      const account = await store.findAccountBySession(hash);
-      ctx = account ? { ...ctx, account, sessionHash: hash, anonVisitor: ctx.visitor, visitor: `acct-${account.id}` } : { ...ctx, anonVisitor: ctx.visitor };
-    } else {
-      ctx = { ...ctx, anonVisitor: ctx.visitor };
+      let account = null;
+      try { account = await idp.resolve(ctx.session); } catch { account = null; }
+      if (account) ctx = { ...ctx, account, sessionHash: account.sessionHash, visitor: `acct-${account.id}` };
     }
     const [pathname, qs = ''] = String(rawPath).split('?');
     const query = Object.fromEntries(new URLSearchParams(qs));

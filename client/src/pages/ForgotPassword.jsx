@@ -29,6 +29,9 @@ export default function ForgotPassword() {
       {result ? (
         <div role="status" className="auth-done">
           <p>{result.message}</p>
+          {result.codeSent && (
+            <p><Link className="btn btn-primary btn-sm" to={`/reset-password?email=${encodeURIComponent(email.trim().toLowerCase())}`}>{t('auth.enterCode')}</Link></p>
+          )}
           {result.demoLink && (
             <p className="note">{t('auth.demoLink')} <Link className="btn btn-sm" to={result.demoLink}>{t('auth.openLink')}</Link></p>
           )}

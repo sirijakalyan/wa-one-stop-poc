@@ -40,3 +40,8 @@ export function passwordProblem(p) {
   if (!/[A-Za-z]/.test(s) || !/\d/.test(s)) return 'Use at least one letter and one number in the password.';
   return '';
 }
+
+// Thrown by an identity provider. status is the HTTP status the caller sees; the message is safe to show.
+export class AuthError extends Error {
+  constructor(message, status = 400) { super(message); this.status = status; }
+}

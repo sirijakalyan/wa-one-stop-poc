@@ -4,6 +4,7 @@ import { api } from '../api.js';
 import { useApp } from '../AppContext.jsx';
 import { useT } from '../i18n.js';
 import AuthShell, { PasswordField } from '../components/AuthShell.jsx';
+import ConfirmEmail from '../components/ConfirmEmail.jsx';
 
 export default function Login() {
   const t = useT();
@@ -14,6 +15,12 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const finish = async () => {
+    if (state?.from) return navigate(state.from, { replace: true });
+    const c = await api.checklist().catch(() => null);
+    return navigate(c?.saved ? '/my-business' : '/', { replace: true });
+  };
 
   async function submit(e) {
     e.preventDefault();
@@ -21,10 +28,9 @@ export default function Login() {
     setBusy(true);
     try {
       const r = await api.login(email, password);
-      signIn(r.user, r.token);
-      if (state?.from) return navigate(state.from, { replace: true });
-      const c = await api.checklist().catch(() => null);
-      return navigate(c?.saved ? '/my-business' : '/', { replace: true });
+      if (r.needsConfirm) { setConfirming(true); return undefined; }
+      signIn(r.user, r.token, r.refreshToken);
+      return await finish();
     } catch (e2) {
       setErr(e2.message);
       return undefined;
@@ -33,6 +39,9 @@ export default function Login() {
     }
   }
 
+  if (confirming) {
+    return <AuthShell title={t('auth.confirmTitle')}><ConfirmEmail email={email.trim().toLowerCase()} password={password} onDone={finish} /></AuthShell>;
+  }
   return (
     <AuthShell title={t('auth.welcome')} lead={t('auth.welcomeLead')}>
       <form onSubmit={submit} noValidate>

@@ -35,9 +35,9 @@ function loadSeedJson(name, fallback) {
 }
 
 // Thin Express adapter. All API logic lives in service.js.
-export function createApp({ dataDir, store = createStore(dataDir), adminKey = process.env.ADMIN_KEY, llm = createOllamaLlm(), mailer = createMailer(), countyHealthPages = loadSeedJson('county_health_candidates.json', { counties: [] }), foundLinks = loadSeedJson('found_links.json', { links: [] }), publicUrl = process.env.PUBLIC_URL, corsOrigins, places = loadSeedJson("wa_places.json", { places: [] }).places, processingTimes = loadSeedJson('processing_times.json', { times: [] }), clientDist = process.env.CLIENT_DIST, adminEmails = String(process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim()).filter(Boolean), demoResetLinks = process.env.DEMO_RESET_LINKS === 'true' } = {}) {
+export function createApp({ dataDir, store = createStore(dataDir), adminKey = process.env.ADMIN_KEY, llm = createOllamaLlm(), mailer = createMailer(), countyHealthPages = loadSeedJson('county_health_candidates.json', { counties: [] }), foundLinks = loadSeedJson('found_links.json', { links: [] }), publicUrl = process.env.PUBLIC_URL, corsOrigins, places = loadSeedJson("wa_places.json", { places: [] }).places, processingTimes = loadSeedJson('processing_times.json', { times: [] }), clientDist = process.env.CLIENT_DIST, adminEmails = String(process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim()).filter(Boolean), demoResetLinks = process.env.DEMO_RESET_LINKS === 'true', idp } = {}) {
   const production = process.env.NODE_ENV === 'production';
-  const service = createService(store, { adminKey: adminKey || undefined, adminLocked: production && !adminKey, llm, mailer, publicUrl, adminEmails, demoResetLinks, countyHealthPages, foundLinks, places, processingTimes });
+  const service = createService(store, { adminKey: adminKey || undefined, adminLocked: production && !adminKey, llm, mailer, publicUrl, adminEmails, demoResetLinks, idp, countyHealthPages, foundLinks, places, processingTimes });
   const app = express();
   app.set('trust proxy', Number.isInteger(Number(process.env.TRUST_PROXY)) && process.env.TRUST_PROXY !== '' ? Number(process.env.TRUST_PROXY) : 1);
 
@@ -93,7 +93,7 @@ export function createApp({ dataDir, store = createStore(dataDir), adminKey = pr
       const ctx = {
         visitor: VISITOR_RX.test(visitor) ? visitor : undefined,
         adminKey: req.get('x-admin-key') || '',
-        session: (/^Bearer ([a-f0-9]{64})$/.exec(req.get('authorization') || '') || [])[1] || '',
+        session: (/^Bearer ([A-Za-z0-9._-]{20,4096})$/.exec(req.get('authorization') || '') || [])[1] || '',
       };
       const { status, body } = await service.handle(req.method, req.originalUrl, req.body, ctx);
       res.status(status).json(body);

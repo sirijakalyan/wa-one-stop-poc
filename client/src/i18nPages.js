@@ -2,6 +2,13 @@
 // footer and shared labels. The Spanish is a DRAFT that a person (Olger Palma, per the build spec) must review.
 // Text that comes from the rule records (step titles, reasons, guides, agency names, notification bodies) stays in English.
 export const pagesEn = {
+  'auth.code': '6-digit code',
+  'auth.confirmTitle': 'Check your email',
+  'auth.confirmBtn': 'Confirm and sign in',
+  'auth.resend': 'Send a new code',
+  'auth.enterCode': 'Enter the code',
+  'auth.codeSentHint': 'We sent a 6-digit code. It works for one hour.',
+  'auth.confirmLead': (e) => `We sent a 6-digit code to ${e}. Enter it to finish creating your account.`,
   'auth.signIn': 'Sign in',
   'auth.signUp': 'Create account',
   'auth.signOut': 'Sign out',
@@ -376,6 +383,13 @@ export const pagesEn = {
 };
 
 export const pagesEs = {
+  'auth.code': 'Código de 6 dígitos',
+  'auth.confirmTitle': 'Revise su correo',
+  'auth.confirmBtn': 'Confirmar e iniciar sesión',
+  'auth.resend': 'Enviar un código nuevo',
+  'auth.enterCode': 'Escriba el código',
+  'auth.codeSentHint': 'Enviamos un código de 6 dígitos. Funciona por una hora.',
+  'auth.confirmLead': (e) => `Enviamos un código de 6 dígitos a ${e}. Escríbalo para terminar de crear su cuenta.`,
   'auth.signIn': 'Iniciar sesión',
   'auth.signUp': 'Crear cuenta',
   'auth.signOut': 'Cerrar sesión',

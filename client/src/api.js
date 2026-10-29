@@ -32,12 +32,21 @@ export function setAdminKey(key) {
 
 // Sign-in token. Kept in this browser (localStorage) so a refresh keeps you signed in. The server stores only a hash of it.
 let memorySession = '';
+let memoryRefresh = '';
 export function getSession() {
   try { return localStorage.getItem('wa-session') || memorySession; } catch { return memorySession; }
 }
-export function setSession(token) {
+export function getRefreshToken() {
+  try { return localStorage.getItem('wa-refresh') || memoryRefresh; } catch { return memoryRefresh; }
+}
+export function setSession(token, refreshToken) {
   memorySession = token || '';
-  try { if (token) localStorage.setItem('wa-session', token); else localStorage.removeItem('wa-session'); } catch { /* memory only */ }
+  if (refreshToken !== undefined || !token) memoryRefresh = token ? (refreshToken || '') : '';
+  try {
+    if (token) localStorage.setItem('wa-session', token); else localStorage.removeItem('wa-session');
+    if (!token) localStorage.removeItem('wa-refresh');
+    else if (refreshToken) localStorage.setItem('wa-refresh', refreshToken);
+  } catch { /* memory only */ }
 }
 
 // The free host sleeps when idle. Tell the page when a request is slow so it can say so.
@@ -51,7 +60,20 @@ const UNREACHABLE = 'We could not reach the server just now. Please try again in
 let apiLang = 'en';
 export const setApiLang = (l) => { apiLang = l === 'es' ? 'es' : 'en'; };
 
-async function request(method, url, body) {
+// With AWS Cognito the sign-in token lasts an hour. When the server says it ran out, trade the refresh token for a new one
+// once and repeat the request. If that fails, the person is signed out (the page hears 'wa-session-expired').
+let refreshing = null;
+async function refreshSession() {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) return false;
+  refreshing = refreshing || fetch(`${BASE}/api/auth/refresh`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ refreshToken }) })
+    .then(async (r) => { const d = await r.json().catch(() => ({})); if (!r.ok || !d.token) return false; setSession(d.token, refreshToken); return true; })
+    .catch(() => false)
+    .finally(() => { refreshing = null; });
+  return refreshing;
+}
+
+async function request(method, url, body, retried = false) {
   if (apiLang === 'es' && !/[?&]lang=/.test(url) && !/^\/api\/(admin|rules|changes|county|source|demo)/.test(url)) url += `${url.includes('?') ? '&' : '?'}lang=es`;
   const headers = { 'content-type': 'application/json', 'x-visitor-id': visitorId() };
   const key = getAdminKey();
@@ -75,6 +97,11 @@ async function request(method, url, body) {
     data = await res.json();
   } catch {
     /* non-JSON response */
+  }
+  if (res.status === 401 && !retried && getSession() && !url.startsWith('/api/auth/')) {
+    if (await refreshSession()) return request(method, url, body, true);
+    setSession('');
+    emit('wa-session-expired');
   }
   if (!res.ok || data.ok === false) {
     const e = new Error(data.error || UNREACHABLE);
@@ -108,12 +135,15 @@ export const api = {
   addSourceReview: (review) => request('POST', '/api/source-reviews', review),
   countySources: () => request('GET', '/api/county-sources'),
   saveCountySource: (county, entry) => request('PUT', `/api/county-sources/${encodeURIComponent(county)}`, entry),
+  authConfig: () => request('GET', '/api/auth/config'),
+  confirmEmail: (email, code) => request('POST', '/api/auth/confirm', { email, code }),
+  resendCode: (email) => request('POST', '/api/auth/resend', { email }),
   me: () => request('GET', '/api/auth/me'),
   signup: (name, email, password) => request('POST', '/api/auth/signup', { name, email, password }),
   login: (email, password) => request('POST', '/api/auth/login', { email, password }),
   logout: () => request('POST', '/api/auth/logout'),
   forgot: (email) => request('POST', '/api/auth/forgot', { email }),
-  resetPassword: (token, password) => request('POST', '/api/auth/reset', { token, password }),
+  resetPassword: (token, password, email, code) => request('POST', '/api/auth/reset', { token, password, email, code }),
   adminUsers: () => request('GET', '/api/admin/users'),
   adminUser: (id) => request('GET', `/api/admin/users/${encodeURIComponent(id)}`),
   adminSetRole: (id, role) => request('POST', `/api/admin/users/${encodeURIComponent(id)}/role`, { role }),
