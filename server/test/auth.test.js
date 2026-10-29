@@ -157,3 +157,21 @@ test('reminders go to the account email from the first sign in, with no form and
   assert.deepEqual([on.body.emailOptIn, on.body.emailConfirmed, on.body.email], [true, true, 'ana@example.com']);
   assert.equal(sent.length, 0);
 });
+
+test('a signed-in person who enters a renewal date that is already due gets the reminder and the notification at once', async () => {
+  const { call, sent } = setup();
+  await signup(call, 'ana@example.com');
+  const token = (await call('POST', '/api/auth/login', { email: 'ana@example.com', password: 'Passw0rdOK' })).body.token;
+  const H = { session: token };
+  await call('POST', '/api/checklist', { answers: STRUCT, label: 'Cafe' }, H);
+  const soon = new Date(Date.now() + 5 * 86400000).toISOString().slice(0, 10);
+  const first = 'dor';
+  assert.equal((await call('PUT', '/api/checklist/renewal', { ruleId: first, date: soon }, H)).status, 200);
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].to, 'ana@example.com');
+  const notes = (await call('GET', '/api/notifications', null, H)).body.notifications;
+  assert.equal(notes.filter((n) => n.type === 'renewal').length, 1);
+  // setting the same date again does not send a second email
+  await call('PUT', '/api/checklist/renewal', { ruleId: first, date: soon }, H);
+  assert.equal(sent.length, 1);
+});

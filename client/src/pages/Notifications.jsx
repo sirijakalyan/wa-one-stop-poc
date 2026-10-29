@@ -66,11 +66,6 @@ export default function Notifications({ embedded = false, onData } = {}) {
             </p>
           )}
           <p className="hint">{t('nt.fromRenewals')}</p>
-          <div className="row spaced">
-            <button type="button" className="btn btn-quiet btn-sm" onClick={() => run(() => api.renewalReminder(), real && optedIn ? t('nt.sentNow') : t('nt.simCreated'))}>
-              {t('nt.acctTest')}
-            </button>
-          </div>
           <ErrorNote message={actionError} />
           {info && <p className="ok" role="status">{info}</p>}
         </div>

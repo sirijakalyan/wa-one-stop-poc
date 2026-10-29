@@ -134,12 +134,13 @@ export function createService(store, options = {}) {
   }
 
   // Sends reminders that are due. Safe to run often: each (rule, date, window) is sent once.
-  async function runReminders(now = new Date()) {
+  async function runReminders(now = new Date(), onlyVisitor = '') {
     const result = { checked: 0, sent: 0, failed: 0 };
     if (!mailer) return result;
     const startOfDay = Date.parse(`${now.toISOString().slice(0, 10)}T00:00:00Z`);
     const rulesDoc = await loadRules();
     for (const sub of await store.listEmailSubscribers()) {
+      if (onlyVisitor && sub.id !== onlyVisitor) continue;
       const cl = await store.getChecklist(sub.id);
       for (const [ruleId, date] of Object.entries(cl?.renewals || {})) {
         const rule = rulesDoc.rules.find((r) => r.id === ruleId);
@@ -426,6 +427,8 @@ export function createService(store, options = {}) {
     if (date) cl.renewals[ruleId] = date; else delete cl.renewals[ruleId];
     await store.putChecklist(visitorOf(ctx), cl);
     await track(ctx, date ? 'renewal-set' : 'renewal-cleared', `${await ruleTitle(ruleId)}${date ? `: ${date}` : ''}`);
+    // A signed-in person gets any reminder that is already due right away (the hourly check would send it later).
+    if (date && ctx.account) { try { await runReminders(new Date(), visitorOf(ctx)); } catch (e) { console.error('[email] reminder failed:', e.message); } }
     return { ok: true, ...(await buildChecklist(cl, await loadRules(), langIn(query, body))) };
   });
 
