@@ -8,7 +8,7 @@ import ConfirmEmail from '../components/ConfirmEmail.jsx';
 
 export default function Login() {
   const t = useT();
-  const { signIn } = useApp();
+  const { signIn, requireLogin } = useApp();
   const navigate = useNavigate();
   const { state } = useLocation();
   const [email, setEmail] = useState(state?.email || '');
@@ -17,9 +17,9 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const finish = async () => {
+    // After signing in the owner lands on Home, or on the page they were trying to open.
     if (state?.from) return navigate(state.from, { replace: true });
-    const c = await api.checklist().catch(() => null);
-    return navigate(c?.saved ? '/my-business' : '/', { replace: true });
+    return navigate(requireLogin ? '/home' : '/', { replace: true });
   };
 
   async function submit(e) {

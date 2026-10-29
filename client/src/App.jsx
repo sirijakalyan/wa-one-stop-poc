@@ -27,6 +27,14 @@ function RequireAccount() {
   return <Outlet />;
 }
 
+// The address "/" is the front door. With the account gate on it sends signed-out visitors to Sign in and signed-in owners to /home.
+function FrontDoor() {
+  const { user, requireLogin } = useApp();
+  const loc = useLocation();
+  if (!requireLogin) return <Landing />;
+  return <Navigate to={user ? '/home' : '/login'} replace state={user ? loc.state : undefined} />;
+}
+
 // Layout wraps every route, including the not-found page, so the
 // demo disclaimer banner is present on every screen.
 export default function App() {
@@ -34,7 +42,8 @@ export default function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route element={<RequireAccount />}>
-        <Route index element={<Landing />} />
+        <Route index element={<FrontDoor />} />
+        <Route path="home" element={<Landing />} />
         <Route path="guide" element={<Guide />} />
         <Route path="questionnaire" element={<Questionnaire />} />
         <Route path="my-business" element={<MyBusiness />} />

@@ -471,6 +471,10 @@ describe('the site needs an account (REQUIRE_LOGIN)', () => {
     await user.type(screen.getByLabelText('Password'), 'Passw0rdOK');
     await user.click(screen.getByRole('button', { name: 'Sign in' }));
     expect(await screen.findByRole('heading', { name: /Start your Washington business/ })).toBeInTheDocument();
+    // Home lives at /home, and it is the page shown after signing in (not My business)
+    const nav = screen.getByRole('navigation', { name: 'Main' });
+    expect(within(nav).getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/home');
+    expect(within(nav).getByRole('link', { name: 'Home' })).toHaveAttribute('aria-current', 'page');
     await user.click(screen.getByRole('button', { name: /Account: Ana/ }));
     await user.click(screen.getByRole('menuitem', { name: 'Sign out' }));
     expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeInTheDocument();

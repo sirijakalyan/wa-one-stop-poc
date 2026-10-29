@@ -26,7 +26,7 @@ export default function Header() {
   return (
     <header className="site-head">
       <div className="wrap">
-        <Link to="/" className="brand">
+        <Link to={requireLogin ? '/home' : '/'} className="brand">
           <span className="brand-mark"><Icon name="shield" size={20} /></span>
           <span>WA Business One-Stop-Shop</span>
         </Link>
@@ -45,7 +45,7 @@ export default function Header() {
           <ul>
             {!locked && ROUTES.filter((r) => r.nav !== false).map((r) => (
               <li key={r.path}>
-                <NavLink to={r.path} end={r.path === '/'}>
+                <NavLink to={r.path === '/' && requireLogin ? '/home' : r.path} end={r.path === '/'}>
                   {t(`nav.${r.path}`) === `nav.${r.path}` ? r.label : t(`nav.${r.path}`)}
                 </NavLink>
               </li>
