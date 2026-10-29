@@ -52,19 +52,22 @@ export default function MyBusiness() {
       <p className="hint">{data.label ? t('pr.sample', data.label) : ''}{t('pr.self')}</p>
       {t.lang === 'es' && <p className="draft-note">{t('enNote')}</p>}
 
-      <ul className="stat-row" aria-label={t('mb.stats')}>
-        <li><strong>{data.done}</strong><span>{t('mb.doneN')}</span></li>
-        <li><strong>{remaining}</strong><span>{t('mb.remaining')}</span></li>
-        <li><strong>{cl ? pending : '-'}</strong><span>{t('mb.pendingV')}</span></li>
-        <li><strong>{data.percent}%</strong><span>{t('mb.complete')}</span></li>
-      </ul>
-      <p className="hint" data-testid="mb-steps">{t('cl.steps', data.done, data.total)}</p>
-
-      <DashSummary data={data} />
-
-      <Checklist embedded onChanged={reload} onData={setCl} />
-
-      <DashRenewals data={data} onSave={saveRenewal} savedId={savedId} actionError={actionError} />
+      <div className="mb-split">
+        <div className="mb-main">
+          <Checklist embedded onChanged={reload} onData={setCl} />
+          <DashRenewals data={data} onSave={saveRenewal} savedId={savedId} actionError={actionError} />
+        </div>
+        <aside className="mb-side" aria-label={t('mb.stats')}>
+          <ul className="stat-row">
+            <li><strong>{data.done}</strong><span>{t('mb.doneN')}</span></li>
+            <li><strong>{remaining}</strong><span>{t('mb.remaining')}</span></li>
+            <li><strong>{cl ? pending : '-'}</strong><span>{t('mb.pendingV')}</span></li>
+            <li><strong>{data.percent}%</strong><span>{t('mb.complete')}</span></li>
+          </ul>
+          <p className="hint" data-testid="mb-steps">{t('cl.steps', data.done, data.total)}</p>
+          <DashSummary data={data} />
+        </aside>
+      </div>
     </>
   );
 }

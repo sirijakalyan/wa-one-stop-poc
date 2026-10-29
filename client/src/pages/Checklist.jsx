@@ -31,7 +31,7 @@ export default function Checklist({ embedded = false, onChanged, onData } = {}) 
     setLabel(data.label || '');
     setCatsAuto(false);
     setStep(stepList(data.answers).length - 1);
-    navigate('/questionnaire');
+    navigate('/', { state: { mode: 'form' } }); // the form lives on the home page
   }
   async function startOver() {
     try {

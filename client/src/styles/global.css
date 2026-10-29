@@ -824,3 +824,14 @@ footer .api-status { background: transparent; color: #a9bdd4; border-color: rgba
 }
 .home-split .guide-road .hint { color: #dbe7f5; }
 .home-split .guide-road .hint a { color: #fff; font-weight: 650; }
+
+/* My business: the checklist on the left, the progress beside it on the right */
+.mb-split { display: grid; gap: 1.25rem; grid-template-columns: minmax(0, 1fr); align-items: start; }
+.mb-side { display: flex; flex-direction: column; gap: .75rem; min-width: 0; }
+.mb-side .stat-row { margin: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.mb-side .hint { margin: 0; }
+@media (max-width: 63.99rem) { .mb-side { order: -1; } }
+@media (min-width: 64rem) {
+  .mb-split { grid-template-columns: minmax(0, 1fr) 22rem; }
+  .mb-side { position: sticky; top: 1rem; max-height: calc(100vh - 2rem); overflow: auto; }
+}

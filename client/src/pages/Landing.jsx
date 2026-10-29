@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { api, useLoad } from '../api.js';
 import { ErrorNote } from '../components/Parts.jsx';
 import Icon from '../components/Icon.jsx';
@@ -19,7 +19,8 @@ const SAMPLE_ICON = { home: 'home', restaurant: 'utensils', contractor: 'hammer'
 export default function Landing() {
   const t = useT();
   const { guide, live, answers, setAnswers, setLabel, setStep, setCatsAuto } = useApp();
-  const [mode, setMode] = useState(canSpeak() ? 'talk' : 'type'); // 'talk' by default so the guide greets out loud; null | 'talk' | 'type' | 'form': the guide and the form both live on this page
+  const location = useLocation();
+  const [mode, setMode] = useState(location.state?.mode === 'form' ? 'form' : (canSpeak() ? 'talk' : 'type')); // 'talk' by default so the guide greets out loud; null | 'talk' | 'type' | 'form': the guide and the form both live on this page
   const [startReq, setStartReq] = useState(null);
   const workRef = useRef(null);
   const reqId = useRef(0);
@@ -105,6 +106,7 @@ export default function Landing() {
                 </button>
               </div>
             </form>
+            <p className="privacy-note">{t('home.privacy')}</p>
           </div>
         </div>
       </section>
@@ -112,9 +114,6 @@ export default function Landing() {
       <section className="workspace" id="workspace" ref={workRef} tabIndex={-1} aria-label={t('mode.title')}>
         {mode === 'form' ? <Questionnaire embedded /> : null}
         {mode === 'talk' || mode === 'type' ? <Guide embedded mode={mode} start={startReq} /> : null}
-        {!mode ? <p className="hint workspace-hint">{t('mode.pick')}</p> : <p className="hint workspace-hint">{t('mode.kept')}</p>}
-        <p className="hint workspace-hint">{t('home.lead')} {t('home.waysNote')}</p>
-        <p className="privacy-note workspace-hint">{t('home.privacy')}</p>
       </section>
       </div>
 

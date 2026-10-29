@@ -454,7 +454,7 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
       <div className={`guide-road${tab === 'plan' ? ' is-active' : ''}`} data-tab="plan">
         {!embedded && <SimulatePanel result={sim} onClose={endSimulation} />}
         {!embedded && <Timeline timeline={view.timeline} simulated={Boolean(sim)} />}
-        <p className="hint">{t('guide.checklistHint')} <Link to="/my-business">{t('guide.checklistLink')}</Link> {t('guide.checklistAfter')}</p>
+        {!embedded && <p className="hint">{t('guide.checklistHint')} <Link to="/my-business">{t('guide.checklistLink')}</Link> {t('guide.checklistAfter')}</p>}
       </div>
     </div>
   );
