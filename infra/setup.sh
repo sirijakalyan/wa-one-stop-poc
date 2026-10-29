@@ -18,11 +18,12 @@ echo "2/4 Letting the Beanstalk server read the secret and manage users..."
 aws iam attach-role-policy --role-name "$ROLE" --policy-arn "$POLICY"
 
 echo "3/4 Adding your two secrets to $SECRET"
-read -r -s -p "  DATABASE_URL (postgres://...): " DB; echo
+echo "  If you do not have a Postgres database, just press Enter to skip DATABASE_URL."
+read -r -s -p "  DATABASE_URL (postgres://..., or Enter to skip): " DB; echo
 read -r -s -p "  New SENDGRID_API_KEY (SG....): " SG; echo
-[ -n "$DB" ] && [ -n "$SG" ] || { echo "Both values are needed. Run the script again."; exit 1; }
+[ -n "$SG" ] || { echo "The SendGrid key is needed. Run the script again."; exit 1; }
 CUR=$(aws secretsmanager get-secret-value --secret-id "$SECRET" --query SecretString --output text)
-NEW=$(CUR="$CUR" DB="$DB" SG="$SG" python3 -c 'import json,os; d=json.loads(os.environ["CUR"]); d["DATABASE_URL"]=os.environ["DB"]; d["SENDGRID_API_KEY"]=os.environ["SG"]; print(json.dumps(d))')
+NEW=$(CUR="$CUR" DB="$DB" SG="$SG" python3 -c 'import json,os; d=json.loads(os.environ["CUR"]); d.update({"DATABASE_URL":os.environ["DB"]} if os.environ["DB"] else {}); d["SENDGRID_API_KEY"]=os.environ["SG"]; print(json.dumps(d))')
 aws secretsmanager put-secret-value --secret-id "$SECRET" --secret-string "$NEW" >/dev/null
 unset DB SG CUR NEW
 
