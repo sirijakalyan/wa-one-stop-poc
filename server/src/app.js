@@ -41,6 +41,21 @@ export function createApp({ dataDir, store = createStore(dataDir), adminKey = pr
   const app = express();
   app.set('trust proxy', Number.isInteger(Number(process.env.TRUST_PROXY)) && process.env.TRUST_PROXY !== '' ? Number(process.env.TRUST_PROXY) : 1);
 
+  // Security headers. HSTS is sent only when the request really came in over HTTPS.
+  app.disable('x-powered-by');
+  const CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
+  app.use((req, res, next) => {
+    res.set({
+      'Content-Security-Policy': CSP,
+      'X-Content-Type-Options': 'nosniff',
+      'X-Frame-Options': 'DENY',
+      'Referrer-Policy': 'no-referrer',
+      'Permissions-Policy': 'microphone=(self), camera=(), geolocation=()',
+    });
+    if (req.secure) res.set('Strict-Transport-Security', 'max-age=31536000');
+    next();
+  });
+
   const allowed = (corsOrigins ?? process.env.CORS_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
   app.use(cors({
     origin(origin, cb) {
