@@ -1234,3 +1234,4 @@ input[type="password"]:hover, input[type="search"]:hover { border-color: var(--n
    (A later .chat-log rule capped the list at 26rem and left a blank gap under the input.) */
 .chat > .chat-log { min-height: 0; max-height: none; padding: 1rem; gap: .8rem; }
 .chat > .chat-form { flex: none; }
+#guide-side { scroll-margin-top: 4.5rem; }

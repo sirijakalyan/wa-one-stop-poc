@@ -293,6 +293,19 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
     }
   }, [location, navigate, turn, startProp]);
 
+  // "Edit answers" on My business lands here: scroll down to the Your business card so the rows are in view.
+  const focusedBusiness = useRef(false);
+  useEffect(() => {
+    if (location.state?.focus !== 'business' || focusedBusiness.current) return undefined;
+    const timer = setTimeout(() => {
+      focusedBusiness.current = true;
+      const el = document.getElementById('guide-side');
+      if (!el) return;
+      const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [location.state]);
   useEffect(() => {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [messages.length, busy]);
