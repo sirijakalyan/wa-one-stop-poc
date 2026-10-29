@@ -18,7 +18,7 @@ const SAMPLE_ICON = { home: 'home', restaurant: 'utensils', contractor: 'hammer'
 // What the owner types goes to the guide through the router's history state, never through the address bar.
 export default function Landing() {
   const t = useT();
-  const { guide, answers, setAnswers, setLabel, setStep, setCatsAuto } = useApp();
+  const { guide, live, answers, setAnswers, setLabel, setStep, setCatsAuto } = useApp();
   const [mode, setMode] = useState(canSpeak() ? 'talk' : 'type'); // 'talk' by default so the guide greets out loud; null | 'talk' | 'type' | 'form': the guide and the form both live on this page
   const [startReq, setStartReq] = useState(null);
   const workRef = useRef(null);
@@ -59,8 +59,14 @@ export default function Landing() {
       <section className="hero guide-hero" aria-labelledby="hero-title">
         <div className="hero-grid">
           <div className="guide-stage">
-            <div className="guide-bubble" data-testid="greeting">
-              <p>{t('home.greeting')}</p>
+            <div className={`guide-bubble${live.speaking ? ' is-speaking' : ''}${live.listening && !live.speaking ? ' is-listening' : ''}`} data-testid="greeting">
+              <p>{live.text && live.role === 'guide' ? live.text : t('home.greeting')}</p>
+              {(live.speaking || live.listening) && (
+                <p className="live-status" aria-hidden="true">
+                  <span className="bars"><i /><i /><i /><i /></span>
+                  {live.speaking ? t('voice.speakingShort') : t('voice.listening')}
+                </p>
+              )}
             </div>
             <GuideArt />
             <p className="ai-label"><Icon name="chat" size={16} /> {t('home.aiLabel')}</p>

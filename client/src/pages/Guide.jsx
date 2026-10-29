@@ -38,7 +38,7 @@ const SAVE_ES = /^\s*(?:(?:ok|okay|s[ií]|por favor|ahora|entonces|bueno)[\s,]+)
 // Main screen: the conversation on the left; the business card, the plan and the road to opening day fill in on the right.
 // embedded: shown inside the home page. mode and start come from the home page's Talk / Type switch and its sentence box.
 export default function Guide({ embedded = false, mode: modeProp, start: startProp } = {}) {
-  const { guide, setGuide, setAnswers, setLabel, setStep, setCatsAuto } = useApp();
+  const { guide, setGuide, setLive, setAnswers, setLabel, setStep, setCatsAuto } = useApp();
   const t = useT();
   const langRef = useRef(t.lang);
   langRef.current = t.lang;
@@ -186,6 +186,15 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
     const l = listenerRef.current;
     if (micOn && !busy) { l?.start(); setListening(true); } else { l?.stop(); setListening(false); }
   }, [micOn, speaking, busy, tick]);
+  // Tell the home page's top banner what is happening, so the owner sees who is talking without scrolling down.
+  const lastMsg = messages[messages.length - 1];
+  const lastText = lastMsg?.text || '';
+  const lastRole = lastMsg?.role || 'guide';
+  useEffect(() => {
+    if (!embedded) return;
+    setLive({ speaking, listening, text: lastText, role: lastRole });
+  }, [embedded, speaking, listening, lastText, lastRole, setLive]);
+  useEffect(() => () => { if (embedded) setLive({ speaking: false, listening: false, text: '', role: 'guide' }); }, [embedded, setLive]);
   // On leaving the page, stop talking and listening. Resetting the counters also makes React's dev double-mount start the greeting again after its cancel.
   useEffect(() => () => { stopSpeaking(); listenerRef.current?.stop(); spokenIdx.current = 0; speakingCount.current = 0; }, []);
 

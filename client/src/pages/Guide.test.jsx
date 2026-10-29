@@ -238,7 +238,7 @@ describe('voice', () => {
     window.speechSynthesis.speak = vi.fn((u) => { spoken.push(u.text); setTimeout(() => u.onstart?.(), 0); });
     renderAt('/');
     await waitFor(() => expect(FakeRec.last?.started).toBe(true), { timeout: 4000 });
-    await waitFor(() => expect(screen.getByText(/The guide is speaking/)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getAllByText(/The guide is speaking/).length).toBeGreaterThan(1));
     const cancels = window.speechSynthesis.cancel.mock.calls.length;
     // Its own words coming back through the speakers are ignored.
     FakeRec.last.onresult({ resultIndex: 0, results: [Object.assign([{ transcript: "I'm here to help you start your Washington business" }], { isFinal: false })] });

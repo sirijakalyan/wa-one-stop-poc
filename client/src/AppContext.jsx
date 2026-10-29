@@ -28,10 +28,12 @@ export function AppProvider({ children }) {
   const [step, setStep] = useState(0);
   const [catsAuto, setCatsAuto] = useState(false);
   // The talking guide: its conversation and "Your business" card survive moving between screens (memory only, never stored).
+  // What the guide is doing right now, so the top of the home page can show it (speaking, listening, and the line being said).
+  const [live, setLive] = useState({ speaking: false, listening: false, text: '', role: 'guide' });
   const [guide, setGuide] = useState({ messages: [], card: blankCard(), ask: null, awaiting: null, complete: false });
   const value = useMemo(
-    () => ({ answers, setAnswers, label, setLabel, step, setStep, catsAuto, setCatsAuto, guide, setGuide }),
-    [answers, label, step, catsAuto, guide]
+    () => ({ answers, setAnswers, label, setLabel, step, setStep, catsAuto, setCatsAuto, guide, setGuide, live, setLive }),
+    [answers, label, step, catsAuto, guide, live]
   );
   return <LangContext.Provider value={langValue}><Ctx.Provider value={value}>{children}</Ctx.Provider></LangContext.Provider>;
 }

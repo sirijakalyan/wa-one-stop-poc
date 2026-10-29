@@ -71,7 +71,7 @@ export function speak(text, { onStart, onEnd, onSilent, lang = 'en-US' } = {}) {
     u.onerror = (e) => { if (u !== current) return; if (e?.error === 'interrupted' || e?.error === 'canceled') finish(); else if (attempt < 2) { reset(); setTimeout(() => say(attempt + 1), 300); } else finish(); };
     // A browser that was left paused will accept a line and never play it.
     try { if (synth().paused) synth().resume(); } catch { /* ignore */ }
-    synth().speak(u);
+    try { synth().speak(u); } catch { /* a browser that refuses to speak must not break the page */ }
     // Not started after a few seconds and nothing else of ours started either: the queue is stuck, whatever speaking says.
     check = setTimeout(() => {
       if (done || started || Date.now() - lastStartAt < 3000) return;
