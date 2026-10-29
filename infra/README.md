@@ -36,3 +36,8 @@ Good to know
   to Amazon SES (verify `hr@knackhook.com` in SES). SendGrid still sends the renewal reminders.
 - Existing demo accounts made before this change stay in the app store and are not copied into Cognito.
 - Locally, leave `COGNITO_USER_POOL_ID` and `SECRETS_ID` unset: the app then uses its own demo accounts and your `.env`.
+
+Shortcut for steps 1 to 4 (CloudShell)
+- Open AWS CloudShell (the `>_` icon), choose Actions, then Upload file, and upload `infra/cognito-and-secrets.yaml` and `infra/setup.sh`.
+- Run `bash setup.sh`. It deploys the stack, attaches the server policy and asks for `DATABASE_URL` and the new SendGrid key in
+  hidden prompts. Then do step 5 (Beanstalk properties) by hand. This script has not been run against a real account by its author.
