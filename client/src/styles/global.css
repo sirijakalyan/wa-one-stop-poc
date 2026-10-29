@@ -1247,3 +1247,16 @@ input[type="password"]:hover, input[type="search"]:hover { border-color: var(--n
 .biz-pick.is-on { border-color: var(--navy-900); background: var(--navy-900); color: #fff; }
 .biz-pick.is-on span { color: #c7d8ec; }
 .biz-add { border-style: dashed; color: var(--teal-700, var(--ink)); font-weight: 650; }
+
+/* Spoken walk through the steps */
+.step-audio { margin: 1rem 0 1.4rem; padding: 1rem 1.1rem; border: 1.5px solid var(--line-strong); border-radius: var(--radius-lg, 16px); background: var(--surface); }
+.step-audio-top { display: flex; align-items: center; gap: .85rem; }
+.step-audio-top > svg { flex: none; color: var(--teal-700, var(--ink)); }
+.step-audio-top > div { flex: 1; min-width: 0; }
+.step-audio-top h3 { margin: 0 0 .15rem; font-size: 1.05rem; }
+.step-audio-top .hint { margin: 0; }
+.step-audio-now { margin-top: .8rem; padding-top: .8rem; border-top: 1px solid var(--line); }
+.step-audio-now p { margin: 0 0 .35rem; }
+.step-audio-now .row { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+.item.is-speaking { outline: 3px solid var(--teal-500); outline-offset: 3px; }
+@media (max-width: 36rem) { .step-audio-top { flex-wrap: wrap; } .step-audio-top > div { flex-basis: calc(100% - 3rem); } }

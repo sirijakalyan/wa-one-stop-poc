@@ -4,6 +4,7 @@ import { api, getBusiness, setBusiness, startEditing, stopEditing, useLoad } fro
 import { useT } from '../i18n.js';
 import { useApp } from '../AppContext.jsx';
 import ChecklistItem from '../components/ChecklistItem.jsx';
+import StepAudio from '../components/StepAudio.jsx';
 import { Chips, ErrorNote, Loading, Meter } from '../components/Parts.jsx';
 import { cardFromAnswers } from '../guideCard.js';
 import { blankAnswers, stepList } from '../questions.js';
@@ -16,6 +17,7 @@ export default function Checklist({ embedded = false, onChanged, onData } = {}) 
   const fetchChecklist = useCallback(() => api.checklist(), [t.lang]); // eslint-disable-line react-hooks/exhaustive-deps
   const { data, error, loading, setData } = useLoad(fetchChecklist);
   const [actionError, setActionError] = useState('');
+  const [speaking, setSpeaking] = useState('');
   useEffect(() => { onData?.(data); }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function toggle(ruleId, done) {
@@ -110,6 +112,10 @@ export default function Checklist({ embedded = false, onChanged, onData } = {}) 
         )}
       </div>
       <ErrorNote message={actionError} />
+      <StepAudio items={Object.keys(phases).flatMap((p) => items.filter((i) => String(i.phase) === p))} onActive={(id) => {
+        setSpeaking(id);
+        if (id) setTimeout(() => document.getElementById(`step-${id}`)?.scrollIntoView({ behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' }), 100);
+      }} />
 
       {Object.entries(phases).map(([p, name]) => {
         const inPhase = items.filter((i) => String(i.phase) === p);
@@ -118,7 +124,7 @@ export default function Checklist({ embedded = false, onChanged, onData } = {}) 
           <section className="phase" key={p} aria-labelledby={`ph${p}`}>
             <h2 id={`ph${p}`}>{name}</h2>
             <ul className="items">
-              {inPhase.map((i) => <ChecklistItem key={i.id} item={i} onToggle={toggle} />)}
+              {inPhase.map((i) => <ChecklistItem key={i.id} item={i} onToggle={toggle} speaking={speaking === i.id} />)}
             </ul>
           </section>
         );

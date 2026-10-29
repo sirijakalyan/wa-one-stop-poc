@@ -70,13 +70,13 @@ function FoundLinks({ links }) {
 
 // One checklist card: title, status label, short reason, one action button, "Mark as done".
 // Explanations live in the Guide. Provenance lives in Source details.
-export default function ChecklistItem({ item, onToggle }) {
+export default function ChecklistItem({ item, onToggle, speaking = false }) {
   const t = useT();
   const pending = item.verification?.status === 'pending';
   const sourceChecked = item.verification?.status === 'checked';
   const checkedOn = shortDate(item.lastVerified, t.lang);
   return (
-    <li className={`item item--${pending ? 'pending' : item.status === 'applies' ? 'applies' : 'maybe'}${item.done ? ' done' : ''}`}>
+    <li id={`step-${item.id}`} className={`item item--${pending ? 'pending' : item.status === 'applies' ? 'applies' : 'maybe'}${item.done ? ' done' : ''}${speaking ? ' is-speaking' : ''}`}>
       <div className="item-top">
         {pending ? (
           <span className="pill pending">{t('pill.pending')}</span>
