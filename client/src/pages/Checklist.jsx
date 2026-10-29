@@ -5,6 +5,7 @@ import { useT } from '../i18n.js';
 import { useApp } from '../AppContext.jsx';
 import ChecklistItem from '../components/ChecklistItem.jsx';
 import { Chips, ErrorNote, Loading, Meter } from '../components/Parts.jsx';
+import Questionnaire from './Questionnaire.jsx';
 import { blankAnswers, stepList } from '../questions.js';
 
 // embedded: used inside the My business page, which already shows the title and the progress summary.
@@ -15,6 +16,7 @@ export default function Checklist({ embedded = false, onChanged, onData } = {}) 
   const fetchChecklist = useCallback(() => api.checklist(), [t.lang]); // eslint-disable-line react-hooks/exhaustive-deps
   const { data, error, loading, setData } = useLoad(fetchChecklist);
   const [actionError, setActionError] = useState('');
+  const [editing, setEditing] = useState(false);
   useEffect(() => { onData?.(data); }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function toggle(ruleId, done) {
@@ -31,7 +33,8 @@ export default function Checklist({ embedded = false, onChanged, onData } = {}) 
     setLabel(data.label || '');
     setCatsAuto(false);
     setStep(stepList(data.answers).length - 1);
-    navigate('/', { state: { mode: 'form' } }); // the form lives on the home page
+    if (embedded) setEditing(true); // edit in place on My business
+    else navigate('/', { state: { mode: 'form' } });
   }
   async function startOver() {
     try {
@@ -59,6 +62,22 @@ export default function Checklist({ embedded = false, onChanged, onData } = {}) 
           <Link className="btn" to="/">{t('cl.pick')}</Link>
         </div>
       </div>
+    );
+  }
+
+  if (editing) {
+    return (
+      <section className="edit-in-place" aria-label={t('cl.edit')}>
+        <Questionnaire
+          embedded
+          onSaved={async () => {
+            try { setData(await api.checklist()); } catch (e) { setActionError(e.message); }
+            setEditing(false);
+            onChanged?.();
+          }}
+        />
+        <button type="button" className="btn btn-quiet btn-sm" onClick={() => setEditing(false)}>{t('cl.cancelEdit')}</button>
+      </section>
     );
   }
 
