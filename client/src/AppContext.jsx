@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { LangContext } from './i18n.js';
 import { blankAnswers } from './questions.js';
 import { blankCard } from './guideCard.js';
-import { setApiLang } from './api.js';
+import { api, getSession, setApiLang, setSession } from './api.js';
 
 // Holds the questionnaire in progress so it survives moving between screens.
 const Ctx = createContext(null);
@@ -31,9 +31,27 @@ export function AppProvider({ children }) {
   // What the guide is doing right now, so the top of the home page can show it (speaking, listening, and the line being said).
   const [live, setLive] = useState({ speaking: false, listening: false, text: '', role: 'guide' });
   const [guide, setGuide] = useState({ messages: [], card: blankCard(), ask: null, awaiting: null, complete: false });
+  // The signed-in account (null when signed out). Signed-out visitors can still use the guide.
+  const [user, setUser] = useState(null);
+  const [authReady, setAuthReady] = useState(() => !getSession());
+  useEffect(() => {
+    if (!getSession()) return undefined;
+    let live = true;
+    api.me().then((r) => { if (live) setUser(r.user); if (live && !r.user) setSession(''); }).catch(() => {}).finally(() => { if (live) setAuthReady(true); });
+    return () => { live = false; };
+  }, []);
+  const signIn = (u, token) => { setSession(token); setUser(u); };
+  const signOut = async () => {
+    try { await api.logout(); } catch { /* the token is dropped here either way */ }
+    setSession('');
+    setUser(null);
+    // Nothing from this person's session stays on screen for the next one.
+    setAnswers(blankAnswers()); setLabel(''); setStep(0); setCatsAuto(false);
+    setGuide({ messages: [], card: blankCard(), ask: null, awaiting: null, complete: false });
+  };
   const value = useMemo(
-    () => ({ answers, setAnswers, label, setLabel, step, setStep, catsAuto, setCatsAuto, guide, setGuide, live, setLive }),
-    [answers, label, step, catsAuto, guide, live]
+    () => ({ user, authReady, signIn, signOut, answers, setAnswers, label, setLabel, step, setStep, catsAuto, setCatsAuto, guide, setGuide, live, setLive }),
+    [user, authReady, answers, label, step, catsAuto, guide, live]
   );
   return <LangContext.Provider value={langValue}><Ctx.Provider value={value}>{children}</Ctx.Provider></LangContext.Provider>;
 }

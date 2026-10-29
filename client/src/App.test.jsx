@@ -156,7 +156,7 @@ describe('admin key gate', () => {
     await user.type(screen.getByLabelText('Admin key'), 'right-key');
     await user.click(screen.getByRole('button', { name: 'Unlock admin' }));
     expect(await screen.findByRole('heading', { name: 'Rules (1)' })).toBeInTheDocument();
-    expect(screen.getByText(/Unlocked with the admin key/)).toBeInTheDocument();
+    expect(screen.getByText(/Unlocked for this browser/)).toBeInTheDocument();
     sessionStorage.clear();
   });
 

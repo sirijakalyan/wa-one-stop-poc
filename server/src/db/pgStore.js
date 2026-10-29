@@ -210,6 +210,43 @@ export function createPgStore(pool) {
       return r.rows.map((x) => ({ county: x.county, officialUrl: x.official_url, reviewedBy: x.reviewed_by, reviewedAt: iso(x.reviewed_at), status: x.status }));
     },
 
+    // Accounts and activity log. The account is one JSON document; email is a unique column.
+    async createAccount(a) {
+      const r = await pool.query('INSERT INTO accounts (id, email, created_at, data) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING', [a.id, a.email, a.createdAt, JSON.stringify(a)]);
+      return r.rowCount === 1;
+    },
+    async getAccount(id) {
+      return (await pool.query('SELECT data FROM accounts WHERE id = $1', [id])).rows[0]?.data || null;
+    },
+    async findAccountByEmail(email) {
+      return (await pool.query('SELECT data FROM accounts WHERE email = $1', [email])).rows[0]?.data || null;
+    },
+    async findAccountBySession(hash) {
+      const r = await pool.query('SELECT data FROM accounts WHERE data->\'sessions\' @> $1::jsonb', [JSON.stringify([{ hash }])]);
+      const a = r.rows[0]?.data;
+      return a && (a.sessions || []).some((x) => x.hash === hash && x.exp > Date.now()) ? a : null;
+    },
+    async findAccountByResetToken(hash) {
+      const a = (await pool.query('SELECT data FROM accounts WHERE data->>\'resetHash\' = $1', [hash])).rows[0]?.data;
+      return a && a.resetExp > Date.now() ? a : null;
+    },
+    async updateAccount(id, patch) {
+      const cur = await this.getAccount(id);
+      if (!cur) return null;
+      const next = { ...cur, ...patch };
+      await pool.query('UPDATE accounts SET data = $2 WHERE id = $1', [id, JSON.stringify(next)]);
+      return next;
+    },
+    async listAccounts() {
+      return (await pool.query('SELECT data FROM accounts ORDER BY created_at DESC')).rows.map((r) => r.data);
+    },
+    async addEvent(v, e) {
+      await pool.query('INSERT INTO events (visitor_id, at, type, detail) VALUES ($1,$2,$3,$4)', [v, e.at, e.type, e.detail || '']);
+    },
+    async listEvents(v, limit = 200) {
+      return (await pool.query('SELECT at, type, detail FROM events WHERE visitor_id = $1 ORDER BY at DESC, id DESC LIMIT $2', [v, limit])).rows.map((x) => ({ at: iso(x.at), type: x.type, detail: x.detail, visitorId: v }));
+    },
+
     async counts() {
       const n = async (t) => Number((await pool.query(`SELECT COUNT(*) AS n FROM ${t}`)).rows[0].n);
       return { rules: await n('rules'), checklists: await n('checklists'), notifications: await n('notifications'), sourceReviews: await n('source_reviews'), countySources: await n('county_sources') };

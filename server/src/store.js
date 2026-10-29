@@ -6,7 +6,7 @@ import { createDocStore } from './docStore.js';
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const SEED_DIR = path.resolve(here, '..', 'seed');
 export const DEFAULT_DATA_DIR = path.resolve(here, '..', 'data');
-export const DATA_FILES = ['rules', 'users', 'checklists', 'notifications', 'source_reviews', 'county_sources'];
+export const DATA_FILES = ['rules', 'users', 'checklists', 'notifications', 'source_reviews', 'county_sources', 'accounts', 'events'];
 
 async function exists(file) {
   try {

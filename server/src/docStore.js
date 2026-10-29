@@ -134,6 +134,50 @@ export function createDocStore({ read, write, seed }) {
         countySources: (await read('county_sources')).counties.length,
       };
     },
+
+    // Accounts. Sessions, reset tokens and failed-login counters live on the account record (hashed, never plain).
+    async createAccount(acct) {
+      const doc = await read('accounts');
+      if (doc.accounts.some((a) => a.email === acct.email)) return false;
+      doc.accounts.push(clone(acct));
+      await write('accounts', doc);
+      return true;
+    },
+    async getAccount(id) {
+      return (await read('accounts')).accounts.find((a) => a.id === id) || null;
+    },
+    async findAccountByEmail(email) {
+      return (await read('accounts')).accounts.find((a) => a.email === email) || null;
+    },
+    async findAccountBySession(hash) {
+      const now = Date.now();
+      return (await read('accounts')).accounts.find((a) => (a.sessions || []).some((x) => x.hash === hash && x.exp > now)) || null;
+    },
+    async findAccountByResetToken(hash) {
+      const now = Date.now();
+      return (await read('accounts')).accounts.find((a) => a.resetHash && a.resetHash === hash && a.resetExp > now) || null;
+    },
+    async updateAccount(id, patch) {
+      const doc = await read('accounts');
+      const a = doc.accounts.find((x) => x.id === id);
+      if (!a) return null;
+      Object.assign(a, clone(patch));
+      await write('accounts', doc);
+      return a;
+    },
+    async listAccounts() {
+      return (await read('accounts')).accounts.slice().sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+    },
+    // Activity log per account (what a person did, with the date). Details are short plain text, never answers or passwords.
+    async addEvent(v, e) {
+      const doc = await read('events');
+      doc.events.push({ ...clone(e), visitorId: v });
+      if (doc.events.length > 5000) doc.events = doc.events.slice(-5000);
+      await write('events', doc);
+    },
+    async listEvents(v, limit = 200) {
+      return (await read('events')).events.filter((e) => e.visitorId === v).sort((a, b) => String(b.at).localeCompare(String(a.at))).slice(0, limit);
+    },
     async close() {},
   };
 }

@@ -4,6 +4,8 @@ import { ROUTES } from '../routes.js';
 import Icon from './Icon.jsx';
 import NotificationBell from './NotificationBell.jsx';
 import { useLang, useT } from '../i18n.js';
+import { useApp } from '../AppContext.jsx';
+import AccountMenu from './AccountMenu.jsx';
 
 // Owner navigation only. On a phone the links sit behind a Menu button so the header stays one calm row.
 export default function Header() {
@@ -11,6 +13,7 @@ export default function Header() {
   const { pathname } = useLocation();
   const { lang, setLang } = useLang();
   const t = useT();
+  const { user } = useApp();
   useEffect(() => { setOpen(false); }, [pathname]);
   useEffect(() => {
     if (!open) return undefined;
@@ -36,6 +39,7 @@ export default function Header() {
           <span className="lang-full">{t('lang.button')}</span>
           <span className="lang-short" aria-hidden="true">{lang === 'es' ? 'EN' : 'ES'}</span>
         </button>
+        <div className="head-auth"><AccountMenu /></div>
         <nav id="main-nav" aria-label="Main" className={open ? 'is-open' : ''}>
           <ul>
             {ROUTES.filter((r) => r.nav !== false).map((r) => (
@@ -45,6 +49,20 @@ export default function Header() {
                 </NavLink>
               </li>
             ))}
+            {/* On a phone the account links live in the menu */}
+            <li className="nav-auth">
+              {user ? (
+                <>
+                  <span className="nav-who">{t('auth.signedAs', user.name)}</span>
+                  {user.role === 'admin' && <NavLink to="/admin">{t('auth.admin')}</NavLink>}
+                </>
+              ) : (
+                <>
+                  <NavLink to="/login">{t('auth.signIn')}</NavLink>
+                  <NavLink to="/signup">{t('auth.signUp')}</NavLink>
+                </>
+              )}
+            </li>
           </ul>
         </nav>
       </div>

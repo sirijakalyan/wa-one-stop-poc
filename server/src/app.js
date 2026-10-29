@@ -35,9 +35,9 @@ function loadSeedJson(name, fallback) {
 }
 
 // Thin Express adapter. All API logic lives in service.js.
-export function createApp({ dataDir, store = createStore(dataDir), adminKey = process.env.ADMIN_KEY, llm = createOllamaLlm(), mailer = createMailer(), countyHealthPages = loadSeedJson('county_health_candidates.json', { counties: [] }), foundLinks = loadSeedJson('found_links.json', { links: [] }), publicUrl = process.env.PUBLIC_URL, corsOrigins, places = loadSeedJson("wa_places.json", { places: [] }).places, processingTimes = loadSeedJson('processing_times.json', { times: [] }), clientDist = process.env.CLIENT_DIST } = {}) {
+export function createApp({ dataDir, store = createStore(dataDir), adminKey = process.env.ADMIN_KEY, llm = createOllamaLlm(), mailer = createMailer(), countyHealthPages = loadSeedJson('county_health_candidates.json', { counties: [] }), foundLinks = loadSeedJson('found_links.json', { links: [] }), publicUrl = process.env.PUBLIC_URL, corsOrigins, places = loadSeedJson("wa_places.json", { places: [] }).places, processingTimes = loadSeedJson('processing_times.json', { times: [] }), clientDist = process.env.CLIENT_DIST, adminEmails = String(process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim()).filter(Boolean), demoResetLinks = process.env.DEMO_RESET_LINKS === 'true' } = {}) {
   const production = process.env.NODE_ENV === 'production';
-  const service = createService(store, { adminKey: adminKey || undefined, adminLocked: production && !adminKey, llm, mailer, publicUrl, countyHealthPages, foundLinks, places, processingTimes });
+  const service = createService(store, { adminKey: adminKey || undefined, adminLocked: production && !adminKey, llm, mailer, publicUrl, adminEmails, demoResetLinks, countyHealthPages, foundLinks, places, processingTimes });
   const app = express();
   app.set('trust proxy', Number.isInteger(Number(process.env.TRUST_PROXY)) && process.env.TRUST_PROXY !== '' ? Number(process.env.TRUST_PROXY) : 1);
 
@@ -63,11 +63,12 @@ export function createApp({ dataDir, store = createStore(dataDir), adminKey = pr
       if (!origin || !allowed.length || allowed.includes('*') || allowed.includes(origin)) return cb(null, true);
       return cb(null, false);
     },
-    allowedHeaders: ['content-type', 'x-visitor-id', 'x-admin-key'],
+    allowedHeaders: ['content-type', 'x-visitor-id', 'x-admin-key', 'authorization'],
   }));
   app.use(express.json({ limit: '32kb' }));
   app.use('/api', rateLimit({ windowMs: 60_000, max: 240 }));
   app.use('/api/chat', rateLimit({ windowMs: 60_000, max: 20 }));
+  app.use('/api/auth', rateLimit({ windowMs: 60_000, max: 20 })); // sign in, sign up and reset: slow down guessing
   app.use((req, res, next) => {
     res.setHeader('X-Demo-Disclaimer', 'Demo only, not official guidance.');
     next();
@@ -92,6 +93,7 @@ export function createApp({ dataDir, store = createStore(dataDir), adminKey = pr
       const ctx = {
         visitor: VISITOR_RX.test(visitor) ? visitor : undefined,
         adminKey: req.get('x-admin-key') || '',
+        session: (/^Bearer ([a-f0-9]{64})$/.exec(req.get('authorization') || '') || [])[1] || '',
       };
       const { status, body } = await service.handle(req.method, req.originalUrl, req.body, ctx);
       res.status(status).json(body);

@@ -7,6 +7,8 @@ import rules from '../../../server/seed/rules.json';
 import users from '../../../server/seed/users.json';
 import checklists from '../../../server/seed/checklists.json';
 import notifications from '../../../server/seed/notifications.json';
+import accountsSeed from '../../../server/seed/accounts.json';
+import eventsSeed from '../../../server/seed/events.json';
 import sourceReviews from '../../../server/seed/source_reviews.json';
 import countySources from '../../../server/seed/county_sources.json';
 import countyHealthPages from '../../../server/seed/county_health_candidates.json';
@@ -15,7 +17,7 @@ import waPlaces from '../../../server/seed/wa_places.json';
 import processingTimes from '../../../server/seed/processing_times.json';
 
 const clone = (x) => JSON.parse(JSON.stringify(x));
-const fresh = () => ({ rules: clone(rules), users: clone(users), checklists: clone(checklists), notifications: clone(notifications), source_reviews: clone(sourceReviews), county_sources: clone(countySources) });
+const fresh = () => ({ rules: clone(rules), users: clone(users), checklists: clone(checklists), notifications: clone(notifications), source_reviews: clone(sourceReviews), county_sources: clone(countySources), accounts: clone(accountsSeed), events: clone(eventsSeed) });
 
 export function createMemoryStore() {
   let data = fresh();
@@ -27,14 +29,14 @@ export function createMemoryStore() {
       data[name] = clone(value);
     },
     async seed(name) {
-      return clone({ rules, users, checklists, notifications, source_reviews: sourceReviews, county_sources: countySources }[name]);
+      return clone({ rules, users, checklists, notifications, source_reviews: sourceReviews, county_sources: countySources, accounts: accountsSeed, events: eventsSeed }[name]);
     },
   });
 }
 
 // Replace window.fetch for /api calls. Everything else goes to the real fetch.
 export function installMockServer() {
-  const service = createService(createMemoryStore(), { countyHealthPages, foundLinks, places: waPlaces.places, processingTimes });
+  const service = createService(createMemoryStore(), { adminEmails: ['admin@example.com'], demoResetLinks: true, countyHealthPages, foundLinks, places: waPlaces.places, processingTimes });
   const realFetch = globalThis.fetch ? globalThis.fetch.bind(globalThis) : null;
   globalThis.fetch = async (input, init = {}) => {
     const url = typeof input === 'string' ? input : input.url;
@@ -44,7 +46,13 @@ export function installMockServer() {
     }
     const method = (init.method || 'GET').toUpperCase();
     const body = init.body ? JSON.parse(init.body) : undefined;
-    const r = await service.handle(method, url, body, {});
+    const h = new Headers(init.headers || {});
+    const ctx = {
+      visitor: h.get('x-visitor-id') || undefined,
+      adminKey: h.get('x-admin-key') || '',
+      session: (/^Bearer ([a-f0-9]{64})$/.exec(h.get('authorization') || '') || [])[1] || '',
+    };
+    const r = await service.handle(method, url, body, ctx);
     return { ok: r.status >= 200 && r.status < 300, status: r.status, json: async () => r.body };
   };
   return service;

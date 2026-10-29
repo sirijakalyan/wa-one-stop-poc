@@ -22,6 +22,7 @@ const PATHS = {
   chat: <><path d="M4 5h16v11H9l-5 4z" /><path d="M8 9.5h8M8 12.5h5" /></>,
   close: <path d="M6 6l12 12M18 6L6 18" />,
   menu: <path d="M4 7h16M4 12h16M4 17h16" />,
+  chevron: <path d="M6 9l6 6 6-6" />,
   globe: <><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18" /></>,
   mic: <><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></>,
   user: <><circle cx="12" cy="8" r="4" /><path d="M4 21c1-4 4-6 8-6s7 2 8 6" /></>,

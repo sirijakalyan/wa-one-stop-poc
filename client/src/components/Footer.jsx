@@ -8,7 +8,7 @@ export default function Footer() {
       <div className="wrap">
         <p className="foot-disclaimer" data-testid="footer-disclaimer"><strong>{t('foot.short')}.</strong> {t('foot.text')}</p>
         <p>{t('foot.line')}</p>
-        <p className="foot-links"><Link to="/sources">{t('foot.sources')}</Link><span aria-hidden="true"> · </span><Link to="/admin">{t('foot.admin')}</Link></p>
+        <p className="foot-links"><Link to="/admin">{t('foot.admin')}</Link></p>
       </div>
     </footer>
   );

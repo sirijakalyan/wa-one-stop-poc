@@ -1,0 +1,4 @@
+{
+  "_note": "Accounts created on this server. Empty in the seed. Passwords are stored only as salted hashes.",
+  "accounts": []
+}

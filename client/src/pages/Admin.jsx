@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { useApp } from '../AppContext.jsx';
 import { api, getAdminKey, setAdminKey, useLoad } from '../api.js';
 import { ErrorNote, Loading } from '../components/Parts.jsx';
 import EvidencePanel from '../components/EvidencePanel.jsx';
+import AdminUsers from './AdminUsers.jsx';
+import Sources from './Sources.jsx';
 
 const FIELDS = [
   { key: 'title', label: 'Requirement name', type: 'text' },
@@ -72,7 +76,7 @@ function AdminPanel({ signedIn = false }) {
       </p>
       <p className="note">
         {signedIn
-          ? 'Unlocked with the admin key for this browser tab. Published changes are live for every visitor.'
+          ? 'Unlocked for this browser (admin key or admin account). Published changes are live for every visitor.'
           : 'No admin key is set on this server, so anyone can edit. Use this only for local development.'}
       </p>
       <section className="panel who-edits" aria-labelledby="who-edits-h" data-testid="who-can-edit">
@@ -244,6 +248,8 @@ export default function Admin() {
   const { data, error, loading, reload } = useLoad(fetchStatus);
   const [key, setKey] = useState('');
   const [keyError, setKeyError] = useState('');
+  const { user } = useApp();
+  const [params, setParams] = useSearchParams();
 
   if (loading && !data) return <Loading what="Checking admin access" />;
   if (error) return <ErrorNote message={error} />;
@@ -275,13 +281,37 @@ export default function Admin() {
               <button type="submit" className="btn btn-primary" disabled={!key.trim()}>Unlock admin</button>
               <ErrorNote message={keyError} />
             </form>
-            <p className="hint">Who can edit: only people your team gives the admin key to. A full explanation appears after you unlock. The rules and their sources are still public on the Sources page.</p>
+            <p className="hint">Or <Link to="/login" state={{ from: '/admin' }}>sign in with an admin account</Link>. Who can edit: people with the admin key and people whose account an admin made an admin.</p>
           </>
         ) : (
-          <p className="lead">Admin is locked. The server owner must set an ADMIN_KEY to turn it on. The rules and their sources are still public on the Sources page.</p>
+          <>
+          <p className="lead">Admin is locked. Sign in with an admin account, or the server owner can set an ADMIN_KEY.</p>
+          {!user && <p><Link className="btn btn-primary btn-sm" to="/login" state={{ from: '/admin' }}>Sign in</Link></p>}
+          </>
         )}
       </div>
     );
   }
-  return <AdminPanel signedIn={Boolean(data?.required && getAdminKey())} />;
+  const tabs = [['users', 'Users'], ['rules', 'Rules and links'], ['sources', 'Official sources']];
+  const tab = tabs.some(([k]) => k === params.get('tab')) ? params.get('tab') : (data?.strict ? 'users' : 'rules');
+  return (
+    <>
+      <div className="admin-tabs" role="tablist" aria-label="Admin sections">
+        {tabs.map(([k, label]) => (
+          <button key={k} type="button" role="tab" id={`atab-${k}`} aria-selected={tab === k} aria-controls="admin-body" onClick={() => setParams({ tab: k })}>{label}</button>
+        ))}
+      </div>
+      <div id="admin-body" role="tabpanel" aria-labelledby={`atab-${tab}`}>
+        {tab === 'users' && (data?.strict ? <AdminUsers /> : (
+          <>
+            <h1 tabIndex={-1}>Users</h1>
+            <p className="lead">Sign in with an admin account, or enter the admin key, to see who has signed up and what they did.</p>
+            <p><Link className="btn btn-primary btn-sm" to="/login" state={{ from: '/admin' }}>Sign in</Link></p>
+          </>
+        ))}
+        {tab === 'rules' && <AdminPanel signedIn={Boolean(data?.required && (getAdminKey() || data?.accountAdmin))} />}
+        {tab === 'sources' && <Sources />}
+      </div>
+    </>
+  );
 }

@@ -30,6 +30,16 @@ export function setAdminKey(key) {
   try { if (key) sessionStorage.setItem('wa-admin-key', key); else sessionStorage.removeItem('wa-admin-key'); } catch { /* memory only */ }
 }
 
+// Sign-in token. Kept in this browser (localStorage) so a refresh keeps you signed in. The server stores only a hash of it.
+let memorySession = '';
+export function getSession() {
+  try { return localStorage.getItem('wa-session') || memorySession; } catch { return memorySession; }
+}
+export function setSession(token) {
+  memorySession = token || '';
+  try { if (token) localStorage.setItem('wa-session', token); else localStorage.removeItem('wa-session'); } catch { /* memory only */ }
+}
+
 // The free host sleeps when idle. Tell the page when a request is slow so it can say so.
 const SLOW_MS = 4000;
 const emit = (name) => { try { globalThis.dispatchEvent?.(new Event(name)); } catch { /* no window */ } };
@@ -46,6 +56,8 @@ async function request(method, url, body) {
   const headers = { 'content-type': 'application/json', 'x-visitor-id': visitorId() };
   const key = getAdminKey();
   if (key) headers['x-admin-key'] = key;
+  const session = getSession();
+  if (session) headers.authorization = `Bearer ${session}`;
   const slow = setTimeout(() => emit('wa-api-slow'), SLOW_MS);
   let res;
   try {
@@ -96,6 +108,15 @@ export const api = {
   addSourceReview: (review) => request('POST', '/api/source-reviews', review),
   countySources: () => request('GET', '/api/county-sources'),
   saveCountySource: (county, entry) => request('PUT', `/api/county-sources/${encodeURIComponent(county)}`, entry),
+  me: () => request('GET', '/api/auth/me'),
+  signup: (name, email, password) => request('POST', '/api/auth/signup', { name, email, password }),
+  login: (email, password) => request('POST', '/api/auth/login', { email, password }),
+  logout: () => request('POST', '/api/auth/logout'),
+  forgot: (email) => request('POST', '/api/auth/forgot', { email }),
+  resetPassword: (token, password) => request('POST', '/api/auth/reset', { token, password }),
+  adminUsers: () => request('GET', '/api/admin/users'),
+  adminUser: (id) => request('GET', `/api/admin/users/${encodeURIComponent(id)}`),
+  adminSetRole: (id, role) => request('POST', `/api/admin/users/${encodeURIComponent(id)}/role`, { role }),
   adminStatus: () => request('GET', '/api/admin/status'),
   chat: (message, conversation, lang) => request('POST', '/api/chat', { message, conversation, lang }),
   intakeTurn: (body) => request('POST', '/api/intake/turn', body),

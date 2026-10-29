@@ -5,17 +5,19 @@ import { MemoryRouter } from 'react-router-dom';
 import App from '../App.jsx';
 import { AppProvider } from '../AppContext.jsx';
 import { installMockServer } from './mockServer.js';
+import { getSession, setSession, visitorId } from '../api.js';
 
 // End to end through the real React screens, the in-page API and the real rules engine.
 beforeEach(() => {
   window.scrollTo = () => {};
+  setSession('');
   installMockServer();
 });
 
 // The home page now starts the guide, so a quick saved checklist is made through the same API the questionnaire uses.
 const RESTAURANT = { structure: 'llc', desc: 'Neighborhood restaurant serving lunch and dinner', cats: ['food'], city: '', county: '', hiring: 'yes', subs: 'no', salestax: 'yes', income: 'yes', tradename: 'yes' };
 async function saveRestaurant(user) {
-  const r = await fetch('/api/checklist', { method: 'POST', body: JSON.stringify({ answers: RESTAURANT, label: 'Restaurant' }) });
+  const r = await fetch('/api/checklist', { method: 'POST', headers: { 'x-visitor-id': visitorId(), ...(getSession() ? { authorization: `Bearer ${getSession()}` } : {}) }, body: JSON.stringify({ answers: RESTAURANT, label: 'Restaurant' }) });
   expect((await r.json()).saved).toBe(true);
   await user.click(screen.getByRole('link', { name: 'My business' }));
 }
@@ -301,5 +303,120 @@ describe('admin evidence panel', () => {
     // The county health rule is still Pending check in the rules table.
     const row = screen.getByRole('button', { name: /Edit Check for a county health department permit/ }).closest('tr');
     expect(within(row).getByText('Pending check')).toBeInTheDocument();
+  });
+});
+
+
+const alertText = (re) => waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(re));
+
+describe('accounts and the admin users area', () => {
+  async function signUp(user, name, email, password = 'Passw0rdOK') {
+    await user.click(screen.getAllByRole('link', { name: 'Create account' })[0]);
+    await user.type(await screen.findByLabelText('Your name'), name);
+    await user.type(screen.getByLabelText('Email address'), email);
+    await user.type(screen.getByLabelText('Password'), password);
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+  }
+
+  it('shows Sign in and Create account when signed out, and the name with a menu when signed in', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    expect(screen.getAllByRole('link', { name: 'Sign in' }).length).toBeGreaterThan(0);
+    await signUp(user, 'Ana Rivera', 'ana@example.com');
+    const btn = await screen.findByRole('button', { name: /Account: Ana Rivera/ });
+    await user.click(btn);
+    expect(screen.getByText('ana@example.com')).toBeInTheDocument();
+    await user.click(screen.getByRole('menuitem', { name: 'Sign out' }));
+    expect((await screen.findAllByRole('link', { name: 'Sign in' })).length).toBeGreaterThan(0);
+  });
+
+  it('rejects a weak password and a duplicate email with clear messages', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    await signUp(user, 'Ana', 'ana@example.com', 'short');
+    await alertText(/at least 8 characters/i);
+  });
+
+  it('signs in again with the right password and refuses the wrong one', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    await signUp(user, 'Ana', 'ana@example.com');
+    await user.click(await screen.findByRole('button', { name: /Account: Ana/ }));
+    await user.click(screen.getByRole('menuitem', { name: 'Sign out' }));
+    await user.click((await screen.findAllByRole('link', { name: 'Sign in' }))[0]);
+    await user.type(await screen.findByLabelText('Email address'), 'ana@example.com');
+    await user.type(screen.getByLabelText('Password'), 'WrongPass1');
+    await user.click(screen.getByRole('button', { name: 'Sign in' }));
+    await alertText('The email or password is not right.');
+    await user.clear(screen.getByLabelText('Password'));
+    await user.type(screen.getByLabelText('Password'), 'Passw0rdOK');
+    await user.click(screen.getByRole('button', { name: 'Sign in' }));
+    expect(await screen.findByRole('button', { name: /Account: Ana/ })).toBeInTheDocument();
+  });
+
+  it('forgot password: shows the demo link, then sets a new password that works', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    await signUp(user, 'Ana', 'ana@example.com');
+    await user.click(await screen.findByRole('button', { name: /Account: Ana/ }));
+    await user.click(screen.getByRole('menuitem', { name: 'Sign out' }));
+    await user.click((await screen.findAllByRole('link', { name: 'Sign in' }))[0]);
+    await user.click(await screen.findByRole('link', { name: 'Forgot your password?' }));
+    await user.type(await screen.findByLabelText('Email address'), 'ana@example.com');
+    await user.click(screen.getByRole('button', { name: 'Send reset link' }));
+    expect(await screen.findByRole('status')).toHaveTextContent(/reset link is on its way/);
+    await user.click(screen.getByRole('link', { name: 'Open the reset link' }));
+    await user.type(await screen.findByLabelText('New password'), 'BrandNew123');
+    await user.type(screen.getByLabelText('Confirm new password'), 'Different123');
+    await user.click(screen.getByRole('button', { name: 'Save new password' }));
+    await alertText('The two passwords do not match.');
+    await user.clear(screen.getByLabelText('Confirm new password'));
+    await user.type(screen.getByLabelText('Confirm new password'), 'BrandNew123');
+    await user.click(screen.getByRole('button', { name: 'Save new password' }));
+    await user.click(await screen.findByRole('link', { name: 'Sign in with your new password' }));
+    await user.type(await screen.findByLabelText('Email address'), 'ana@example.com');
+    await user.type(screen.getByLabelText('Password'), 'BrandNew123');
+    await user.click(screen.getByRole('button', { name: 'Sign in' }));
+    expect(await screen.findByRole('button', { name: /Account: Ana/ })).toBeInTheDocument();
+  });
+
+  it('Sources is no longer in the main navigation', async () => {
+    renderApp();
+    const nav = screen.getByRole('navigation', { name: 'Main' });
+    expect(within(nav).queryByRole('link', { name: 'Sources' })).not.toBeInTheDocument();
+  });
+
+  it('admin sees users, their saved answers, checklist progress and activity; owners do not', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    // an owner builds a plan and ticks a step
+    await signUp(user, 'Ana Rivera', 'ana@example.com');
+    await screen.findByRole('button', { name: /Account: Ana/ });
+    await saveRestaurant(user);
+    await screen.findByRole('heading', { name: 'Sample checklist: Restaurant' });
+    await user.click(within(checklistRow('Apply for your Washington business license')).getByLabelText('Mark as done'));
+    await user.click(screen.getByRole('button', { name: /Account: Ana/ }));
+    expect(screen.queryByRole('menuitem', { name: 'Admin' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('menuitem', { name: 'Sign out' }));
+    // the admin signs up with the configured admin email and opens the Users tab
+    await signUp(user, 'Boss', 'admin@example.com');
+    await user.click(await screen.findByRole('button', { name: /Account: Boss/ }));
+    await user.click(screen.getByRole('menuitem', { name: 'Admin' }));
+    expect(await screen.findByRole('heading', { name: 'Users' })).toBeInTheDocument();
+    const row = (await screen.findByText('ana@example.com')).closest('tr');
+    expect(within(row).getByText('Restaurant')).toBeInTheDocument();
+    expect(within(row).getByText(/^1 of \d+$/)).toBeInTheDocument();
+    await user.click(within(row).getByRole('button', { name: /View Ana Rivera/ }));
+    expect(await screen.findByText('Saved answers')).toBeInTheDocument();
+    expect(screen.getByText('LLC')).toBeInTheDocument();
+    expect(screen.getByText(/Marked a step done/)).toBeInTheDocument();
+    expect(screen.getByText(/Saved a plan/)).toBeInTheDocument();
+    expect(screen.getByText(/Created the account/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Back to users/ }));
+    // the other tabs are still there, including the former Sources page
+    await user.click(screen.getByRole('tab', { name: 'Official sources' }));
+    expect(await screen.findByRole('heading', { name: /Sources and how this demo works/ })).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: 'Rules and links' }));
+    expect(await screen.findByRole('heading', { name: 'Rules management' })).toBeInTheDocument();
   });
 });

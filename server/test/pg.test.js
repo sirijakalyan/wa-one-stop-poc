@@ -162,7 +162,7 @@ test('migrations 002 to 004 created the evidence tables with their indexes and c
   const idx = (await pool.query("SELECT indexname FROM pg_indexes WHERE schemaname = 'public'")).rows.map((r) => r.indexname);
   for (const name of ['source_reviews_rule_idx', 'source_reviews_reviewed_at_idx', 'county_sources_status_idx']) assert.ok(idx.includes(name), name);
   const applied = (await pool.query('SELECT id FROM schema_migrations ORDER BY id')).rows.map((r) => r.id);
-  assert.deepEqual(applied, ['001_init.sql', '002_source_reviews.sql', '003_county_sources.sql', '004_email_reminders.sql']);
+  assert.deepEqual(applied, ['001_init.sql', '002_source_reviews.sql', '003_county_sources.sql', '004_email_reminders.sql', '005_accounts.sql']);
   await assert.rejects(pool.query("INSERT INTO source_reviews (id, rule_id, source_url, reviewed_by, result) VALUES ('x','dor','https://a.example','R','approved')"));
   await assert.rejects(pool.query("INSERT INTO county_sources (county, official_url, reviewed_by, status) VALUES ('x','https://a.example','R','approved')"));
   await store.init(); // running migrations again changes nothing
@@ -187,4 +187,24 @@ test('source reviews and county sources are saved in Postgres and survive a rest
   const rule = (await call('GET', '/api/rules')).body.rules.find((r) => r.id === 'health');
   assert.equal(rule.verification.status, 'pending');
   assert.equal(rule.apply, null);
+});
+
+test('accounts, sessions, reset tokens and the activity log work in Postgres', async (t) => {
+  if (skipReason) return t.skip(skipReason);
+  const a = { id: 'acct1', email: 'pg@example.com', name: 'Pg', role: 'user', createdAt: new Date().toISOString(), sessions: [{ hash: 'h1', exp: Date.now() + 60000 }, { hash: 'old', exp: Date.now() - 1000 }], resetHash: 'rh', resetExp: Date.now() + 60000 };
+  assert.equal(await store.createAccount(a), true);
+  assert.equal(await store.createAccount({ ...a, id: 'acct2' }), false, 'email is unique');
+  assert.equal((await store.findAccountByEmail('pg@example.com')).id, 'acct1');
+  assert.equal((await store.findAccountBySession('h1')).id, 'acct1');
+  assert.equal(await store.findAccountBySession('old'), null, 'expired session');
+  assert.equal(await store.findAccountBySession('nope'), null);
+  assert.equal((await store.findAccountByResetToken('rh')).id, 'acct1');
+  await store.updateAccount('acct1', { role: 'admin', resetHash: '', resetExp: 0 });
+  assert.equal((await store.getAccount('acct1')).role, 'admin');
+  assert.equal(await store.findAccountByResetToken('rh'), null);
+  await store.addEvent('acct-acct1', { at: new Date().toISOString(), type: 'signup', detail: 'x' });
+  await store.addEvent('acct-acct1', { at: new Date(Date.now() + 1000).toISOString(), type: 'login', detail: 'y' });
+  const ev = await store.listEvents('acct-acct1');
+  assert.deepEqual(ev.map((e) => e.type), ['login', 'signup']);
+  assert.equal((await store.listAccounts()).length, 1);
 });
