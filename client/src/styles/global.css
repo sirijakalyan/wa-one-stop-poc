@@ -1223,3 +1223,9 @@ input[type="password"]:hover, input[type="search"]:hover { border-color: var(--n
 .panel.wide { max-width: none; }
 
 .page-loading { padding: 3rem 0; text-align: center; color: var(--ink-soft, #5b6b7a); }
+
+/* Admin: "Who can edit" uses the full page width, in columns, instead of one narrow strip */
+.who-edits { max-width: none; }
+.who-edits ul { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: .9rem; }
+.who-edits li { margin: 0; padding: .9rem 1.1rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); line-height: 1.55; }
+.who-edits li strong { display: block; margin-bottom: .2rem; color: var(--navy-900, var(--ink)); }

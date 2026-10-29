@@ -83,10 +83,13 @@ function AdminPanel({ signedIn = false }) {
         <h2 id="who-edits-h">Who can edit</h2>
         <ul>
           <li>
-            <strong>The admin key.</strong> Anyone who has the admin key can edit rules, record source reviews and publish. The key is a
-            shared secret set on the server (<code>ADMIN_KEY</code>). This demo has no individual sign-in, so the app cannot tell who
-            is using the key. If no key is set, as in local development, anyone who opens this page can edit. A production server
-            with no key keeps this page locked.
+            <strong>Admin accounts.</strong> A person whose account an admin made an admin signs in with their own email and password,
+            and can edit rules, record source reviews and publish. Make or remove admins in the Users tab.
+          </li>
+          <li>
+            <strong>The admin key.</strong> The shared secret set on the server (<code>ADMIN_KEY</code>) also unlocks this page for anyone who
+            has it, but the app cannot tell who is using the key. If no key is set, as in local development, anyone who opens this
+            page can edit. A production server with no key keeps this page locked.
           </li>
           <li>
             <strong>The reviewer.</strong> The reviewer is the person who compares a draft with the official agency page and approves it.
