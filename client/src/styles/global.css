@@ -1229,3 +1229,8 @@ input[type="password"]:hover, input[type="search"]:hover { border-color: var(--n
 .who-edits ul { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); gap: .9rem; }
 .who-edits li { margin: 0; padding: .9rem 1.1rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); line-height: 1.55; }
 .who-edits li strong { display: block; margin-bottom: .2rem; color: var(--navy-900, var(--ink)); }
+
+/* Ask-a-question side panel: the message list fills the panel and the input stays at the bottom.
+   (A later .chat-log rule capped the list at 26rem and left a blank gap under the input.) */
+.chat > .chat-log { min-height: 0; max-height: none; padding: 1rem; gap: .8rem; }
+.chat > .chat-form { flex: none; }
