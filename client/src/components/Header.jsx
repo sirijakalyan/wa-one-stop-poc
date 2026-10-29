@@ -14,7 +14,8 @@ export default function Header() {
   const { lang, setLang } = useLang();
   const t = useT();
   const { user, requireLogin } = useApp();
-  const locked = Boolean(requireLogin) && !user; // the site needs an account: signed-out visitors only see sign in and sign up
+  const isAdmin = user?.role === 'admin'; // admin accounts see the Admin area only
+  const locked = (Boolean(requireLogin) && !user) || isAdmin; // the site needs an account: signed-out visitors only see sign in and sign up
   useEffect(() => { setOpen(false); }, [pathname]);
   useEffect(() => {
     if (!open) return undefined;
@@ -26,7 +27,7 @@ export default function Header() {
   return (
     <header className="site-head">
       <div className="wrap">
-        <Link to={requireLogin ? '/home' : '/'} className="brand">
+        <Link to={isAdmin ? '/admin' : requireLogin ? '/home' : '/'} className="brand">
           <span className="brand-mark"><Icon name="shield" size={20} /></span>
           <span>WA Business One-Stop-Shop</span>
         </Link>

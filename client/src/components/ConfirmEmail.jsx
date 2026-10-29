@@ -17,11 +17,13 @@ export default function ConfirmEmail({ email, password, onDone, signInAfter = tr
     setErr(''); setNote(''); setBusy(true);
     try {
       await api.confirmEmail(email, code.trim());
+      let who;
       if (signInAfter) {
         const r = await api.login(email, password);
         signIn(r.user, r.token, r.refreshToken);
+        who = r.user;
       }
-      onDone();
+      onDone(who);
     } catch (e2) {
       setErr(e2.message);
     } finally {

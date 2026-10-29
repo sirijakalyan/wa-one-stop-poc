@@ -502,3 +502,26 @@ describe('the site needs an account (REQUIRE_LOGIN)', () => {
     expect(await screen.findByRole('heading', { name: /Forgot your password|Reset/i })).toBeInTheDocument();
   });
 });
+
+describe('an admin account sees only the Admin area', () => {
+  it('lands on Admin after sign in, with no Home, My business, bell or chat, and cannot open the business pages', async () => {
+    const user = userEvent.setup();
+    render(<MemoryRouter initialEntries={['/']}><AppProvider><App /></AppProvider></MemoryRouter>);
+    await user.click(screen.getAllByRole('link', { name: 'Create account' })[0]);
+    await user.type(await screen.findByLabelText('Your name'), 'Boss');
+    await user.type(screen.getByLabelText('Email address'), 'admin@example.com');
+    await user.type(screen.getByLabelText('Password'), 'Passw0rdOK');
+    await user.type(screen.getByLabelText('Confirm password'), 'Passw0rdOK');
+    await user.click(screen.getByRole('button', { name: 'Create account' }));
+    await screen.findByRole('heading', { name: 'Welcome back' });
+    await user.type(screen.getByLabelText('Password'), 'Passw0rdOK');
+    await user.click(screen.getByRole('button', { name: 'Sign in' }));
+    expect(await screen.findByRole('heading', { name: 'Users' })).toBeInTheDocument();
+    const nav = screen.getByRole('navigation', { name: 'Main' });
+    expect(within(nav).queryByRole('link', { name: 'Home' })).not.toBeInTheDocument();
+    expect(within(nav).queryByRole('link', { name: 'My business' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Notifications, / })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ask a question' })).not.toBeInTheDocument();
+  });
+});
+

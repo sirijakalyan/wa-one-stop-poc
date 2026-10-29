@@ -34,7 +34,7 @@ export default function Layout() {
         </div>
       </main>
       <Footer />
-      {!(requireLogin && !user) && <ChatPanel />}
+      {!(requireLogin && !user) && user?.role !== 'admin' && <ChatPanel />}
       <WakeNotice />
     </div>
   );

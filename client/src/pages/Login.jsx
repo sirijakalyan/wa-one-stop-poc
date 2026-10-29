@@ -16,7 +16,8 @@ export default function Login() {
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
-  const finish = async () => {
+  const finish = async (who) => {
+    if (who?.role === 'admin') return navigate('/admin', { replace: true }); // admins go straight to the Admin area
     // After signing in the owner lands on Home, or on the page they were trying to open.
     if (state?.from) return navigate(state.from, { replace: true });
     return navigate(requireLogin ? '/home' : '/', { replace: true });
@@ -30,7 +31,7 @@ export default function Login() {
       const r = await api.login(email, password);
       if (r.needsConfirm) { setConfirming(true); return undefined; }
       signIn(r.user, r.token, r.refreshToken);
-      return await finish();
+      return await finish(r.user);
     } catch (e2) {
       setErr(e2.message);
       return undefined;

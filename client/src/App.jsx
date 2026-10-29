@@ -20,6 +20,8 @@ function RequireAccount() {
   const t = useT();
   const loc = useLocation();
   if (requireLogin === null || !authReady) return <p className="page-loading" role="status">{t('auth.loading')}</p>;
+  // An admin account only works in the Admin area: no home page, business pages or alerts.
+  if (user?.role === 'admin' && loc.pathname !== '/admin') return <Navigate to="/admin" replace />;
   if (requireLogin && !user) {
     const from = loc.pathname === '/' ? undefined : `${loc.pathname}${loc.search}`;
     return <Navigate to="/login" replace state={from ? { from } : undefined} />;
@@ -31,6 +33,7 @@ function RequireAccount() {
 function FrontDoor() {
   const { user, requireLogin } = useApp();
   const loc = useLocation();
+  if (user?.role === 'admin') return <Navigate to="/admin" replace />;
   if (!requireLogin) return <Landing />;
   return <Navigate to={user ? '/home' : '/login'} replace state={user ? loc.state : undefined} />;
 }
