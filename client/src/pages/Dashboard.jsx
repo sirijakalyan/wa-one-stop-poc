@@ -25,7 +25,7 @@ export function DashOverall({ data }) {
   );
 }
 
-export function DashNext({ data, className = 'panel' }) {
+export function DashNext({ data, className = 'panel', compact = false }) {
   const t = useT();
   return (
         <section className={className} aria-labelledby="next">
@@ -38,16 +38,18 @@ export function DashNext({ data, className = 'panel' }) {
                 {data.next.apply?.url && (
                   <ExternalLink className="btn btn-primary btn-sm" href={data.next.apply.url} fallback={data.next.fallback} showFallback>{data.next.apply.label}</ExternalLink>
                 )}
-                <Link className="btn btn-quiet btn-sm" to="/my-business">{t('pr.openList')}</Link>
+                {!compact && <Link className="btn btn-quiet btn-sm" to="/my-business">{t('pr.openList')}</Link>}
               </div>
             </>
           ) : (
             <p>{t('pr.allDone')}</p>
           )}
-          <p className="hint">
-            <Link to="/notifications">{t('pr.notes')}</Link>
-            {t('pr.unread', data.unread)}
-          </p>
+          {!compact && (
+            <p className="hint">
+              <Link to="/notifications">{t('pr.notes')}</Link>
+              {t('pr.unread', data.unread)}
+            </p>
+          )}
         </section>
   );
 }

@@ -62,7 +62,7 @@ export default function MyBusiness() {
 
       <div className="mb-split">
         <div className="mb-main">
-          <DashNext data={data} className="next-card" />
+          <DashNext data={data} className="next-card" compact />
           <Checklist embedded onChanged={reload} onData={setCl} />
           <DashRenewals data={data} onSave={saveRenewal} savedId={savedId} actionError={actionError} />
         </div>
