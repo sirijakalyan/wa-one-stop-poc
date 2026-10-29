@@ -340,6 +340,19 @@ describe('accounts and the admin users area', () => {
     expect(await screen.findByRole('button', { name: /Account: Ana/ })).toBeInTheDocument();
   });
 
+  it('a signed-in person sees their notifications with no email form or confirmation step', async () => {
+    const user = userEvent.setup();
+    renderApp();
+    await signUpIn(user, 'Ana', 'ana@example.com');
+    await screen.findByRole('button', { name: /Account: Ana/ });
+    await user.click(await screen.findByRole('button', { name: /^Notifications, / }));
+    const pop = await screen.findByRole('region', { name: 'Notifications' });
+    expect(await within(pop).findByRole('heading', { name: /Your notifications/ })).toBeInTheDocument();
+    expect(within(pop).queryByLabelText(/Email me renewal reminders/i)).not.toBeInTheDocument();
+    expect(within(pop).queryByRole('button', { name: 'Send confirmation' })).not.toBeInTheDocument();
+    expect(within(pop).queryByPlaceholderText('name@example.com')).not.toBeInTheDocument();
+  });
+
   it('shows Sign in and Create account when signed out, and the name with a menu when signed in', async () => {
     const user = userEvent.setup();
     renderApp();

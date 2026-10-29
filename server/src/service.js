@@ -256,6 +256,14 @@ export function createService(store, options = {}) {
   };
   const publicUser = (a) => ({ id: a.id, name: a.name, email: a.email, role: a.role });
   const nowIso = () => new Date().toISOString();
+  // Renewal reminders go to the email the person signed in with, from their first sign in. They can stop them any time.
+  async function startAccountReminders(user) {
+    if (!mailer || !user.email) return;
+    const v = acctVisitor(user);
+    const cur = await store.getSettings(v);
+    if (cur.emailToken) return; // already set up (on or stopped)
+    await store.putSettings(v, { emailOptIn: true, email: user.email, emailConfirmed: true, emailToken: randomToken() });
+  }
   async function adoptPlan(ctx, user, onlyIfEmpty) {
     if (!ctx.anonVisitor || ctx.anonVisitor === acctVisitor(user)) return;
     if (onlyIfEmpty && (await store.getChecklist(acctVisitor(user)))) return;
@@ -287,6 +295,8 @@ export function createService(store, options = {}) {
     const r = await viaIdp(() => idp.login({ email: body?.email, password: body?.password }));
     if (r.needsConfirm) return { ok: true, needsConfirm: true, email: normalizeEmail(body?.email) };
     await adoptPlan(ctx, r.user, true);
+    const firstLogin = !(await store.listEvents(acctVisitor(r.user), 200)).some((e) => e.type === 'login');
+    if (firstLogin) await startAccountReminders(r.user);
     await store.addEvent(acctVisitor(r.user), { at: nowIso(), type: 'login', detail: 'Signed in' });
     return { ok: true, token: r.token, refreshToken: r.refreshToken || '', user: r.user };
   });
@@ -446,6 +456,7 @@ export function createService(store, options = {}) {
     return {
       ok: true, notifications: [...notes].reverse(), emailOptIn: settings.emailOptIn,
       email: settings.email, emailConfirmed: settings.emailConfirmed, emailMode,
+      accountEmail: ctx.account?.email || '', // signed in: reminders go to this address
     };
   });
 
@@ -497,8 +508,16 @@ export function createService(store, options = {}) {
     }
     if (!optIn) {
       // Opting out removes the stored address.
+      if (ctx.account) { // keep the token so the first-sign-in setup does not turn it back on
+        await store.putSettings(v, { emailOptIn: false, emailConfirmed: false, emailToken: cur.emailToken || randomToken() });
+        return { ok: true, emailOptIn: false, emailMode, note: 'Renewal reminder emails are off.' };
+      }
       await store.putSettings(v, { emailOptIn: false, email: '', emailConfirmed: false, emailToken: '' });
       return { ok: true, emailOptIn: false, email: '', emailConfirmed: false, emailMode, note: 'Email reminders are off and your address was removed.' };
+    }
+    if (ctx.account?.email) { // a signed-in person: their account email, no separate confirmation
+      await store.putSettings(v, { emailOptIn: true, email: ctx.account.email, emailConfirmed: true, emailToken: cur.emailToken || randomToken() });
+      return { ok: true, emailOptIn: true, email: ctx.account.email, emailConfirmed: true, emailMode, note: 'Renewal reminders will be emailed to your account address.' };
     }
     const email = String(body?.email ?? cur.email ?? '').trim().toLowerCase();
     if (!EMAIL_RX.test(email) || email.length > 254) fail('Enter a valid email address, for example name@example.com.');

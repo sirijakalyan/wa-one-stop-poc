@@ -136,3 +136,24 @@ test('an admin account can edit rules without the admin key', async () => {
   assert.equal((await call('PUT', `/api/rules/${rules[0].id}/draft`, { fields: draft }, {})).status, 403);
   assert.equal((await call('PUT', `/api/rules/${rules[0].id}/draft`, { fields: draft }, { session: boss })).status, 200);
 });
+
+test('reminders go to the account email from the first sign in, with no form and no confirmation; stopping sticks', async () => {
+  const { call, sent } = setup();
+  await signup(call, 'ana@example.com');
+  const login = () => call('POST', '/api/auth/login', { email: 'ana@example.com', password: 'Passw0rdOK' });
+  const H = (token) => ({ session: token });
+  const t1 = (await login()).body.token;
+  const n1 = (await call('GET', '/api/notifications', null, H(t1))).body;
+  assert.equal(n1.accountEmail, 'ana@example.com');
+  assert.deepEqual([n1.emailOptIn, n1.emailConfirmed, n1.email], [true, true, 'ana@example.com']);
+  assert.equal(sent.length, 0, 'no confirmation email is sent');
+  // the person stops the emails; signing in again does not turn them back on
+  const off = await call('PUT', '/api/settings', { emailOptIn: false }, H(t1));
+  assert.equal(off.body.emailOptIn, false);
+  const t2 = (await login()).body.token;
+  assert.equal((await call('GET', '/api/notifications', null, H(t2))).body.emailOptIn, false);
+  // one click turns them on again, using the account address and no confirmation email
+  const on = await call('PUT', '/api/settings', { emailOptIn: true }, H(t2));
+  assert.deepEqual([on.body.emailOptIn, on.body.emailConfirmed, on.body.email], [true, true, 'ana@example.com']);
+  assert.equal(sent.length, 0);
+});

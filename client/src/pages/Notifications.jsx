@@ -34,6 +34,7 @@ export default function Notifications({ embedded = false, onData } = {}) {
   const savedEmail = data?.email || '';
   const confirmed = Boolean(data?.emailConfirmed);
   const optedIn = Boolean(data?.emailOptIn);
+  const acctEmail = data?.accountEmail || ''; // signed in: reminders use this address, no form
 
   async function turnOn(e) {
     e.preventDefault();
@@ -52,6 +53,28 @@ export default function Notifications({ embedded = false, onData } = {}) {
     <>
       {!embedded && <h1 tabIndex={-1}>{t('nt.title')}</h1>}
       {t.lang === 'es' && <p className="draft-note">{t('nt.note')}</p>}
+      {acctEmail ? (
+        <div className="panel acct-notes">
+          {mode === 'log' && <p className="hint">{t('nt.log')}</p>}
+          {mode === 'off' && <p className="hint">{t('nt.off')}</p>}
+          {real && (
+            <p className="email-status" role="status">
+              {optedIn ? t('nt.acctOn', acctEmail) : t('nt.acctOff')}{' '}
+              <button type="button" className="linklike" onClick={() => run(() => api.setEmailOptIn(!optedIn))}>
+                {optedIn ? t('nt.acctStop') : t('nt.acctStart')}
+              </button>
+            </p>
+          )}
+          <p className="hint">{t('nt.fromRenewals')}</p>
+          <div className="row spaced">
+            <button type="button" className="btn btn-quiet btn-sm" onClick={() => run(() => api.renewalReminder(), real && optedIn ? t('nt.sentNow') : t('nt.simCreated'))}>
+              {t('nt.acctTest')}
+            </button>
+          </div>
+          <ErrorNote message={actionError} />
+          {info && <p className="ok" role="status">{info}</p>}
+        </div>
+      ) : (<>
       <p className={embedded ? 'hint' : 'lead'}>
         {mode === 'live' && t('nt.live')}
         {mode === 'log' && t('nt.log')}
@@ -120,6 +143,7 @@ export default function Notifications({ embedded = false, onData } = {}) {
         <ErrorNote message={actionError} />
         {info && <p className="ok" role="status">{info}</p>}
       </div>
+      </>)}
 
       <h2>{t('nt.yours', notes.length)}</h2>
       {notes.length === 0 && <p className="hint">{t('nt.nothing')}</p>}
