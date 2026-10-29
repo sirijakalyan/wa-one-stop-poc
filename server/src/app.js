@@ -39,7 +39,7 @@ export function createApp({ dataDir, store = createStore(dataDir), adminKey = pr
   const production = process.env.NODE_ENV === 'production';
   const service = createService(store, { adminKey: adminKey || undefined, adminLocked: production && !adminKey, llm, mailer, publicUrl, countyHealthPages, foundLinks, places, processingTimes });
   const app = express();
-  app.set('trust proxy', 1);
+  app.set('trust proxy', Number.isInteger(Number(process.env.TRUST_PROXY)) && process.env.TRUST_PROXY !== '' ? Number(process.env.TRUST_PROXY) : 1);
 
   const allowed = (corsOrigins ?? process.env.CORS_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
   app.use(cors({
