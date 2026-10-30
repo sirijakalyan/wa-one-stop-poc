@@ -458,7 +458,7 @@ describe('accounts and the admin users area', () => {
     await user.click(screen.getByRole('tab', { name: 'Rules' }));
     expect(await screen.findByRole('heading', { name: 'Rule desk' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /File your business entity with the Secretary of State/ })).toBeInTheDocument();
-    expect(screen.getByText(/Official sources and how this demo works/)).toBeInTheDocument();
+    expect(screen.getByText(/Official sources and how this works/)).toBeInTheDocument();
   });
 });
 
