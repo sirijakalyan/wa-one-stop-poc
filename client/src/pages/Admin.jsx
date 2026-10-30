@@ -355,6 +355,16 @@ export default function Admin() {
 
   if (loading && !data) return <Loading what="Checking admin access" />;
   if (error) return <ErrorNote message={error} />;
+  // A signed-in person who is not an admin gets a plain "not for you" page, with no key box to try.
+  if (user && user.role !== 'admin' && !data?.authorized) {
+    return (
+      <div className="panel gate">
+        <h1 tabIndex={-1}>Admins only</h1>
+        <p className="lead">This area is only for admins. Your account can use Home and My business.</p>
+        <p><Link className="btn btn-primary btn-sm" to="/home">Back to Home</Link></p>
+      </div>
+    );
+  }
   if (data?.required && !data.authorized) {
     async function submit(e) {
       e.preventDefault();

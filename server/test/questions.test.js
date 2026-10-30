@@ -88,3 +88,22 @@ test('built-in rules cannot be removed or re-aimed; custom rules need a real sou
   const none = await app.call('POST', '/api/evaluate', { answers: { ...ANSWERS, hiring: 'no' } });
   assert.equal(none.body.items.some((i) => i.id === ok.body.rule.id), false);
 });
+
+test('a signed-in user who is not an admin cannot add, edit or remove anything', async () => {
+  const email = 'plain-user@example.com';
+  await app.call('POST', '/api/auth/signup', { name: 'Plain User', email, password: 'Test-pass-12345!' });
+  const login = await app.call('POST', '/api/auth/login', { email, password: 'Test-pass-12345!' });
+  assert.equal(login.status, 200);
+  const as = { authorization: `Bearer ${login.body.token}` };
+  const q = await app.call('POST', '/api/questions', { text: 'Sneaky?', type: 'yesno' }, as);
+  assert.equal(q.status, 403);
+  assert.equal((await app.call('PUT', '/api/questions/q_abcdef', { text: 'x' }, as)).status, 403);
+  assert.equal((await app.call('DELETE', '/api/questions/q_abcdef', undefined, as)).status, 403);
+  assert.equal((await app.call('POST', '/api/rules', { title: 'x', agency: 'y', phase: 1, sourceUrl: 'https://a.gov', applies: { mode: 'always' } }, as)).status, 403);
+  assert.equal((await app.call('PUT', '/api/rules/dor/applies', { applies: { mode: 'always' } }, as)).status, 403);
+  assert.equal((await app.call('DELETE', '/api/rules/dor', undefined, as)).status, 403);
+  assert.equal((await app.call('PUT', '/api/rules/dor/draft', { fields: { detail: 'x' } }, as)).status, 403);
+  assert.equal((await app.call('POST', '/api/rules/dor/publish', { reviewer: 'x' }, as)).status, 403);
+  assert.equal((await app.call('GET', '/api/rule-fields', undefined, as)).status, 403);
+  assert.equal((await app.call('GET', '/api/admin/users', undefined, as)).status, 403);
+});
