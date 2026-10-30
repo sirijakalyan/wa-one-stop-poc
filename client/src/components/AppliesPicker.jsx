@@ -1,10 +1,11 @@
-import { useA } from '../adminText.js';
+import { useA, localizeFields } from '../adminText.js';
 
 // "Who sees this step": everyone, or only people who gave one particular answer to one question.
 // fields: [{ field, text, options: [{ value, label }] }] from /api/rule-fields. "Not sure" is left out on purpose:
 // someone who is not sure automatically gets the step marked "may apply".
-export default function AppliesPicker({ idPrefix, fields, value, onChange }) {
+export default function AppliesPicker({ idPrefix, fields: rawFields, value, onChange }) {
   const a = useA();
+  const fields = localizeFields(rawFields, a.lang);
   const f = fields.find((x) => x.field === value.field);
   const answers = (f?.options || []).filter((o) => o.value !== 'unsure');
   return (

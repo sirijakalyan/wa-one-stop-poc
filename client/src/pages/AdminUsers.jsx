@@ -31,10 +31,14 @@ function Bar({ done, total }) {
   );
 }
 
+const YN_ES = { yes: 'Sí', no: 'No', unsure: 'No estoy seguro' };
+const STRUCT_ES = { sole: 'Propietario único', llc: 'LLC', corp: 'Corporación', partnership: 'Sociedad o LLP', unsure: 'Estructura aún sin decidir' };
+const CAT_ES = { food: 'Servicio de comida', construction: 'Contratación de construcción', other: 'Otro servicio o venta' };
+
 function UserDetail({ id, onBack }) {
   const tr = useA();
   const EVENT = eventLabels(tr);
-  const fetchOne = useCallback(() => api.adminUser(id), [id]);
+  const fetchOne = useCallback(() => api.adminUser(id, tr.lang), [id, tr.lang]);
   const { data, error, loading, reload } = useLoad(fetchOne);
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
@@ -42,6 +46,12 @@ function UserDetail({ id, onBack }) {
   if (error) return <><button type="button" className="btn btn-quiet btn-sm" onClick={onBack}>{tr('Back to users', 'Volver a Personas')}</button><ErrorNote message={error} /></>;
   const { user, events } = data;
   const lists = data.checklists || (data.checklist ? [data.checklist] : []);
+  // Event details start with a step title in English. Show the title in the page language.
+  const titles = lists.flatMap((l) => l.items).filter((i) => i.titleEn && i.titleEn !== i.title);
+  const detailText = (d) => {
+    const hit = titles.find((i) => d.startsWith(i.titleEn));
+    return hit ? hit.title + d.slice(hit.titleEn.length) : d;
+  };
 
   async function setRole(role) {
     setErr(''); setMsg('');
@@ -85,14 +95,14 @@ function UserDetail({ id, onBack }) {
               <h3 id={`ud-answers${k}`}>{tr('Saved answers', 'Respuestas guardadas')}</h3>
               <dl className="answers">
                 <div><dt>{tr('Plan name', 'Nombre del plan')}</dt><dd>{checklist.label || tr('None', 'Ninguno')}</dd></div>
-                <div><dt>{tr('Business structure', 'Estructura del negocio')}</dt><dd>{STRUCT_LABEL[a.structure] || a.structure}</dd></div>
-                <div><dt>{tr('What they do', 'A qué se dedica')}</dt><dd>{[a.desc, ...(a.cats || []).map((c) => CAT_LABEL[c] || c)].filter(Boolean).join(' · ') || tr('Not given', 'Sin indicar')}</dd></div>
-                <div><dt>{tr('City and county', 'Ciudad y condado')}</dt><dd>{[a.city, countyLabel(a.county)].filter(Boolean).join(', ') || tr('Skipped', 'Omitido')}</dd></div>
-                <div><dt>{tr('Hiring within 90 days', 'Contratará en 90 días')}</dt><dd>{YN_LABEL[a.hiring] || tr('Not answered', 'Sin responder')}</dd></div>
-                <div><dt>{tr('Subcontractors', 'Subcontratistas')}</dt><dd>{YN_LABEL[a.subs] || tr('Not answered', 'Sin responder')}</dd></div>
-                <div><dt>{tr('Collects sales tax', 'Cobra impuesto sobre ventas')}</dt><dd>{YN_LABEL[a.salestax] || tr('Not answered', 'Sin responder')}</dd></div>
-                <div><dt>{tr('Income $12,000 or more', 'Ingresos de $12,000 o más')}</dt><dd>{YN_LABEL[a.income] || tr('Not answered', 'Sin responder')}</dd></div>
-                <div><dt>{tr('Uses a business name', 'Usa un nombre comercial')}</dt><dd>{YN_LABEL[a.tradename] || tr('Not answered', 'Sin responder')}</dd></div>
+                <div><dt>{tr('Business structure', 'Estructura del negocio')}</dt><dd>{(tr.lang === 'es' ? STRUCT_ES : STRUCT_LABEL)[a.structure] || a.structure}</dd></div>
+                <div><dt>{tr('What they do', 'A qué se dedica')}</dt><dd>{[a.desc, ...(a.cats || []).map((c) => (tr.lang === 'es' ? CAT_ES : CAT_LABEL)[c] || c)].filter(Boolean).join(' · ') || tr('Not given', 'Sin indicar')}</dd></div>
+                <div><dt>{tr('City and county', 'Ciudad y condado')}</dt><dd>{[a.city, (tr.lang === 'es' ? countyLabel(a.county).replace(/ County$/, '').replace(/^/, 'Condado de ') : countyLabel(a.county))].filter(Boolean).join(', ') || tr('Skipped', 'Omitido')}</dd></div>
+                <div><dt>{tr('Hiring within 90 days', 'Contratará en 90 días')}</dt><dd>{(tr.lang === 'es' ? YN_ES : YN_LABEL)[a.hiring] || tr('Not answered', 'Sin responder')}</dd></div>
+                <div><dt>{tr('Subcontractors', 'Subcontratistas')}</dt><dd>{(tr.lang === 'es' ? YN_ES : YN_LABEL)[a.subs] || tr('Not answered', 'Sin responder')}</dd></div>
+                <div><dt>{tr('Collects sales tax', 'Cobra impuesto sobre ventas')}</dt><dd>{(tr.lang === 'es' ? YN_ES : YN_LABEL)[a.salestax] || tr('Not answered', 'Sin responder')}</dd></div>
+                <div><dt>{tr('Income $12,000 or more', 'Ingresos de $12,000 o más')}</dt><dd>{(tr.lang === 'es' ? YN_ES : YN_LABEL)[a.income] || tr('Not answered', 'Sin responder')}</dd></div>
+                <div><dt>{tr('Uses a business name', 'Usa un nombre comercial')}</dt><dd>{(tr.lang === 'es' ? YN_ES : YN_LABEL)[a.tradename] || tr('Not answered', 'Sin responder')}</dd></div>
                 <div><dt>{tr('Saved', 'Guardado')}</dt><dd>{when(checklist.savedAt, tr)}</dd></div>
               </dl>
             </section>
@@ -126,7 +136,7 @@ function UserDetail({ id, onBack }) {
             {events.map((e, i) => (
               <li key={`${e.at}-${i}`}>
                 <time dateTime={e.at}>{when(e.at, tr)}</time>
-                <span><strong>{EVENT[e.type] || e.type}</strong>{e.detail && !['signup', 'login'].includes(e.type) ? `: ${e.detail}` : ''}</span>
+                <span><strong>{EVENT[e.type] || e.type}</strong>{e.detail && !['signup', 'login'].includes(e.type) ? `: ${detailText(e.detail)}` : ''}</span>
               </li>
             ))}
           </ol>

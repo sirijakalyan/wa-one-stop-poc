@@ -45,6 +45,13 @@ function AdminPanel({ signedIn = false }) {
   const fetchRules = useCallback(() => api.rules(), []);
   const fetchChanges = useCallback(() => api.changes(), []);
   const rulesLoad = useLoad(fetchRules);
+  // Spanish names for the built-in rules, for reading only. The edit form always works on the published English text.
+  const fetchLoc = useCallback(() => (a.lang === 'es' ? api.rules('es') : Promise.resolve(null)), [a.lang]);
+  const locLoad = useLoad(fetchLoc);
+  const locById = Object.fromEntries((locLoad.data?.rules ?? []).map((r) => [r.id, r]));
+  const nameOf = (r) => locById[r.id]?.title || r.title;
+  const agencyOf = (r) => locById[r.id]?.agency || r.agency;
+  const reviewerName = (n) => (n === 'admin key' ? a('admin key', 'clave de administración') : n);
   const changesLoad = useLoad(fetchChanges);
   const [selected, setSelected] = useState('');
   const [form, setForm] = useState({});
@@ -79,6 +86,7 @@ function AdminPanel({ signedIn = false }) {
       const result = await fn();
       await rulesLoad.reload();
       await changesLoad.reload();
+      await locLoad.reload();
       if (success) setMsg(typeof success === 'function' ? success(result) : success);
       return result;
     } catch (e) {
@@ -132,7 +140,7 @@ function AdminPanel({ signedIn = false }) {
                   type="button"
                   className={`tile tile--${st.key}${r.id === selected ? ' is-on' : ''}${dim(r) ? ' is-dim' : ''}`}
                   aria-pressed={r.id === selected}
-                  aria-label={`${r.title}. ${st.label}${r.draft ? a('. Has a draft', '. Tiene un borrador') : ''}`}
+                  aria-label={`${nameOf(r)}. ${st.label}${r.draft ? a('. Has a draft', '. Tiene un borrador') : ''}`}
                   onClick={() => { setSelected(r.id); setMsg(''); setErr(''); setTimeout(() => document.getElementById('desk-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); }}
                 >
                   <span className="tile-top">
@@ -142,8 +150,8 @@ function AdminPanel({ signedIn = false }) {
                     {r.draft && <span className="tile-draft">{a('Draft', 'Borrador')}</span>}
                     {r.custom && <span className="tile-draft tile-added">{a('Added', 'Agregada')}</span>}
                   </span>
-                  <span className="tile-title">{r.title}</span>
-                  <span className="tile-foot">{r.agency} · {r.lastVerified ? a(`checked ${shortDay(r.lastVerified, a)}`, `revisada ${shortDay(r.lastVerified, a)}`) : a('never checked', 'nunca revisada')}</span>
+                  <span className="tile-title">{nameOf(r)}</span>
+                  <span className="tile-foot">{agencyOf(r)} · {r.lastVerified ? a(`checked ${shortDay(r.lastVerified, a)}`, `revisada ${shortDay(r.lastVerified, a)}`) : a('never checked', 'nunca revisada')}</span>
                 </button>
               </li>
             );
@@ -156,7 +164,7 @@ function AdminPanel({ signedIn = false }) {
 
       {adding && (
         <AddRuleForm
-          phases={rulesLoad.data?.phases ?? {}}
+          phases={locLoad.data?.phases ?? rulesLoad.data?.phases ?? {}}
           fields={fields}
           onCancel={() => setAdding(false)}
           onAdded={async (res) => {
@@ -174,7 +182,7 @@ function AdminPanel({ signedIn = false }) {
         {rule && (
           <div className="desk-editor">
             <section className="panel editor" aria-labelledby="editor-h">
-              <h2 id="editor-h">{a('Edit:', 'Editar:')} {rule.title}</h2>
+              <h2 id="editor-h">{a('Edit:', 'Editar:')} {nameOf(rule)}</h2>
               <p className="hint">{rule.custom ? a('You added this rule. Change who sees it in the panel on the right.', 'Usted agregó esta regla. Cambie quién la ve en el panel de la derecha.') : a('The condition that decides who sees this built-in rule is fixed in the rules file.', 'La condición que decide quién ve esta regla integrada está fija en el archivo de reglas.')}</p>
               <form onSubmit={(e) => e.preventDefault()}>
                 {FIELDS.map((f) => (
@@ -245,7 +253,7 @@ function AdminPanel({ signedIn = false }) {
                 <div><dt>{a('Last verified', 'Última verificación')}</dt><dd>{rule.lastVerified || a('Never', 'Nunca')} <small>{staleness(rule, a)}</small></dd></div>
                 <div><dt>{a('Owner', 'Responsable')}</dt><dd>{rule.owner}</dd></div>
                 <div><dt>{a('Reviewer', 'Revisor')}</dt><dd>{rule.reviewer || a('none yet', 'ninguno aún')}</dd></div>
-                <div><dt>{a('Agency', 'Agencia')}</dt><dd>{rule.agency}</dd></div>
+                <div><dt>{a('Agency', 'Agencia')}</dt><dd>{agencyOf(rule)}</dd></div>
                 <div><dt>{a('Draft', 'Borrador')}</dt><dd>{rule.draft ? a('Yes, waiting for approval', 'Sí, esperando aprobación') : 'No'}</dd></div>
               </dl>
               {rule.source?.url && <p><ExternalLink className="btn btn-quiet btn-sm" href={rule.source.url}>{a('Open the source page', 'Abrir la página de la fuente')}</ExternalLink></p>}
@@ -267,7 +275,7 @@ function AdminPanel({ signedIn = false }) {
               {ruleChanges.length === 0 ? <p className="hint">{a('No published changes yet.', 'Aún no hay cambios publicados.')}</p> : (
                 <ul className="desk-history">
                   {ruleChanges.map((c) => (
-                    <li key={c.id}><strong>{a('Version', 'Versión')} {c.version}</strong> {a('approved by', 'aprobada por')} {c.reviewer}, {new Date(c.at).toLocaleDateString(a.locale)}. {a('Changed:', 'Cambió:')} {c.fields.map((f) => f.field).join(', ')}.</li>
+                    <li key={c.id}><strong>{a('Version', 'Versión')} {c.version}</strong> {a('approved by', 'aprobada por')} {reviewerName(c.reviewer)}, {new Date(c.at).toLocaleDateString(a.locale)}. {a('Changed:', 'Cambió:')} {c.fields.map((f) => f.field).join(', ')}.</li>
                   ))}
                 </ul>
               )}
@@ -311,7 +319,7 @@ function AdminPanel({ signedIn = false }) {
         {rules.length > 0 && (
           <details>
             <summary>{a('Evidence: source reviews and county pages', 'Evidencia: revisiones de fuentes y páginas de condados')}</summary>
-            <EvidencePanel rules={rules} />
+            <EvidencePanel rules={rules.map((r) => ({ ...r, title: nameOf(r) }))} />
           </details>
         )}
 
@@ -326,8 +334,8 @@ function AdminPanel({ signedIn = false }) {
           <ul className="notes">
             {(changesLoad.data?.changes ?? []).map((c) => (
               <li key={c.id} className="note-item">
-                <h3>{c.ruleTitle} ({a('version', 'versión')} {c.version})</h3>
-                <p>{a('Approved by', 'Aprobada por')} {c.reviewer} {a('on', 'el')} {new Date(c.at).toLocaleString(a.locale)}. {a('Fields changed:', 'Campos cambiados:')} {c.fields.map((f) => f.field).join(', ')}.</p>
+                <h3>{locById[c.ruleId]?.title || c.ruleTitle} ({a('version', 'versión')} {c.version})</h3>
+                <p>{a('Approved by', 'Aprobada por')} {reviewerName(c.reviewer)} {a('on', 'el')} {new Date(c.at).toLocaleString(a.locale)}. {a('Fields changed:', 'Campos cambiados:')} {c.fields.map((f) => f.field).join(', ')}.</p>
               </li>
             ))}
           </ul>

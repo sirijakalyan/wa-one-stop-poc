@@ -377,15 +377,16 @@ export function createService(store, options = {}) {
     }
     return { ok: true, users, total: accounts.length };
   });
-  route('GET', '/api/admin/users/:id', async ({ params, ctx }) => {
+  route('GET', '/api/admin/users/:id', async ({ params, ctx, query }) => {
     requireStrictAdmin(ctx);
     const a = await viaIdp(() => idp.getUser(params.id));
     if (!a) fail('User not found.', 404);
     const rulesDoc = await loadRules();
     const checklists = [];
     for (const cl of await businessesOf(acctVisitor(a))) {
-      const built = await buildChecklist(cl, rulesDoc, 'en');
-      checklists.push({ id: bizIdOf(cl.id), label: cl.label || '', answers: cl.answers, savedAt: cl.savedAt || '', items: built.items.map((i) => ({ id: i.id, title: i.title, status: i.status, done: i.done, renewal: i.renewal || '', agency: i.agency || '' })) });
+      const built = await buildChecklist(cl, rulesDoc, langIn(query));
+      const english = langIn(query) === 'es' ? Object.fromEntries((await buildChecklist(cl, rulesDoc, 'en')).items.map((i) => [i.id, i.title])) : {};
+      checklists.push({ id: bizIdOf(cl.id), label: cl.label || '', answers: cl.answers, savedAt: cl.savedAt || '', items: built.items.map((i) => ({ id: i.id, title: i.title, titleEn: english[i.id] || i.title, status: i.status, done: i.done, renewal: i.renewal || '', agency: i.agency || '' })) });
     }
     return {
       ok: true,

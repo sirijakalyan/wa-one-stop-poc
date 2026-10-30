@@ -182,7 +182,7 @@ export const api = {
   forgot: (email) => request('POST', '/api/auth/forgot', { email }),
   resetPassword: (token, password, email, code) => request('POST', '/api/auth/reset', { token, password, email, code }),
   adminUsers: () => request('GET', '/api/admin/users'),
-  adminUser: (id) => request('GET', `/api/admin/users/${encodeURIComponent(id)}`),
+  adminUser: (id, lang) => request('GET', `/api/admin/users/${encodeURIComponent(id)}${lang === 'es' ? '?lang=es' : ''}`),
   adminSetRole: (id, role) => request('POST', `/api/admin/users/${encodeURIComponent(id)}/role`, { role }),
   adminStatus: () => request('GET', '/api/admin/status'),
   chat: (message, conversation, lang) => request('POST', '/api/chat', { message, conversation, lang }),

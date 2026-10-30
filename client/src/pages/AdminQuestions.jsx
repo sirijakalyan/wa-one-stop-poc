@@ -3,6 +3,7 @@ import { api, useLoad } from '../api.js';
 import { ErrorNote, Loading } from '../components/Parts.jsx';
 import { QUESTIONS } from '../questions.js';
 import { useA } from '../adminText.js';
+import { useT } from '../i18n.js';
 
 const STANDARD = ['structure', 'desc', 'cats', 'city', 'hiring', 'subs', 'salestax', 'income', 'tradename'];
 const BLANK = { text: '', hint: '', type: 'yesno', options: '' };
@@ -62,6 +63,7 @@ function QuestionForm({ initial, editing, onSave, onCancel }) {
 
 export default function AdminQuestions() {
   const a = useA();
+  const t = useT();
   const fetchQ = useCallback(() => api.questions(), []);
   const { data, error, loading, reload } = useLoad(fetchQ);
   const [adding, setAdding] = useState(false);
@@ -116,7 +118,7 @@ export default function AdminQuestions() {
                   <p className="q-no">{a('Question', 'Pregunta')} {i + 1}</p>
                   <h3>{q.text}</h3>
                   {q.hint && <p className="hint">{q.hint}</p>}
-                  <p className="q-opts">{q.options.map((o) => <span key={o.value} className="q-opt">{o.label}</span>)}</p>
+                  <p className="q-opts">{q.options.map((o) => <span key={o.value} className="q-opt">{a.lang === 'es' && ((o.value === 'yes' && o.label === 'Yes') || (o.value === 'no' && o.label === 'No') || (o.value === 'unsure' && o.label === 'Not sure')) ? { yes: 'Sí', no: 'No', unsure: 'No estoy seguro' }[o.value] : o.label}</span>)}</p>
                   <div className="row">
                     <button type="button" className="btn btn-sm" onClick={() => { setEditing(q.id); setAdding(false); setMsg(''); }}>{a('Edit', 'Editar')}<span className="sr-only"> {q.text}</span></button>
                     {confirm === q.id ? (
@@ -138,7 +140,7 @@ export default function AdminQuestions() {
       <details className="desk-more-one">
         <summary>{a('The standard questions everyone is asked first', 'Las preguntas estándar que se hacen primero a todos')}</summary>
         <ol className="q-standard">
-          {STANDARD.map((k) => <li key={k}>{QUESTIONS[k].title}</li>)}
+          {STANDARD.map((k) => <li key={k}>{a.lang === 'es' ? t(`qn.q.${k}.t`) : QUESTIONS[k].title}</li>)}
         </ol>
         <p className="hint">{a('These are built in and cannot be changed here. Rules can still use them to decide who sees a step.', 'Estas vienen integradas y no se pueden cambiar aquí. Las reglas aún pueden usarlas para decidir quién ve un paso.')}</p>
       </details>
