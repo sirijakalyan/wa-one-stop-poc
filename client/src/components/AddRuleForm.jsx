@@ -8,7 +8,7 @@ import SpanishRuleFields from './SpanishRuleFields.jsx';
 const BLANK = { title: '', agency: '', phase: '', detail: '', sourceLabel: '', sourceUrl: '', applyLabel: '', applyUrl: '' };
 const BLANK_ES = { title: '', agency: '', detail: '', sourceLabel: '', applyLabel: '' };
 
-// Add a new requirement. It goes live straight away, marked "Pending verification" until you mark it as checked.
+// Add a new step. It goes live straight away, marked "Pending verification" until you mark it as checked.
 export default function AddRuleForm({ phases, fields, onAdded, onCancel }) {
   const a = useA();
   const [f, setF] = useState(BLANK);
@@ -34,9 +34,9 @@ export default function AddRuleForm({ phases, fields, onAdded, onCancel }) {
 
   return (
     <form className="panel add-rule" onSubmit={submit} aria-labelledby="add-rule-h">
-      <h2 id="add-rule-h">{a('Add a rule', 'Agregar una regla')}</h2>
+      <h2 id="add-rule-h">{a('Add a step', 'Agregar un paso')}</h2>
       <p className="hint">{a('The new step is live for the people it applies to right away. It shows "Pending verification" until you check it against the official page and mark it as checked.', 'El nuevo paso se ve de inmediato para las personas a quienes aplica. Muestra "Verificación pendiente" hasta que usted lo revise contra la página oficial y lo marque como revisado.')}</p>
-      <div className="field"><label htmlFor="ar-title">{a('Requirement name', 'Nombre del requisito')}</label><input id="ar-title" type="text" value={f.title} onChange={set('title')} maxLength={200} required /></div>
+      <div className="field"><label htmlFor="ar-title">{a('Step name', 'Nombre del paso')}</label><input id="ar-title" type="text" value={f.title} onChange={set('title')} maxLength={200} required /></div>
       <div className="field"><label htmlFor="ar-agency">{a('Agency', 'Agencia')}</label><input id="ar-agency" type="text" value={f.agency} onChange={set('agency')} maxLength={120} required /></div>
       <div className="field">
         <label htmlFor="ar-phase">{a('Where it belongs on the road to opening day', 'Dónde va en el camino al día de apertura')}</label>
@@ -54,7 +54,7 @@ export default function AddRuleForm({ phases, fields, onAdded, onCancel }) {
       <AppliesPicker idPrefix="ar" fields={fields} value={applies} onChange={setApplies} />
       <ErrorNote message={err} />
       <div className="row">
-        <button type="submit" className="btn btn-primary" disabled={busy}>{a('Add this rule', 'Agregar esta regla')}</button>
+        <button type="submit" className="btn btn-primary" disabled={busy}>{a('Add this step', 'Agregar este paso')}</button>
         <button type="button" className="btn btn-quiet" onClick={onCancel}>{a('Cancel', 'Cancelar')}</button>
       </div>
     </form>

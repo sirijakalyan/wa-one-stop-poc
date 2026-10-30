@@ -58,7 +58,7 @@ describe('in-page preview', () => {
     // Disclaimer is still there after navigating
 
     // Admin: edit the DOR rule and save, then mark it checked
-    await user.click(screen.getByRole('link', { name: /Admin rules/ }));
+    await user.click(screen.getByRole('link', { name: /Admin area/ }));
     const who = await screen.findByTestId('who-can-edit');
     for (const part of [/admin key/i, /saving a change/i, /save changes/i, /cannot tell who/i]) expect(who).toHaveTextContent(part);
     await user.click(await screen.findByRole('button', { name: /^Apply for your Washington business license\./ }));
@@ -275,9 +275,9 @@ describe('admin evidence panel', () => {
   it('records a source review and a county page without changing any rule status', async () => {
     const user = userEvent.setup();
     renderApp();
-    await user.click(screen.getByRole('link', { name: /Admin rules/ }));
+    await user.click(screen.getByRole('link', { name: /Admin area/ }));
     const form = (await screen.findByRole('heading', { name: 'Record a source review' })).closest('form');
-    await user.selectOptions(within(form).getByLabelText('Rule'), 'Check for a county health department permit');
+    await user.selectOptions(within(form).getByLabelText('Step'), 'Check for a county health department permit');
     await user.type(within(form).getByLabelText('Official page reviewed (https)'), 'http://insecure.example');
     await user.type(within(form).getByLabelText('Who reviewed this page'), 'Reviewer One');
     await user.click(within(form).getByRole('button', { name: 'Record review' }));
@@ -455,8 +455,8 @@ describe('accounts and the admin users area', () => {
     expect(screen.getByText(/Created the account/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Back to users/ }));
     // the Rules room is one click away and holds the board, with the former Sources page folded into it
-    await user.click(screen.getByRole('tab', { name: 'Rules' }));
-    expect(await screen.findByRole('heading', { name: 'Rule desk' })).toBeInTheDocument();
+    await user.click(screen.getByRole('tab', { name: 'Steps' }));
+    expect(await screen.findByRole('heading', { name: 'Steps desk' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /File your business entity with the Secretary of State/ })).toBeInTheDocument();
     expect(screen.getByText(/Official sources and how this works/)).toBeInTheDocument();
   });

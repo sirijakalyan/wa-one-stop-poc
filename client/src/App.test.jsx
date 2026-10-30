@@ -62,7 +62,7 @@ describe('layout', () => {
     for (const r of ROUTES.filter((x) => x.nav !== false)) expect(nav).toHaveTextContent(r.label);
     // Admin is not in the owner navigation. It is reachable from the footer.
     expect(within(nav).queryByRole('link', { name: /Admin/ })).toBeNull();
-    expect(within(screen.getByRole('contentinfo')).getByRole('link', { name: /Admin rules/ })).toHaveAttribute('href', '/admin');
+    expect(within(screen.getByRole('contentinfo')).getByRole('link', { name: /Admin area/ })).toHaveAttribute('href', '/admin');
     await waitFor(() => expect(screen.getByText('Restaurant')).toBeInTheDocument());
   });
 
@@ -150,7 +150,7 @@ describe('admin key gate', () => {
     await user.clear(screen.getByLabelText('Admin key'));
     await user.type(screen.getByLabelText('Admin key'), 'right-key');
     await user.click(screen.getByRole('button', { name: 'Unlock admin' }));
-    expect(await screen.findByRole('heading', { name: 'Rule desk' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Steps desk' })).toBeInTheDocument();
     expect(screen.getByText(/Unlocked for this browser/)).toBeInTheDocument();
     sessionStorage.clear();
   });

@@ -39,8 +39,7 @@ export default function EvidencePanel({ rules }) {
     <section aria-labelledby="evidence-h">
       <h2 id="evidence-h">{a('Evidence for Pending verification', 'Evidencia para Verificación pendiente')}</h2>
       <p className="note">
-        {a('Recording a review or a county page here does not change a rule\'s status. To mark a rule as checked, open it in the editor above and click Mark as checked. Do not put personal details in notes.',
-          'Registrar aquí una revisión o una página de condado no cambia el estado de una regla. Para marcar una regla como revisada, ábrala en el editor de arriba y haga clic en Marcar como revisada. No ponga datos personales en las notas.')}
+        {a('Recording a review or a county page here does not change a step\'s status. To mark a step as checked, open it in the editor above and click Mark as checked. Do not put personal details in notes.', 'Registrar aquí una revisión o una página de condado no cambia el estado de un paso. Para marcar un paso como revisado, ábralo en el editor de arriba y haga clic en Marcar como revisado. No ponga datos personales en las notas.')}
       </p>
       <ErrorNote message={err} />
       {msg && <p className="ok" role="status">{msg}</p>}
@@ -55,7 +54,7 @@ export default function EvidencePanel({ rules }) {
         }}>
           <h3 id="sr-h">{a('Record a source review', 'Registrar una revisión de fuente')}</h3>
           <div className="field">
-            <label htmlFor="sr-rule">{a('Rule', 'Regla')}</label>
+            <label htmlFor="sr-rule">{a('Step', 'Paso')}</label>
             <select id="sr-rule" value={ruleId} onChange={(e) => setRuleId(e.target.value)}>
               {rules.map((r) => <option key={r.id} value={r.id}>{r.title}</option>)}
             </select>
@@ -71,8 +70,8 @@ export default function EvidencePanel({ rules }) {
           <div className="field">
             <label htmlFor="sr-result">{a('Result', 'Resultado')}</label>
             <select id="sr-result" value={review.result} onChange={(e) => setReview({ ...review, result: e.target.value })}>
-              <option value="pending">{a('Pending: page does not yet support the rule', 'Pendiente: la página aún no respalda la regla')}</option>
-              <option value="checked">{a('Checked: page supports the rule', 'Revisada: la página respalda la regla')}</option>
+              <option value="pending">{a('Pending: page does not yet support the step', 'Pendiente: la página aún no respalda el paso')}</option>
+              <option value="checked">{a('Checked: page supports the step', 'Revisado: la página respalda el paso')}</option>
             </select>
           </div>
           <div className="field">
@@ -118,7 +117,7 @@ export default function EvidencePanel({ rules }) {
       {recent.length === 0 ? <p className="hint">{a('No reviews recorded yet.', 'Aún no hay revisiones registradas.')}</p> : (
         <div className="table-scroll">
           <table className="stack">
-            <thead><tr><th scope="col">{a('Rule', 'Regla')}</th><th scope="col">{a('Result', 'Resultado')}</th><th scope="col">{a('Reviewer', 'Revisor')}</th><th scope="col">{a('Date', 'Fecha')}</th><th scope="col">{a('Notes', 'Notas')}</th></tr></thead>
+            <thead><tr><th scope="col">{a('Step', 'Paso')}</th><th scope="col">{a('Result', 'Resultado')}</th><th scope="col">{a('Reviewer', 'Revisor')}</th><th scope="col">{a('Date', 'Fecha')}</th><th scope="col">{a('Notes', 'Notas')}</th></tr></thead>
             <tbody>
               {recent.map((r) => (
                 <tr key={r.id}>

@@ -14,7 +14,7 @@ import Sources from './Sources.jsx';
 import { useA } from '../adminText.js';
 
 const fieldsFor = (a) => [
-  { key: 'title', label: a('Requirement name', 'Nombre del requisito'), type: 'text' },
+  { key: 'title', label: a('Step name', 'Nombre del paso'), type: 'text' },
   { key: 'detail', label: a('Plain-language detail', 'Detalle en lenguaje sencillo'), type: 'area' },
   { key: 'source.label', label: a('Source name', 'Nombre de la fuente'), type: 'text' },
   { key: 'source.url', label: a('Source link (https)', 'Enlace de la fuente (https)'), type: 'text' },
@@ -35,7 +35,7 @@ function statusOf(r, a) {
   if (r.disabled) return { key: 'off', label: a('Disabled', 'Desactivada') };
   if (r.verification.status !== 'checked' || !r.lastVerified) return { key: 'needs', label: a('Needs check', 'Falta revisar') };
   if (staleness(r, a) !== a('Current', 'Vigente')) return { key: 'stale', label: a('Stale', 'Vencida') };
-  return { key: 'ok', label: a('Checked', 'Revisada') };
+  return { key: 'ok', label: a('Checked', 'Revisado') };
 }
 const shortDay = (iso, a) => (iso ? new Date(`${iso}T00:00:00Z`).toLocaleDateString(a.locale, { month: 'short', day: 'numeric', timeZone: 'UTC' }) : '');
 
@@ -52,7 +52,7 @@ function AdminPanel({ signedIn = false }) {
   const nameOf = (r) => locById[r.id]?.title || r.title;
   const agencyOf = (r) => locById[r.id]?.agency || r.agency;
   // The change log keeps field keys like "source.url". Show them as the labels the editor uses.
-  const fieldName = (k) => (k === 'rule' ? a('rule', 'regla') : k === 'applies' ? a('who sees it', 'quién la ve') : k === 'verification.status' ? a('marked as checked or needs check', 'marcada como revisada o falta revisar') : (FIELDS.find((x) => x.key === k)?.label || k));
+  const fieldName = (k) => (k === 'rule' ? a('step', 'paso') : k === 'applies' ? a('who sees it', 'quién lo ve') : k === 'verification.status' ? a('marked as checked or needs check', 'marcada como revisado o falta revisar') : (FIELDS.find((x) => x.key === k)?.label || k));
   const reviewerName = (n) => (n === 'admin key' ? a('admin key', 'clave de administración') : n);
   const changesLoad = useLoad(fetchChanges);
   const [selected, setSelected] = useState('');
@@ -101,7 +101,7 @@ function AdminPanel({ signedIn = false }) {
     }
   }
 
-  if (rulesLoad.loading && !rulesLoad.data) return <Loading what={a('Loading rules', 'Cargando reglas')} />;
+  if (rulesLoad.loading && !rulesLoad.data) return <Loading what={a('Loading steps', 'Cargando pasos')} />;
   if (rulesLoad.error) return <ErrorNote message={rulesLoad.error} />;
 
   const live = rules.filter((r) => !r.disabled);
@@ -113,13 +113,13 @@ function AdminPanel({ signedIn = false }) {
   return (
     <>
       <header className="desk-head">
-        <h1 tabIndex={-1}>{a('Rule desk', 'Mesa de reglas')}</h1>
+        <h1 tabIndex={-1}>{a('Steps desk', 'Mesa de pasos')}</h1>
         <p className="lead">
-          {needsCount === 0 ? a('Every rule has been checked against its official page.', 'Todas las reglas se revisaron contra su página oficial.') : a(`${needsCount} of ${live.length} rules need a check before you can trust them.`, `${needsCount} de ${live.length} reglas necesitan una revisión antes de confiar en ellas.`)}{' '}
-          {a('Pick a rule to edit it or check it. Saved changes go live right away.', 'Elija una regla para editarla o revisarla. Los cambios guardados se publican de inmediato.')}
+          {needsCount === 0 ? a('Every step has been checked against its official page.', 'Todos los pasos se revisaron contra su página oficial.') : a(`${needsCount} of ${live.length} steps need a check before you can trust them.`, `${needsCount} de ${live.length} pasos necesitan una revisión antes de confiar en ellos.`)}{' '}
+          {a('Pick a step to edit it or check it. Saved changes go live right away.', 'Elija un paso para editarlo o revisarlo. Los cambios guardados se publican de inmediato.')}
         </p>
         <p className="desk-add">
-          <button type="button" className="btn btn-primary btn-sm" onClick={() => { setAdding(true); setSelected(''); setMsg(''); setErr(''); setTimeout(() => document.getElementById('add-rule-h')?.scrollIntoView?.({ behavior: 'smooth', block: 'center' }), 60); }}>{a('Add a rule', 'Agregar una regla')}</button>
+          <button type="button" className="btn btn-primary btn-sm" onClick={() => { setAdding(true); setSelected(''); setMsg(''); setErr(''); setTimeout(() => document.getElementById('add-rule-h')?.scrollIntoView?.({ behavior: 'smooth', block: 'center' }), 60); }}>{a('Add a step', 'Agregar un paso')}</button>
         </p>
         <p className="desk-note">
           {signedIn
@@ -130,7 +130,7 @@ function AdminPanel({ signedIn = false }) {
 
       <section className="board" aria-labelledby="board-h">
         <div className="board-top">
-          <h2 id="board-h" className="board-title"><strong>{checkedCount}</strong> {a('of', 'de')} {rules.length} {a('rules checked', 'reglas revisadas')}</h2>
+          <h2 id="board-h" className="board-title"><strong>{checkedCount}</strong> {a('of', 'de')} {rules.length} {a('steps checked', 'pasos revisados')}</h2>
           <div className="board-filters" role="group" aria-label={a('Show', 'Mostrar')}>
             {[['all', `${a('All', 'Todas')} ${rules.length}`], ['needs', `${a('Needs check', 'Falta revisar')} ${needsCount}`]].map(([k, label]) => (
               <button key={k} type="button" aria-pressed={filter === k} onClick={() => setFilter(k)}>{label}</button>
@@ -157,7 +157,7 @@ function AdminPanel({ signedIn = false }) {
                     {r.custom && <span className="tile-draft tile-added">{a('Added', 'Agregada')}</span>}
                   </span>
                   <span className="tile-title">{nameOf(r)}</span>
-                  <span className="tile-foot">{r.disabled ? `${a('Hidden from new members', 'Oculta para miembros nuevos')} · ` : ''}{agencyOf(r)} · {r.lastVerified ? a(`checked ${shortDay(r.lastVerified, a)}`, `revisada ${shortDay(r.lastVerified, a)}`) : a('never checked', 'nunca revisada')}</span>
+                  <span className="tile-foot">{r.disabled ? `${a('Hidden from new members', 'Oculta para miembros nuevos')} · ` : ''}{agencyOf(r)} · {r.lastVerified ? a(`checked ${shortDay(r.lastVerified, a)}`, `revisado ${shortDay(r.lastVerified, a)}`) : a('never checked', 'nunca revisado')}</span>
                 </button>
               </li>
             );
@@ -178,18 +178,18 @@ function AdminPanel({ signedIn = false }) {
             await rulesLoad.reload();
             await changesLoad.reload();
             setSelected(res.rule.id);
-            setMsg(a(`Rule added and live. Simulated notices queued: ${res.queuedNotifications}. It shows "Pending verification" until you mark it as checked.`, `Regla agregada y publicada. Avisos simulados en cola: ${res.queuedNotifications}. Muestra "Verificación pendiente" hasta que la marque como revisada.`));
+            setMsg(a(`Step added and live. Simulated notices queued: ${res.queuedNotifications}. It shows "Pending verification" until you mark it as checked.`, `Paso agregado y publicado. Avisos simulados en cola: ${res.queuedNotifications}. Muestra "Verificación pendiente" hasta que lo marque como revisado.`));
           }}
         />
       )}
 
       <div id="desk-editor" className="desk-editor-anchor">
-        {!rule && !adding && <p className="desk-empty">{a('Pick a rule on the board to read it, edit it and check it.', 'Elija una regla del tablero para leerla, editarla y revisarla.')}</p>}
+        {!rule && !adding && <p className="desk-empty">{a('Pick a step on the board to read it, edit it and check it.', 'Elija un paso del tablero para leerlo, editarlo y revisarlo.')}</p>}
         {rule && (
           <div className="desk-editor">
             <section className="panel editor" aria-labelledby="editor-h">
               <h2 id="editor-h">{a('Edit:', 'Editar:')} {nameOf(rule)}</h2>
-              <p className="hint">{rule.custom ? a('You added this rule. Change who sees it in the panel on the right.', 'Usted agregó esta regla. Cambie quién la ve en el panel de la derecha.') : a('The condition that decides who sees this built-in rule is fixed in the rules file.', 'La condición que decide quién ve esta regla integrada está fija en el archivo de reglas.')}</p>
+              <p className="hint">{rule.custom ? a('You added this step. Change who sees it in the panel on the right.', 'Usted agregó este paso. Cambie quién lo ve en el panel de la derecha.') : a('The condition that decides who sees this built-in step is fixed in the steps file.', 'La condición que decide quién ve este paso integrado está fija en el archivo de pasos.')}</p>
               <form onSubmit={(e) => e.preventDefault()}>
                 {FIELDS.map((f) => (
                   <div className="field" key={f.key}>
@@ -208,22 +208,22 @@ function AdminPanel({ signedIn = false }) {
               </form>
             </section>
 
-            <aside className="desk-side" aria-label={a('This rule today', 'Esta regla hoy')}>
+            <aside className="desk-side" aria-label={a('This step today', 'Este paso hoy')}>
               <h2>{a('Live now', 'En vivo ahora')}</h2>
               <dl className="desk-facts">
                 <div><dt>{a('Status', 'Estado')}</dt><dd>{statusOf(rule, a).label}</dd></div>
                 <div><dt>{a('Version', 'Versión')}</dt><dd>{rule.version}</dd></div>
                 <div><dt>{a('Last verified', 'Última verificación')}</dt><dd>{rule.lastVerified || a('Never', 'Nunca')} <small>{staleness(rule, a)}</small></dd></div>
                 <div><dt>{a('Owner', 'Responsable')}</dt><dd>{humanInput(rule.owner, a.lang)}</dd></div>
-                <div><dt>{a('Checked by', 'Revisada por')}</dt><dd>{rule.reviewer || a('none yet', 'ninguno aún')}</dd></div>
+                <div><dt>{a('Checked by', 'Revisado por')}</dt><dd>{rule.reviewer || a('none yet', 'ninguno aún')}</dd></div>
                 <div><dt>{a('Agency', 'Agencia')}</dt><dd>{agencyOf(rule)}</dd></div>
                               </dl>
               <div className="desk-check">
-                <h3>{a('Check this rule', 'Revisar esta regla')}</h3>
+                <h3>{a('Check this step', 'Revisar este paso')}</h3>
                 <ol className="hint">
                   <li>{a('Open the official page.', 'Abra la página oficial.')}</li>
-                  <li>{a('Read it and compare it with the rule text.', 'Léala y compárela con el texto de la regla.')}</li>
-                  <li>{a('If they match, click Mark as checked. If not, edit the rule and save.', 'Si coinciden, haga clic en Marcar como revisada. Si no, edite la regla y guarde.')}</li>
+                  <li>{a('Read it and compare it with the step text.', 'Léalo y compárelo con el texto del paso.')}</li>
+                  <li>{a('If they match, click Mark as checked. If not, edit the step and save.', 'Si coinciden, haga clic en Marcar como revisado. Si no, edite el paso y guarde.')}</li>
                 </ol>
                 {rule.source?.url && <p><ExternalLink className="btn btn-quiet btn-sm" href={rule.source.url}>{a('Open the source page', 'Abrir la página de la fuente')}</ExternalLink></p>}
                 <div className="field">
@@ -231,27 +231,27 @@ function AdminPanel({ signedIn = false }) {
                   <input type="text" id="check-note" maxLength={300} value={checkNote} onChange={(e) => setCheckNote(e.target.value)} placeholder={a('For example: fee is still $19', 'Por ejemplo: la tarifa sigue en $19')} />
                 </div>
                 <div className="row">
-                  <button type="button" className="btn btn-primary btn-sm" onClick={async () => { await run(() => api.checkRule(rule.id, 'checked', checkNote), a('Marked as checked today.', 'Marcada como revisada hoy.')); setCheckNote(''); }}>{a('Mark as checked', 'Marcar como revisada')}</button>
+                  <button type="button" className="btn btn-primary btn-sm" onClick={async () => { await run(() => api.checkRule(rule.id, 'checked', checkNote), a('Marked as checked today.', 'Marcado como revisado hoy.')); setCheckNote(''); }}>{a('Mark as checked', 'Marcar como revisado')}</button>
                   {rule.verification?.status === 'checked' && (
-                    <button type="button" className="btn btn-quiet btn-sm" onClick={() => run(() => api.checkRule(rule.id, 'pending', ''), a('Marked as needs check.', 'Marcada como falta revisar.'))}>{a('Mark as needs check', 'Marcar como falta revisar')}</button>
+                    <button type="button" className="btn btn-quiet btn-sm" onClick={() => run(() => api.checkRule(rule.id, 'pending', ''), a('Marked as needs check.', 'Marcado como falta revisar.'))}>{a('Mark as needs check', 'Marcar como falta revisar')}</button>
                   )}
                 </div>
               </div>
               <div className="desk-onoff">
                 {rule.disabled ? (
                   <>
-                    <p className="hint">{a('This rule is disabled. New members do not see it. People who saved a plan before you disabled it keep it.', 'Esta regla está desactivada. Los miembros nuevos no la ven. Quienes guardaron un plan antes de que la desactivara la conservan.')}</p>
-                    <button type="button" className="btn btn-primary btn-sm" onClick={() => run(() => api.enableRule(rule.id), a('Rule enabled. Everyone sees it again.', 'Regla activada. Todos la ven de nuevo.'))}>{a('Enable this rule', 'Activar esta regla')}</button>
+                    <p className="hint">{a('This step is disabled. New members do not see it. People who saved a plan before you disabled it keep it.', 'Este paso está desactivado. Los miembros nuevos no lo ven. Quienes guardaron un plan antes de que lo desactivara lo conservan.')}</p>
+                    <button type="button" className="btn btn-primary btn-sm" onClick={() => run(() => api.enableRule(rule.id), a('Step enabled. Everyone sees it again.', 'Paso activado. Todos lo ven de nuevo.'))}>{a('Enable this step', 'Activar este paso')}</button>
                   </>
                 ) : (
                   <>
-                    <p className="hint">{a('Delete hides a rule from new members. People who already saved a plan keep it. Nothing is lost, and you can enable it again.', 'Eliminar oculta una regla para los miembros nuevos. Quienes ya guardaron un plan la conservan. No se pierde nada y puede activarla de nuevo.')}</p>
+                    <p className="hint">{a('Delete hides a step from new members. People who already saved a plan keep it. Nothing is lost, and you can enable it again.', 'Eliminar oculta un paso para los miembros nuevos. Quienes ya guardaron un plan lo conservan. No se pierde nada y puede activarlo de nuevo.')}</p>
                     {confirmOff ? (
                       <div className="row">
-                        <button type="button" className="btn btn-primary btn-sm" onClick={async () => { await run(() => api.disableRule(rule.id), a('Rule disabled. New members no longer see it, and people who already saved a plan keep it. You can enable it again here.', 'Regla desactivada. Los miembros nuevos ya no la ven y quienes ya guardaron un plan la conservan. Puede activarla de nuevo aquí.')); setConfirmOff(false); }}>{a('Yes, disable it', 'Sí, desactivarla')}</button>
+                        <button type="button" className="btn btn-primary btn-sm" onClick={async () => { await run(() => api.disableRule(rule.id), a('Step disabled. New members no longer see it, and people who already saved a plan keep it. You can enable it again here.', 'Paso desactivado. Los miembros nuevos ya no lo ven y quienes ya guardaron un plan lo conservan. Puede activarlo de nuevo aquí.')); setConfirmOff(false); }}>{a('Yes, disable it', 'Sí, desactivarla')}</button>
                         <button type="button" className="btn btn-quiet btn-sm" onClick={() => setConfirmOff(false)}>{a('Keep it', 'Conservarla')}</button>
                       </div>
-                    ) : <button type="button" className="btn btn-quiet btn-sm" onClick={() => setConfirmOff(true)}>{a('Delete (disable) this rule', 'Eliminar (desactivar) esta regla')}</button>}
+                    ) : <button type="button" className="btn btn-quiet btn-sm" onClick={() => setConfirmOff(true)}>{a('Delete (disable) this step', 'Eliminar (desactivar) este paso')}</button>}
                   </>
                 )}
               </div>
@@ -263,17 +263,17 @@ function AdminPanel({ signedIn = false }) {
                   </div>
                   <AppliesPicker idPrefix="ed" fields={fields} value={audience} onChange={setAudience} />
                   <div className="row">
-                    <button type="button" className="btn btn-sm" onClick={() => run(() => api.setApplies(rule.id, audience), (r) => a(`Saved. Simulated notices queued: ${r.queuedNotifications}.`, `Guardado. Avisos simulados en cola: ${r.queuedNotifications}.`))}>{a('Save who sees it', 'Guardar quién la ve')}</button>
+                    <button type="button" className="btn btn-sm" onClick={() => run(() => api.setApplies(rule.id, audience), (r) => a(`Saved. Simulated notices queued: ${r.queuedNotifications}.`, `Guardado. Avisos simulados en cola: ${r.queuedNotifications}.`))}>{a('Save who sees it', 'Guardar quién lo ve')}</button>
                     {confirmRemove ? (
                       <>
-                        <button type="button" className="btn btn-primary btn-sm" onClick={async () => { const ok = await run(() => api.removeRule(rule.id), a('Rule removed.', 'Regla eliminada.')); if (ok) setSelected(''); }}>{a('Yes, remove this rule', 'Sí, eliminar esta regla')}</button>
+                        <button type="button" className="btn btn-primary btn-sm" onClick={async () => { const ok = await run(() => api.removeRule(rule.id), a('Step removed.', 'Paso eliminado.')); if (ok) setSelected(''); }}>{a('Yes, remove this step', 'Sí, eliminar este paso')}</button>
                         <button type="button" className="btn btn-quiet btn-sm" onClick={() => setConfirmRemove(false)}>{a('Keep it', 'Conservarla')}</button>
                       </>
-                    ) : <button type="button" className="btn btn-quiet btn-sm" onClick={() => setConfirmRemove(true)}>{a('Remove this rule', 'Eliminar esta regla')}</button>}
+                    ) : <button type="button" className="btn btn-quiet btn-sm" onClick={() => setConfirmRemove(true)}>{a('Remove this step', 'Eliminar este paso')}</button>}
                   </div>
                 </div>
-              ) : <p className="hint">{a('This is a built-in rule. Who sees it is fixed in the rules file. You can edit its text and links, or disable it.', 'Esta es una regla integrada. Quién la ve está fijo en el archivo de reglas. Puede editar su texto y sus enlaces, o desactivarla.')}</p>}
-              <h3>{a('History of this rule', 'Historial de esta regla')}</h3>
+              ) : <p className="hint">{a('This is a built-in step. Who sees it is fixed in the steps file. You can edit its text and links, or disable it.', 'Este es un paso integrado. Quién lo ve está fija en el archivo de pasos. Puede editar su texto y sus enlaces, o desactivarlo.')}</p>}
+              <h3>{a('History of this step', 'Historial de este paso')}</h3>
               {ruleChanges.length === 0 ? <p className="hint">{a('No published changes yet.', 'Aún no hay cambios publicados.')}</p> : (
                 <ul className="desk-history">
                   {ruleChanges.map((c) => (
@@ -292,23 +292,19 @@ function AdminPanel({ signedIn = false }) {
           <ul>
             <li>
               <strong>{a('Admin accounts.', 'Cuentas de administración.')}</strong>{' '}
-              {a('A person whose account an admin made an admin signs in with their own email and password, and can edit rules, record source reviews and publish. Make or remove admins in the People tab.',
-                'Una persona a quien un administrador le dio ese rol inicia sesión con su propio correo y contraseña, y puede editar reglas, registrar revisiones de fuentes y publicar. Agregue o quite administradores en la pestaña Personas.')}
+              {a('A person whose account an admin made an admin signs in with their own email and password, and can edit steps, record source reviews and publish. Make or remove admins in the People tab.', 'Una persona a quien un administrador le dio ese rol inicia sesión con su propio correo y contraseña, y puede editar pasos, registrar revisiones de fuentes y publicar. Agregue o quite administradores en la pestaña Personas.')}
             </li>
             <li>
               <strong>{a('The admin key.', 'La clave de administración.')}</strong>{' '}
-              {a('The shared secret set on the server (ADMIN_KEY) also unlocks this page for anyone who has it, but the app cannot tell who is using the key. A production server with no key keeps this page locked.',
-                'El secreto compartido del servidor (ADMIN_KEY) también desbloquea esta página para quien lo tenga, pero la aplicación no puede saber quién usa la clave. Un servidor de producción sin clave mantiene esta página bloqueada.')}
+              {a('The shared secret set on the server (ADMIN_KEY) also unlocks this page for anyone who has it, but the app cannot tell who is using the key. A production server with no key keeps this page locked.', 'El secreto compartido del servidor (ADMIN_KEY) también desbloquea esta página para quien lo tenga, pero la aplicación no puede saber quién usa la clave. Un servidor de producción sin clave mantiene esta página bloqueada.')}
             </li>
             <li>
               <strong>{a('Saving a change.', 'Guardar un cambio.')}</strong>{' '}
-              {a('Save changes makes the edit live for every visitor at once. It adds one to the version number, records who saved it and the date, and queues a simulated notice for checklists that include the rule. It does not mark the rule as checked.',
-                'Guardar cambios hace que la edición se vea de inmediato para todos los visitantes. Suma uno al número de versión, registra quién la guardó y la fecha, y pone en cola un aviso simulado para las listas que incluyen la regla. No marca la regla como revisada.')}
+              {a('Save changes makes the edit live for every visitor at once. It adds one to the version number, records who saved it and the date, and queues a simulated notice for checklists that include the step. It does not mark the step as checked.', 'Guardar cambios hace que la edición se vea de inmediato para todos los visitantes. Suma uno al número de versión, registra quién la guardó y la fecha, y pone en cola un aviso simulado para las listas que incluyen el paso. No marca el paso como revisado.')}
             </li>
             <li>
               <strong>{a('Verification status.', 'Estado de verificación.')}</strong>{' '}
-              {a('Click Mark as checked only after you have read the official page and compared it with the rule. It sets today\'s date, adds a source review to the evidence log and adds a line to the history. A rule turns Stale after 12 months. Each rule has an owner field that reads "NEEDS HUMAN INPUT" until your team names a person.',
-                'Haga clic en Marcar como revisada solo después de leer la página oficial y compararla con la regla. Pone la fecha de hoy, agrega una revisión de fuente al registro de evidencia y una línea al historial. Una regla pasa a Vencida después de 12 meses. Cada regla tiene un campo de responsable que dice "NEEDS HUMAN INPUT" hasta que su equipo nombre a una persona.')}
+              {a('Click Mark as checked only after you have read the official page and compared it with the step. It sets today\'s date, adds a source review to the evidence log and adds a line to the history. A step turns Stale after 12 months. Each step has an owner field that reads "NEEDS HUMAN INPUT" until your team names a person.', 'Haga clic en Marcar como revisado solo después de leer la página oficial y compararla con el paso. Pone la fecha de hoy, agrega una revisión de fuente al registro de evidencia y una línea al historial. Un paso pasa a Vencida después de 12 meses. Cada paso tiene un campo de responsable que dice "NEEDS HUMAN INPUT" hasta que su equipo nombre a una persona.')}
             </li>
           </ul>
         </details>
@@ -344,7 +340,7 @@ function AdminPanel({ signedIn = false }) {
             <button type="button" className="btn btn-quiet btn-sm" onClick={() => setConfirmReset(true)}>{a('Reset sample data', 'Restablecer datos de muestra')}</button>
           ) : (
             <div className="row">
-              <p className="hint">{a('This restores the original rules and clears your checklist and notifications.', 'Esto restaura las reglas originales y borra su lista y sus notificaciones.')}</p>
+              <p className="hint">{a('This restores the original steps and clears your checklist and notifications.', 'Esto restaura los pasos originales y borra su lista y sus notificaciones.')}</p>
               <button type="button" className="btn btn-primary btn-sm" onClick={() => { setConfirmReset(false); setSelected(''); run(() => api.resetDemo(), a('Sample data reset.', 'Datos de muestra restablecidos.')); }}>{a('Yes, reset', 'Sí, restablecer')}</button>
               <button type="button" className="btn btn-quiet btn-sm" onClick={() => setConfirmReset(false)}>{a('Cancel', 'Cancelar')}</button>
             </div>
@@ -393,10 +389,10 @@ export default function Admin() {
     }
     return (
       <div className="panel gate">
-        <h1 tabIndex={-1}>{a('Rule desk', 'Mesa de reglas')}</h1>
+        <h1 tabIndex={-1}>{a('Steps desk', 'Mesa de pasos')}</h1>
         {data.keyConfigured ? (
           <>
-            <p className="lead">{a('This area is for content owners. Enter the admin key to edit rules.', 'Esta área es para los responsables del contenido. Escriba la clave de administración para editar reglas.')}</p>
+            <p className="lead">{a('This area is for content owners. Enter the admin key to edit steps.', 'Esta área es para los responsables del contenido. Escriba la clave de administración para editar pasos.')}</p>
             <form onSubmit={submit}>
               <div className="field">
                 <label htmlFor="admin-key">{a('Admin key', 'Clave de administración')}</label>
@@ -416,7 +412,7 @@ export default function Admin() {
       </div>
     );
   }
-  const tabs = [['rules', a('Rules', 'Reglas')], ['questions', a('Questions', 'Preguntas')], ['people', a('People', 'Personas')]];
+  const tabs = [['rules', a('Steps', 'Pasos')], ['questions', a('Questions', 'Preguntas')], ['people', a('People', 'Personas')]];
   const asked = params.get('tab');
   const wanted = asked === 'users' ? 'people' : asked === 'sources' ? 'rules' : asked;
   const tab = tabs.some(([k]) => k === wanted) ? wanted : (data?.strict ? 'people' : 'rules');

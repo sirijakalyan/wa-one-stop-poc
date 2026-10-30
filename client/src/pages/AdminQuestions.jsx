@@ -134,7 +134,7 @@ export default function AdminQuestions() {
       const r = await api.removeQuestion(q.id);
       setConfirm('');
       const base = a('Question deleted. Nobody new is asked it, and answers people already gave are kept. You can restore it any time.', 'Pregunta eliminada. Ya no se le hace a nadie nuevo y se conservan las respuestas que ya se dieron. Puede restaurarla cuando quiera.');
-      setMsg(r.usedBy?.length ? `${base} ${a(`A rule uses its answer (${r.usedBy.join(', ')}). It shows as "may apply" for new members.`, `Una regla usa su respuesta (${r.usedBy.join(', ')}). Aparece como "puede aplicar" para miembros nuevos.`)}` : base);
+      setMsg(r.usedBy?.length ? `${base} ${a(`A step uses its answer (${r.usedBy.join(', ')}). It shows as "may apply" for new members.`, `Un paso usa su respuesta (${r.usedBy.join(', ')}). Aparece como "puede aplicar" para miembros nuevos.`)}` : base);
       await reload();
     } catch (e) { setErr(e.message); setConfirm(''); }
   }
@@ -157,7 +157,7 @@ export default function AdminQuestions() {
     <>
       <header className="desk-head">
         <h1 tabIndex={-1}>{a('Questions', 'Preguntas')}</h1>
-        <p className="lead">{a('Add your own questions. The guide asks them in the chat after the standard ones, and they appear as more rows on the business card and in the step-by-step form. A rule can then use the answer to decide who sees it.', 'Agregue sus propias preguntas. La guía las hace en el chat después de las estándar, y aparecen como más filas en la tarjeta del negocio y en el formulario paso a paso. Una regla puede usar la respuesta para decidir quién la ve.')}</p>
+        <p className="lead">{a('Add your own questions. The guide asks them in the chat after the standard ones, and they appear as more rows on the business card and in the step-by-step form. A step can then use the answer to decide who sees it.', 'Agregue sus propias preguntas. La guía las hace en el chat después de las estándar, y aparecen como más filas en la tarjeta del negocio y en el formulario paso a paso. Un paso puede usar la respuesta para decidir quién la ve.')}</p>
       </header>
       {msg && <p className="ok" role="status">{msg}</p>}
       <ErrorNote message={err} />
@@ -171,7 +171,7 @@ export default function AdminQuestions() {
           <QuestionForm
             initial={BLANK}
             onCancel={() => setAdding(false)}
-            onSave={async (f) => { await api.addQuestion(toBody(f)); setAdding(false); setMsg(a('Question added. Everyone sees it now. Next, add a rule that uses the answer in the Rules tab.', 'Pregunta agregada. Todos la ven ahora. Después, agregue en la pestaña Reglas una regla que use la respuesta.')); await reload(); }}
+            onSave={async (f) => { await api.addQuestion(toBody(f)); setAdding(false); setMsg(a('Question added. Everyone sees it now. Next, add a step that uses the answer in the Steps tab.', 'Pregunta agregada. Todos la ven ahora. Después, agregue en la pestaña Pasos un paso que use la respuesta.')); await reload(); }}
           />
         )}
         {questions.length === 0 && !adding && <p className="desk-empty">{a('No questions of your own yet. Add one and it appears for everyone after the standard questions.', 'Aún no hay preguntas propias. Agregue una y aparecerá para todos después de las preguntas estándar.')}</p>}
@@ -217,7 +217,7 @@ export default function AdminQuestions() {
 
       <section aria-labelledby="sq-h" className="q-section">
         <div className="q-section-head"><h2 id="sq-h">{a('Standard questions', 'Preguntas estándar')} ({shown})</h2></div>
-        <p className="hint">{a('Everyone is asked these first. Edit the wording, or delete one you do not need. A deleted question is not asked, and a rule that uses its answer shows as "may apply". Restore it any time.', 'Se hacen primero a todos. Edite el texto, o elimine una que no necesite. Una pregunta eliminada no se hace, y una regla que usa su respuesta aparece como "puede aplicar". Restáurela cuando quiera.')}</p>
+        <p className="hint">{a('Everyone is asked these first. Edit the wording, or delete one you do not need. A deleted question is not asked, and a step that uses its answer shows as "may apply". Restore it any time.', 'Se hacen primero a todos. Edite el texto, o elimine una que no necesite. Una pregunta eliminada no se hace, y un paso que usa su respuesta aparece como "puede aplicar". Restáurela cuando quiera.')}</p>
         <ol className="q-list">
           {standard.map((item, i) => (
             <li key={item.field} className={`q-card${item.hidden ? ' is-deleted' : ''}`}>
