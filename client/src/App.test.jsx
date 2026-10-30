@@ -148,14 +148,14 @@ describe('admin key gate', () => {
     }));
     renderAt('/admin');
     expect(await screen.findByLabelText('Admin key')).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Rules (1)' })).toBeNull();
+    expect(screen.queryByRole('group', { name: 'Show' })).toBeNull();
     await user.type(screen.getByLabelText('Admin key'), 'wrong');
     await user.click(screen.getByRole('button', { name: 'Unlock admin' }));
     expect(await screen.findByText(/That key did not match/)).toBeInTheDocument();
     await user.clear(screen.getByLabelText('Admin key'));
     await user.type(screen.getByLabelText('Admin key'), 'right-key');
     await user.click(screen.getByRole('button', { name: 'Unlock admin' }));
-    expect(await screen.findByRole('heading', { name: 'Rules (1)' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Rule desk' })).toBeInTheDocument();
     expect(screen.getByText(/Unlocked for this browser/)).toBeInTheDocument();
     sessionStorage.clear();
   });

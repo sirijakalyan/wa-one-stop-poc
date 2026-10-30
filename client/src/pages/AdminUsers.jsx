@@ -136,7 +136,7 @@ export default function AdminUsers() {
   if (error) {
     return (
       <>
-        <h1 tabIndex={-1}>Users</h1>
+        <h1 tabIndex={-1}>People</h1>
         <ErrorNote message={error} />
         <p><Link className="btn btn-primary btn-sm" to="/login" state={{ from: '/admin' }}>Sign in</Link></p>
       </>
@@ -146,7 +146,7 @@ export default function AdminUsers() {
   const savedCount = users.filter((u) => u.saved).length;
   return (
     <>
-      <h1 tabIndex={-1}>Users</h1>
+      <h1 tabIndex={-1}>People</h1>
       <p className="lead">Everyone with an account, what they saved and how far they have got. Open a person to see their answers, their checklist and a dated activity log.</p>
       <ul className="stat-chips" aria-label="Summary">
         <li><strong>{users.length}</strong> accounts</li>

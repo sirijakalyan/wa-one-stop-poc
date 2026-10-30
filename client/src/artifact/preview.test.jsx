@@ -61,8 +61,8 @@ describe('in-page preview', () => {
     // Admin: edit the DOR rule, approve with a reviewer
     await user.click(screen.getByRole('link', { name: /Admin rules/ }));
     const who = await screen.findByTestId('who-can-edit');
-    for (const part of [/admin key/i, /reviewer/i, /draft changes/i, /publishing/i, /cannot tell who/i, /different person/i]) expect(who).toHaveTextContent(part);
-    await user.click(await screen.findByRole('button', { name: /Edit Apply for your Washington business license/ }));
+    for (const part of [/admin key/i, /reviewer/i, /draft and publish/i, /approve and publish/i, /cannot tell who/i, /different person/i]) expect(who).toHaveTextContent(part);
+    await user.click(await screen.findByRole('button', { name: /^Apply for your Washington business license\./ }));
     const detail = await screen.findByLabelText('Plain-language detail');
     await user.clear(detail);
     await user.type(detail, 'Updated detail for the preview test.');
@@ -300,9 +300,9 @@ describe('admin evidence panel', () => {
     expect(await screen.findByText('County page saved.')).toBeInTheDocument();
     expect(await screen.findByText('King County')).toBeInTheDocument();
 
-    // The county health rule is still Pending check in the rules table.
-    const row = screen.getByRole('button', { name: /Edit Check for a county health department permit/ }).closest('tr');
-    expect(within(row).getByText('Pending check')).toBeInTheDocument();
+    // The county health rule still shows "Needs check" on the board.
+    const tile = screen.getByRole('button', { name: /^Check for a county health department permit\. Needs check/ });
+    expect(tile).toBeInTheDocument();
   });
 });
 
@@ -445,7 +445,7 @@ describe('accounts and the admin users area', () => {
     await signUpIn(user, 'Boss', 'admin@example.com');
     await user.click(await screen.findByRole('button', { name: /Account: Boss/ }));
     await user.click(screen.getByRole('menuitem', { name: 'Admin' }));
-    expect(await screen.findByRole('heading', { name: 'Users' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'People' })).toBeInTheDocument();
     const row = (await screen.findByText('ana@example.com')).closest('tr');
     expect(within(row).getByText('Restaurant')).toBeInTheDocument();
     expect(within(row).getByText(/^1 of \d+$/)).toBeInTheDocument();
@@ -456,11 +456,11 @@ describe('accounts and the admin users area', () => {
     expect(screen.getByText(/Saved a plan/)).toBeInTheDocument();
     expect(screen.getByText(/Created the account/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Back to users/ }));
-    // the other tabs are still there, including the former Sources page
-    await user.click(screen.getByRole('tab', { name: 'Official sources' }));
-    expect(await screen.findByRole('heading', { name: /Sources and how this demo works/ })).toBeInTheDocument();
-    await user.click(screen.getByRole('tab', { name: 'Rules and links' }));
-    expect(await screen.findByRole('heading', { name: 'Rules management' })).toBeInTheDocument();
+    // the Rules room is one click away and holds the board, with the former Sources page folded into it
+    await user.click(screen.getByRole('tab', { name: 'Rules' }));
+    expect(await screen.findByRole('heading', { name: 'Rule desk' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /File your business entity with the Secretary of State/ })).toBeInTheDocument();
+    expect(screen.getByText(/Official sources and how this demo works/)).toBeInTheDocument();
   });
 });
 
@@ -516,7 +516,7 @@ describe('an admin account sees only the Admin area', () => {
     await screen.findByRole('heading', { name: 'Welcome back' });
     await user.type(screen.getByLabelText('Password'), 'Passw0rdOK');
     await user.click(screen.getByRole('button', { name: 'Sign in' }));
-    expect(await screen.findByRole('heading', { name: 'Users' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'People' })).toBeInTheDocument();
     const nav = screen.getByRole('navigation', { name: 'Main' });
     expect(within(nav).queryByRole('link', { name: 'Home' })).not.toBeInTheDocument();
     expect(within(nav).queryByRole('link', { name: 'My business' })).not.toBeInTheDocument();

@@ -26,7 +26,7 @@ const SOURCES = [
 const NAMES_ES = ["DOR, Abrir un negocio (Open a business)", "DOR, Solicitar una licencia comercial (Apply for a business license)", "DOR, Elegir una estructura de propiedad (Choose an ownership structure)", "DOR, Endosos de ciudad (City endorsements)", "Secretario de Estado, Corporaciones y organizaciones benéficas (Corporations & Charities)", "L&I, Registrarse como contratista (Register as a Contractor)", "L&I, ¿Necesito una cuenta de compensación para trabajadores? (Do I Need a Workers' Comp Account?)", "L&I, Contratistas independientes (Independent Contractors)", "ESD, Informes trimestrales (Quarterly reports)", "ESD, Impuestos de desempleo (Unemployment taxes)", "DSHS, Informe de nuevas contrataciones (New Hire Reporting)", "DOR, Inicio de sesión de My DOR (página de acción) (My DOR sign-in)", "Secretario de Estado, Iniciar un negocio nacional de WA (página de acción) (Start a Domestic (WA) Business)", "L&I, Cómo obtener una cuenta de compensación para trabajadores (página de acción) (How to Get a Workers' Compensation Account)", "ESD, Guía para empleadores sobre el pago de impuestos (página de acción) (Employers' guide to paying taxes)", "DOR, Asistente de licencias comerciales (Business Licensing Wizard)"];
 const SOURCES_ES = ["Punto de partida. Explica que el Asistente de licencias comerciales devuelve las licencias que su negocio puede necesitar.", "Cuándo es obligatorio registrarse y cómo solicitar.", "Qué estructuras se presentan primero ante el Secretario de Estado. Los propietarios únicos aparecen sin esa presentación.", "Ciudades cuyos endosos se pueden agregar a la presentación estatal. Ciudades que no aparecen: comuníquese con la ciudad.", "Dónde se hacen las presentaciones de entidades. No indica quién debe presentar.", "Registro de contratistas de construcción, fianza y seguro, y oficios con requisitos adicionales.", "Compensación para trabajadores en negocios que tienen trabajadores.", "Pruebas para saber si los contratistas independientes necesitan cobertura.", "Los empleadores presentan dos informes de impuestos y salarios cada trimestre.", "Pago de impuestos de desempleo, multas y empleadores de reembolso.", "Informe de nuevas contrataciones en 20 días, definición de recontratación y exención tribal.", "Donde se inicia la Solicitud de Licencia Comercial en línea. Necesita un identificador de usuario de Secure Access Washington. No se probó más allá de la página de inicio de sesión.", "Elija un tipo de entidad y siga sus instrucciones de presentación. El sistema de presentación necesita una cuenta.", "Indica que la cuenta se obtiene mediante la solicitud de licencia comercial del DOR.", "Pasos para empleadores nuevos, informes trimestrales y pagos. Sigue en Verificación pendiente.", "Herramienta oficial de seguimiento. Confirme aquí sus requisitos reales. Necesita cookies. Sus preguntas no se revisaron."];
 
-export default function Sources() {
+export default function Sources({ embedded = false }) {
   const t = useT();
   const fetchRules = useCallback(() => api.rules(t.lang), [t.lang]);
   const { data } = useLoad(fetchRules);
@@ -34,7 +34,7 @@ export default function Sources() {
 
   return (
     <>
-      <h1 tabIndex={-1}>{t('sr.title')}</h1>
+      {embedded ? <h2>{t('sr.title')}</h2> : <h1 tabIndex={-1}>{t('sr.title')}</h1>}
       <p className="lead">{t('sr.lead')}</p>
       {t.lang === 'es' && <p className="draft-note">{t('sr.en')}</p>}
 
