@@ -22,7 +22,9 @@ function RequireAccount() {
   if (requireLogin === null || !authReady) return <p className="page-loading" role="status">{t('auth.loading')}</p>;
   // An admin account only works in the Admin area: no home page, business pages or alerts.
   if (user?.role === 'admin' && loc.pathname !== '/admin') return <Navigate to="/admin" replace />;
-  if (requireLogin && !user) {
+  // Home, the guide and the form stay open to visitors; the sign in page appears when they save a plan or open a page that needs an account.
+  const open = ['/', '/home', '/guide', '/questionnaire'].includes(loc.pathname);
+  if (requireLogin && !user && !open) {
     const from = loc.pathname === '/' ? undefined : `${loc.pathname}${loc.search}`;
     return <Navigate to="/login" replace state={from ? { from } : undefined} />;
   }
@@ -34,7 +36,7 @@ function FrontDoor() {
   const { user, requireLogin } = useApp();
   const loc = useLocation();
   if (user?.role === 'admin') return <Navigate to="/admin" replace />;
-  if (!requireLogin) return <Landing />;
+  if (!requireLogin || !user) return <Landing />;
   return <Navigate to={user ? '/home' : '/login'} replace state={user ? loc.state : undefined} />;
 }
 

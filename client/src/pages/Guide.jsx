@@ -38,7 +38,7 @@ const SAVE_ES = /^\s*(?:(?:ok|okay|s[ií]|por favor|ahora|entonces|bueno)[\s,]+)
 // Main screen: the conversation on the left; the business card, the plan and the road to opening day fill in on the right.
 // embedded: shown inside the home page. mode and start come from the home page's Talk / Type switch and its sentence box.
 export default function Guide({ embedded = false, mode: modeProp, start: startProp } = {}) {
-  const { guide, setGuide, setLive, setAnswers, setLabel, setStep, setCatsAuto } = useApp();
+  const { user, requireLogin, guide, setGuide, setLive, setAnswers, setLabel, setStep, setCatsAuto } = useApp();
   const t = useT();
   const langRef = useRef(t.lang);
   langRef.current = t.lang;
@@ -158,6 +158,15 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
     else { spokenIdx.current = 0; greetHeard.current = false; setSpeakTick((n) => n + 1); }
   }, [t.lang]);
   saveRef.current = save;
+  // Back from sign in with a finished card: save it straight away.
+  const resumed = useRef(false);
+  useEffect(() => {
+    if (location.state?.resume === 'save' && user && guide.complete && !resumed.current) {
+      resumed.current = true;
+      navigate(location.pathname, { replace: true, state: null });
+      saveRef.current();
+    }
+  });
   cond.current = { micOn, speaking, busy };
 
   // Read each new guide line aloud, in order. Lines the owner typed or older lines are never read.
@@ -343,6 +352,8 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
   }
 
   async function save() {
+    // Visitors can try everything first; the account is only needed to keep the plan.
+    if (requireLogin && !user) return navigate('/login', { state: { from: '/guide', resume: 'save' } });
     setBusy(true);
     setError('');
     try {

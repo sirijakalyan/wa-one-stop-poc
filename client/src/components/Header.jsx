@@ -15,7 +15,7 @@ export default function Header() {
   const t = useT();
   const { user, requireLogin } = useApp();
   const isAdmin = user?.role === 'admin'; // admin accounts see the Admin area only
-  const locked = (Boolean(requireLogin) && !user) || isAdmin; // the site needs an account: signed-out visitors only see sign in and sign up
+  const locked = isAdmin; // the site needs an account: signed-out visitors only see sign in and sign up
   useEffect(() => { setOpen(false); }, [pathname]);
   useEffect(() => {
     if (!open) return undefined;

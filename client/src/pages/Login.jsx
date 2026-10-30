@@ -19,7 +19,7 @@ export default function Login() {
   const finish = async (who) => {
     if (who?.role === 'admin') return navigate('/admin', { replace: true }); // admins go straight to the Admin area
     // After signing in the owner lands on Home, or on the page they were trying to open.
-    if (state?.from) return navigate(state.from, { replace: true });
+    if (state?.from) return navigate(state.from, { replace: true, state: state.resume ? { resume: state.resume } : null });
     return navigate(requireLogin ? '/home' : '/', { replace: true });
   };
 
