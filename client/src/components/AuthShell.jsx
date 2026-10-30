@@ -23,17 +23,30 @@ export default function AuthShell({ title, lead, children }) {
   );
 }
 
-export function PasswordField({ id, label, value, onChange, autoComplete, hint, required = true }) {
+// Shows the password rules as a short list that ticks off while the person types, instead of a sentence they have to read first.
+const PW_RULES = [
+  ['auth.pwLen', (v) => v.length >= 8],
+  ['auth.pwLetter', (v) => /[A-Za-z]/.test(v)],
+  ['auth.pwNumber', (v) => /\d/.test(v)],
+];
+export function PasswordField({ id, label, value, onChange, autoComplete, hint, rules = false, required = true }) {
   const t = useT();
   const [show, setShow] = useState(false);
   return (
     <div className="field">
       <label htmlFor={id}>{label}</label>
       <div className="pw-row">
-        <input id={id} type={show ? 'text' : 'password'} value={value} onChange={(e) => onChange(e.target.value)} autoComplete={autoComplete} required={required} aria-describedby={hint ? `${id}-hint` : undefined} />
+        <input id={id} type={show ? 'text' : 'password'} value={value} onChange={(e) => onChange(e.target.value)} autoComplete={autoComplete} required={required} aria-describedby={rules ? `${id}-rules` : hint ? `${id}-hint` : undefined} />
         <button type="button" className="btn btn-quiet btn-sm" aria-pressed={show} onClick={() => setShow((s) => !s)}>{show ? t('auth.hide') : t('auth.show')}</button>
       </div>
-      {hint && <p id={`${id}-hint`} className="hint">{hint}</p>}
+      {rules ? (
+        <ul id={`${id}-rules`} className="pw-rules" aria-label={t('auth.pwRulesLabel')}>
+          {PW_RULES.map(([key, ok]) => {
+            const met = ok(value || '');
+            return <li key={key} className={met ? 'is-met' : ''}><span aria-hidden="true">{met ? '\u2713' : '\u25CB'}</span> {t(key)}<span className="sr-only">{met ? ` (${t('auth.pwDone')})` : ''}</span></li>;
+          })}
+        </ul>
+      ) : hint && <p id={`${id}-hint`} className="hint">{hint}</p>}
     </div>
   );
 }

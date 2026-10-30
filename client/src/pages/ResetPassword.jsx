@@ -64,7 +64,7 @@ export default function ResetPassword() {
             </div>
           </>
         )}
-        <PasswordField id="rp-password" label={t('auth.newPassword')} value={password} onChange={setPassword} autoComplete="new-password" hint={t('auth.pwHint')} />
+        <PasswordField id="rp-password" label={t('auth.newPassword')} value={password} onChange={setPassword} autoComplete="new-password" rules />
         <PasswordField id="rp-again" label={t('auth.confirm')} value={again} onChange={setAgain} autoComplete="new-password" />
         <p className="err" role="alert">{err}</p>
         <button type="submit" className="btn btn-primary auth-submit" disabled={busy || !password || !again || (codeMode && (!email || !code))}>{busy ? t('auth.saving') : t('auth.resetSave')}</button>

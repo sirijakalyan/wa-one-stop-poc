@@ -51,7 +51,7 @@ export default function Signup() {
           <label htmlFor="su-email">{t('auth.email')}</label>
           <input id="su-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
         </div>
-        <PasswordField id="su-password" label={t('auth.password')} value={password} onChange={setPassword} autoComplete="new-password" hint={t('auth.pwHint')} />
+        <PasswordField id="su-password" label={t('auth.password')} value={password} onChange={setPassword} autoComplete="new-password" rules />
         <PasswordField id="su-again" label={t('auth.confirmPw')} value={again} onChange={setAgain} autoComplete="new-password" />
         <p className="err" role="alert">{err}</p>
         <button type="submit" className="btn btn-primary auth-submit" disabled={busy || !name || !email || !password || !again}>{busy ? t('auth.creating') : t('auth.signUp')}</button>

@@ -1364,3 +1364,10 @@ input[type="password"]:hover, input[type="search"]:hover { border-color: var(--n
 .es-fields { margin: 1rem 0; padding: .6rem .9rem; border: 1px dashed var(--line, #c8d3dd); border-radius: 12px; }
 .es-fields > summary { cursor: pointer; font-weight: 600; }
 .es-fields .field { margin-top: .75rem; }
+
+/* Password rules that tick off while typing */
+.pw-rules { list-style: none; margin: .55rem 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: .35rem 1.1rem; text-align: left; font-size: .92rem; color: var(--muted, #5b6b82); }
+.pw-rules li { display: inline-flex; align-items: center; gap: .35rem; }
+.pw-rules li span[aria-hidden] { display: inline-grid; place-items: center; width: 1.15rem; height: 1.15rem; border-radius: 50%; font-size: .78rem; line-height: 1; border: 1.5px solid currentColor; }
+.pw-rules li.is-met { color: #0b7a4b; font-weight: 600; }
+.pw-rules li.is-met span[aria-hidden] { background: #0b7a4b; border-color: #0b7a4b; color: #fff; }
