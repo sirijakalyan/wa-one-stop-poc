@@ -359,7 +359,7 @@ describe('accounts and the admin users area', () => {
     const btn = await screen.findByRole('button', { name: /Account: Ana Rivera/ });
     await user.click(btn);
     expect(screen.getByText('ana@example.com')).toBeInTheDocument();
-    await user.click(screen.getByRole('menuitem', { name: 'Sign out' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Sign out' }));
     expect((await screen.findAllByRole('link', { name: 'Sign in' })).length).toBeGreaterThan(0);
   });
 
@@ -383,7 +383,7 @@ describe('accounts and the admin users area', () => {
     renderApp();
     await signUpIn(user, 'Ana', 'ana@example.com');
     await user.click(await screen.findByRole('button', { name: /Account: Ana/ }));
-    await user.click(screen.getByRole('menuitem', { name: 'Sign out' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Sign out' }));
     await user.click((await screen.findAllByRole('link', { name: 'Sign in' }))[0]);
     await user.type(await screen.findByLabelText('Email address'), 'ana@example.com');
     await user.type(screen.getByLabelText('Password'), 'WrongPass1');
@@ -400,7 +400,7 @@ describe('accounts and the admin users area', () => {
     renderApp();
     await signUpIn(user, 'Ana', 'ana@example.com');
     await user.click(await screen.findByRole('button', { name: /Account: Ana/ }));
-    await user.click(screen.getByRole('menuitem', { name: 'Sign out' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Sign out' }));
     await user.click((await screen.findAllByRole('link', { name: 'Sign in' }))[0]);
     await user.click(await screen.findByRole('link', { name: 'Forgot your password?' }));
     await user.type(await screen.findByLabelText('Email address'), 'ana@example.com');
@@ -436,9 +436,9 @@ describe('accounts and the admin users area', () => {
     await saveRestaurant(user);
     await screen.findByRole('heading', { name: 'Sample checklist: Restaurant' });
     await user.click(within(checklistRow('Apply for your Washington business license')).getByLabelText('Mark as done'));
-    await user.click(screen.getByRole('button', { name: /Account: Ana/ }));
+    await user.click(await screen.findByRole('button', { name: /Account: Ana/ }, { timeout: 5000 }));
     expect(screen.queryByRole('menuitem', { name: 'Admin' })).not.toBeInTheDocument();
-    await user.click(screen.getByRole('menuitem', { name: 'Sign out' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Sign out' }));
     // the admin signs up with the configured admin email and opens the Users tab
     await signUpIn(user, 'Boss', 'admin@example.com');
     await user.click(await screen.findByRole('button', { name: /Account: Boss/ }));
@@ -488,8 +488,8 @@ describe('the site needs an account (REQUIRE_LOGIN)', () => {
     const nav = screen.getByRole('navigation', { name: 'Main' });
     expect(within(nav).getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/home');
     expect(within(nav).getByRole('link', { name: 'Home' })).toHaveAttribute('aria-current', 'page');
-    await user.click(screen.getByRole('button', { name: /Account: Ana/ }));
-    await user.click(screen.getByRole('menuitem', { name: 'Sign out' }));
+    await user.click(await screen.findByRole('button', { name: /Account: Ana/ }, { timeout: 5000 }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Sign out' }));
     expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Account:/ })).not.toBeInTheDocument();
   });
