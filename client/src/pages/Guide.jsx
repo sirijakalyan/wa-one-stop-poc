@@ -344,7 +344,7 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
   const edit = (field, value) => turn({ action: 'set', field, value }, t('guide.edited', FIELD_LABELS[field]));
   // Questions an admin added. They are answered by tapping, after the standard rows are confirmed.
   const [extraQs, setExtraQs] = useState([]);
-  useEffect(() => { api.questions().then((r) => setExtraQs(r.questions || [])).catch(() => {}); }, []);
+  useEffect(() => { api.questions(t.lang).then((r) => setExtraQs(r.questions || [])).catch(() => {}); }, [t.lang]);
   function answerExtra(qid, value) {
     const card = { ...guide.card, values: { ...guide.card.values, extra: { ...(guide.card.values.extra || {}), [qid]: value } } };
     setGuide((g) => ({ ...g, card }));

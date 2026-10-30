@@ -65,7 +65,7 @@ const publicRule = (r) => ({
   id: r.id, order: r.order, phase: r.phase, title: r.title, agency: r.agency, detail: r.detail,
   source: r.source, apply: r.apply, verification: r.verification, owner: r.owner,
   reviewer: r.reviewer, lastVerified: r.lastVerified, version: r.version, status: r.status,
-  applies: r.applies, draft: r.draft, custom: Boolean(r.custom),
+  applies: r.applies, draft: r.draft, custom: Boolean(r.custom), es: r.es || null,
   supports: r.supports || '', limits: r.limits || '', fallback: r.fallback || '', guide: r.guide || null,
 });
 
@@ -677,7 +677,40 @@ export function createService(store, options = {}) {
   }
 
   // The questions as the questionnaire shows them: yes/no ones get the three standard answers, choice ones get "Not sure" last.
-  const publicQuestion = (q) => ({ id: q.id, text: q.text, hint: q.hint || '', type: q.type, options: q.options });
+  const NOT_SURE_ES = { yes: 'Sí', no: 'No', unsure: 'No estoy seguro' };
+  // Shown in the page language when an admin wrote a Spanish version; otherwise the text stays as the admin typed it.
+  function localizeQuestion(q, lang) {
+    if (lang !== 'es') return q;
+    const es = q.es || {};
+    const std = q.type === 'yesno' ? (o) => NOT_SURE_ES[o.value] : (o) => (o.value === 'unsure' ? NOT_SURE_ES.unsure : undefined);
+    const picks = q.options.filter((o) => o.value !== 'unsure');
+    return {
+      ...q,
+      text: es.text || q.text,
+      hint: es.hint || q.hint,
+      options: q.options.map((o) => ({ ...o, label: std(o) || (Array.isArray(es.options) && es.options.length === picks.length ? es.options[picks.findIndex((x) => x.value === o.value)] : '') || o.label })),
+    };
+  }
+  const publicQuestion = (q, lang = 'en') => { const l = localizeQuestion(q, lang); return { id: l.id, text: l.text, hint: l.hint || '', type: l.type, options: l.options, es: q.es || null }; };
+
+  // Optional Spanish version of a question: the question, the help text and one line per choice.
+  function cleanEs(body, type, count) {
+    const es = body?.es;
+    if (!es || typeof es !== 'object') return null;
+    const text = String(es.text ?? '').trim();
+    const hint = String(es.hint ?? '').trim();
+    if (text.length > 200) fail('The Spanish question must be 200 characters or fewer.');
+    if (hint.length > 300) fail('The Spanish help text must be 300 characters or fewer.');
+    let options;
+    if (type === 'choice') {
+      const lines = (Array.isArray(es.options) ? es.options : []).map((o) => String(o ?? '').trim()).filter(Boolean);
+      if (lines.length && lines.length !== count) fail(`Write ${count} Spanish choices, one for each English choice, or leave them all empty.`);
+      if (lines.some((l) => l.length > 80)) fail('Each Spanish choice must be 80 characters or fewer.');
+      if (lines.length) options = lines;
+    }
+    if (!text && !hint && !options) return null;
+    return { text, hint, ...(options ? { options } : {}) };
+  }
 
   function cleanQuestion(body, existing) {
     const text = String(body?.text ?? '').trim();
@@ -704,10 +737,11 @@ export function createService(store, options = {}) {
       });
       options = [...options, NOT_SURE];
     }
-    return { text, hint, type, options };
+    const es = cleanEs(body, type, options.filter((o) => o.value !== 'unsure').length);
+    return { text, hint, type, options, ...(es ? { es } : { es: undefined }) };
   }
 
-  route('GET', '/api/questions', async () => ({ ok: true, questions: questionsOf(await loadRules()).map(publicQuestion) }));
+  route('GET', '/api/questions', async ({ query }) => ({ ok: true, questions: questionsOf(await loadRules()).map((q) => publicQuestion(q, langIn(query))) }));
 
   route('POST', '/api/questions', async ({ body, ctx }) => {
     requireAdmin(ctx);
@@ -801,6 +835,26 @@ export function createService(store, options = {}) {
     return queued;
   }
 
+  // Optional Spanish version of a rule an admin adds: what people read in Spanish. Empty fields fall back to the English text.
+  function cleanRuleEs(es) {
+    if (!es || typeof es !== 'object') return null;
+    const f = (v, max, what) => { const x = String(v ?? '').trim(); if (x.length > max) fail(`The Spanish ${what} must be ${max} characters or fewer.`); return x; };
+    const out = { title: f(es.title, 200, 'name'), agency: f(es.agency, 120, 'agency'), detail: f(es.detail, 1000, 'detail'), sourceLabel: f(es.sourceLabel, 200, 'source name'), applyLabel: f(es.applyLabel, 120, 'button text') };
+    return Object.values(out).some(Boolean) ? out : null;
+  }
+
+  route('PUT', '/api/rules/:id/es', async ({ params, body, ctx }) => {
+    requireAdmin(ctx);
+    const doc = await loadRules();
+    const rule = doc.rules.find((r) => r.id === params.id);
+    if (!rule) fail('Rule not found.', 404);
+    if (!rule.custom) fail('Only a rule an admin added has its Spanish text edited here. The built-in rules already have Spanish.');
+    const es = cleanRuleEs(body?.es);
+    if (es) rule.es = es; else delete rule.es;
+    await store.writeRules(doc);
+    return { ok: true, rule: publicRule(rule) };
+  });
+
   route('POST', '/api/rules', async ({ body, ctx }) => {
     requireAdmin(ctx);
     const doc = await loadRules();
@@ -838,6 +892,7 @@ export function createService(store, options = {}) {
       verification: { status: 'pending', note: 'Added by an admin. A second person has not checked it against the official page yet.' },
       owner: '[NEEDS HUMAN INPUT: content owner]', reviewer: null, lastVerified: null, version: 1, status: 'published', draft: null,
       fallback: '', noLink: applyUrl ? '' : 'This step has no apply button. Use the source link under Source details.', supports: '', limits: '', guide: null,
+      ...(cleanRuleEs(body?.es) ? { es: cleanRuleEs(body.es) } : {}),
     };
     doc.rules = [...doc.rules, rule];
     recordChange(doc, rule, 'rule', '', `added, applies to ${describeCondition(applies)}`, ctx);

@@ -15,7 +15,7 @@ export default function Questionnaire({ embedded = false } = {}) {
   const [busy, setBusy] = useState(false);
   const [countyFrom, setCountyFrom] = useState('');
 
-  const { data: extraData } = useLoad(useCallback(() => api.questions().catch(() => ({ questions: [] })), []));
+  const { data: extraData } = useLoad(useCallback(() => api.questions(t.lang).catch(() => ({ questions: [] })), [t.lang]));
   const extraQs = extraData?.questions ?? [];
   const list = stepList(answers, extraQs.map((x) => x.id));
   const index = Math.min(step, list.length - 1);

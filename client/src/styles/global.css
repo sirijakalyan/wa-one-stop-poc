@@ -1353,3 +1353,8 @@ input[type="password"]:hover, input[type="search"]:hover { border-color: var(--n
 .extra-opts button { min-height: 44px; padding: .4rem .95rem; border: 1.5px solid var(--line-strong); border-radius: 99px; background: var(--surface); color: var(--ink); font: inherit; font-weight: 600; cursor: pointer; }
 .extra-opts button:hover { border-color: var(--teal-500); background: var(--brand-soft); }
 .extra-opts button[aria-pressed="true"] { background: var(--navy-900); border-color: var(--navy-900); color: #fff; }
+
+/* Optional Spanish text boxes in the admin forms */
+.es-fields { margin: 1rem 0; padding: .6rem .9rem; border: 1px dashed var(--line, #c8d3dd); border-radius: 12px; }
+.es-fields > summary { cursor: pointer; font-weight: 600; }
+.es-fields .field { margin-top: .75rem; }

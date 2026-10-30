@@ -16,7 +16,7 @@ export default function Checklist({ embedded = false, onChanged, onData } = {}) 
   const { setAnswers, setLabel, setStep, setCatsAuto, setGuide } = useApp();
   const fetchChecklist = useCallback(() => api.checklist(), [t.lang]); // eslint-disable-line react-hooks/exhaustive-deps
   const { data, error, loading, setData } = useLoad(fetchChecklist);
-  const { data: extraData } = useLoad(useCallback(() => api.questions().catch(() => ({ questions: [] })), []));
+  const { data: extraData } = useLoad(useCallback(() => api.questions(t.lang).catch(() => ({ questions: [] })), [t.lang]));
   const [actionError, setActionError] = useState('');
   const [speaking, setSpeaking] = useState('');
   useEffect(() => { onData?.(data); }, [data]); // eslint-disable-line react-hooks/exhaustive-deps

@@ -6,7 +6,7 @@ import { useA } from '../adminText.js';
 import { useT } from '../i18n.js';
 
 const STANDARD = ['structure', 'desc', 'cats', 'city', 'hiring', 'subs', 'salestax', 'income', 'tradename'];
-const BLANK = { text: '', hint: '', type: 'yesno', options: '' };
+const BLANK = { text: '', hint: '', type: 'yesno', options: '', es: { text: '', hint: '', options: '' } };
 const linesOf = (txt) => txt.split('\n').map((l) => l.trim()).filter(Boolean);
 
 // Edited lines back to options. A line that still reads the same keeps its option, a reworded line in the same place keeps
@@ -52,6 +52,18 @@ function QuestionForm({ initial, editing, onSave, onCancel }) {
           <p className="hint">{a('"Not sure" is added at the end for you.', 'Se agrega "No estoy seguro" al final por usted.')}</p>
         </div>
       )}
+      <details className="es-fields" open={Boolean(initial.es?.text)}>
+        <summary>{a('Spanish version (optional)', 'Versión en español (opcional)')}</summary>
+        <p className="hint">{a('What people read when they switch the site to Spanish. Leave empty to show the English.', 'Lo que ven las personas cuando cambian el sitio a español. Deje vacío para mostrar el inglés.')}</p>
+        <div className="field"><label htmlFor={`${id}-et`}>{a('Question in Spanish', 'Pregunta en español')}</label><input id={`${id}-et`} type="text" value={f.es?.text || ''} maxLength={200} onChange={(e) => setF({ ...f, es: { ...f.es, text: e.target.value } })} /></div>
+        <div className="field"><label htmlFor={`${id}-eh`}>{a('Help text in Spanish', 'Texto de ayuda en español')}</label><input id={`${id}-eh`} type="text" value={f.es?.hint || ''} maxLength={300} onChange={(e) => setF({ ...f, es: { ...f.es, hint: e.target.value } })} /></div>
+        {f.type === 'choice' && (
+          <div className="field">
+            <label htmlFor={`${id}-eo`}>{a('Choices in Spanish, one per line, in the same order', 'Opciones en español, una por línea, en el mismo orden')}</label>
+            <textarea id={`${id}-eo`} rows={5} value={f.es?.options || ''} onChange={(e) => setF({ ...f, es: { ...f.es, options: e.target.value } })} />
+          </div>
+        )}
+      </details>
       <ErrorNote message={err} />
       <div className="row">
         <button type="submit" className="btn btn-primary" disabled={busy}>{editing ? a('Save changes', 'Guardar cambios') : a('Add this question', 'Agregar esta pregunta')}</button>
@@ -75,7 +87,8 @@ export default function AdminQuestions() {
   if (error) return <ErrorNote message={error} />;
   const questions = data?.questions ?? [];
 
-  const toBody = (f) => ({ text: f.text, hint: f.hint, type: f.type, options: f.type === 'choice' ? linesOf(f.options) : undefined });
+  const esBody = (f) => ({ text: f.es?.text || '', hint: f.es?.hint || '', options: f.type === 'choice' ? linesOf(f.es?.options || '') : undefined });
+  const toBody = (f) => ({ text: f.text, hint: f.hint, type: f.type, options: f.type === 'choice' ? linesOf(f.options) : undefined, es: esBody(f) });
   async function remove(q) {
     setErr(''); setMsg('');
     try { await api.removeQuestion(q.id); setConfirm(''); setMsg(a('Question removed. Answers people already gave to it are ignored.', 'Pregunta eliminada. Se ignoran las respuestas que ya se dieron.')); await reload(); } catch (e) { setErr(e.message); setConfirm(''); }
@@ -109,9 +122,9 @@ export default function AdminQuestions() {
               {editing === q.id ? (
                 <QuestionForm
                   editing={q.id}
-                  initial={{ text: q.text, hint: q.hint, type: q.type, options: q.options.filter((o) => o.value !== 'unsure').map((o) => o.label).join('\n') }}
+                  initial={{ text: q.text, hint: q.hint, type: q.type, options: q.options.filter((o) => o.value !== 'unsure').map((o) => o.label).join('\n'), es: { text: q.es?.text || '', hint: q.es?.hint || '', options: (q.es?.options || []).join('\n') } }}
                   onCancel={() => setEditing('')}
-                  onSave={async (f) => { await api.editQuestion(q.id, { text: f.text, hint: f.hint, options: f.type === 'choice' ? optionsFromLines(f.options, q.options.filter((o) => o.value !== 'unsure')) : undefined }); setEditing(''); setMsg(a('Question saved.', 'Pregunta guardada.')); await reload(); }}
+                  onSave={async (f) => { await api.editQuestion(q.id, { text: f.text, hint: f.hint, options: f.type === 'choice' ? optionsFromLines(f.options, q.options.filter((o) => o.value !== 'unsure')) : undefined, es: esBody(f) }); setEditing(''); setMsg(a('Question saved.', 'Pregunta guardada.')); await reload(); }}
                 />
               ) : (
                 <>

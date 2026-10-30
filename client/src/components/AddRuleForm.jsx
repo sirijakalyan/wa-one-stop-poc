@@ -3,13 +3,16 @@ import { api } from '../api.js';
 import { ErrorNote } from './Parts.jsx';
 import AppliesPicker from './AppliesPicker.jsx';
 import { useA } from '../adminText.js';
+import SpanishRuleFields from './SpanishRuleFields.jsx';
 
 const BLANK = { title: '', agency: '', phase: '', detail: '', sourceLabel: '', sourceUrl: '', applyLabel: '', applyUrl: '' };
+const BLANK_ES = { title: '', agency: '', detail: '', sourceLabel: '', applyLabel: '' };
 
 // Add a new requirement. It goes live straight away, marked "Pending verification" until a second person checks it.
 export default function AddRuleForm({ phases, fields, onAdded, onCancel }) {
   const a = useA();
   const [f, setF] = useState(BLANK);
+  const [es, setEs] = useState(BLANK_ES);
   const [applies, setApplies] = useState({ mode: 'always', field: '', value: '' });
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
@@ -20,7 +23,7 @@ export default function AddRuleForm({ phases, fields, onAdded, onCancel }) {
     setErr('');
     setBusy(true);
     try {
-      const res = await api.addRule({ ...f, phase: Number(f.phase), applies });
+      const res = await api.addRule({ ...f, phase: Number(f.phase), applies, es });
       onAdded(res);
     } catch (x) {
       setErr(x.message);
@@ -47,6 +50,7 @@ export default function AddRuleForm({ phases, fields, onAdded, onCancel }) {
       <div className="field"><label htmlFor="ar-su">{a('Source link (https)', 'Enlace de la fuente (https)')}</label><input id="ar-su" type="text" value={f.sourceUrl} onChange={set('sourceUrl')} required placeholder="https://" /></div>
       <div className="field"><label htmlFor="ar-al">{a('Apply button text', 'Texto del botón de solicitud')}</label><input id="ar-al" type="text" value={f.applyLabel} onChange={set('applyLabel')} maxLength={120} placeholder={a('Optional', 'Opcional')} /></div>
       <div className="field"><label htmlFor="ar-au">{a('Apply link (https)', 'Enlace de solicitud (https)')}</label><input id="ar-au" type="text" value={f.applyUrl} onChange={set('applyUrl')} placeholder={a('Optional', 'Opcional')} /></div>
+      <SpanishRuleFields idPrefix="ar-es" value={es} onChange={setEs} />
       <AppliesPicker idPrefix="ar" fields={fields} value={applies} onChange={setApplies} />
       <ErrorNote message={err} />
       <div className="row">

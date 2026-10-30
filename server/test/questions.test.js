@@ -107,3 +107,28 @@ test('a signed-in user who is not an admin cannot add, edit or remove anything',
   assert.equal((await app.call('GET', '/api/rule-fields', undefined, as)).status, 403);
   assert.equal((await app.call('GET', '/api/admin/users', undefined, as)).status, 403);
 });
+
+test('an admin can write Spanish text for a question and a rule, and Spanish pages show it', async () => {
+  const app = await startApp({ adminKey: 'k' });
+  try {
+    const admin = { 'x-admin-key': 'k' };
+    const q = (await app.call('POST', '/api/questions', { text: 'Will you fly drones for work?', hint: 'Extra rules apply.', type: 'yesno', es: { text: '¿Usará drones para trabajar?', hint: 'Aplican reglas adicionales.' } }, admin)).body.question;
+    const es = (await app.call('GET', '/api/questions?lang=es')).body.questions[0];
+    assert.equal(es.text, '¿Usará drones para trabajar?');
+    assert.deepEqual(es.options.map((o) => o.label), ['Sí', 'No', 'No estoy seguro']);
+    const en = (await app.call('GET', '/api/questions')).body.questions[0];
+    assert.equal(en.text, 'Will you fly drones for work?');
+    const rule = (await app.call('POST', '/api/rules', { title: 'Register your drone', agency: 'FAA', phase: 3, sourceUrl: 'https://www.faa.gov/uas', applyUrl: 'https://faadronezone.faa.gov', applyLabel: 'Open FAA DroneZone', applies: { mode: 'when', field: `extra.${q.id}`, value: 'yes' }, es: { title: 'Registre su dron', agency: 'FAA', applyLabel: 'Abrir FAA DroneZone' } }, admin)).body.rule;
+    const rulesEs = (await app.call('GET', '/api/rules?lang=es')).body.rules.find((r) => r.id === rule.id);
+    assert.equal(rulesEs.title, 'Registre su dron');
+    assert.equal(rulesEs.apply.label, 'Abrir FAA DroneZone');
+    const rulesEn = (await app.call('GET', '/api/rules')).body.rules.find((r) => r.id === rule.id);
+    assert.equal(rulesEn.title, 'Register your drone');
+    // the Spanish text can be changed later, and a built-in rule cannot be edited this way
+    const saved = await app.call('PUT', `/api/rules/${rule.id}/es`, { es: { title: 'Registre su dron ante la FAA' } }, admin);
+    assert.equal(saved.status, 200);
+    assert.equal((await app.call('PUT', '/api/rules/dor/es', { es: { title: 'x' } }, admin)).status, 400);
+  } finally {
+    await app.stop();
+  }
+});

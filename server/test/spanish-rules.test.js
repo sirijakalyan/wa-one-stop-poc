@@ -90,11 +90,11 @@ test('Spanish: an admin edit to the English text is never hidden by the Spanish 
   }
 });
 
-test('Spanish: source page titles keep the English title in brackets', async () => {
+test('Spanish: source page titles are fully in Spanish, with no English title in brackets', async () => {
   const app = await startApp();
   try {
     const es = (await app.call('GET', '/api/rules?lang=es')).body;
-    assert.ok(es.rules.every((r) => /\(.+\)$/.test(r.source.label)), es.rules.map((r) => r.source.label).join(' | '));
+    assert.ok(es.rules.every((r) => !/\([A-Z][^)]*\)$/.test(r.source.label)), es.rules.map((r) => r.source.label).join(' | '));
   } finally {
     await app.stop();
   }

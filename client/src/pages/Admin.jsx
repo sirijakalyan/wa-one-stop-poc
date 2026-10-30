@@ -2,13 +2,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useApp } from '../AppContext.jsx';
 import { api, getAdminKey, setAdminKey, useLoad } from '../api.js';
-import { ErrorNote, Loading } from '../components/Parts.jsx';
+import { ErrorNote, Loading, humanInput } from '../components/Parts.jsx';
 import EvidencePanel from '../components/EvidencePanel.jsx';
 import ExternalLink from '../components/ExternalLink.jsx';
 import AdminUsers from './AdminUsers.jsx';
 import AdminQuestions from './AdminQuestions.jsx';
 import AddRuleForm from '../components/AddRuleForm.jsx';
 import AppliesPicker, { pickerFrom } from '../components/AppliesPicker.jsx';
+import SpanishRuleFields from '../components/SpanishRuleFields.jsx';
 import Sources from './Sources.jsx';
 import { useA } from '../adminText.js';
 
@@ -63,6 +64,7 @@ function AdminPanel({ signedIn = false }) {
   const [adding, setAdding] = useState(false);
   const [audience, setAudience] = useState({ mode: 'always', field: '', value: '' });
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const [esForm, setEsForm] = useState({ title: '', agency: '', detail: '', sourceLabel: '', applyLabel: '' });
   const fieldsLoad = useLoad(useCallback(() => api.ruleFields().catch(() => ({ fields: [] })), []));
   const fields = fieldsLoad.data?.fields ?? [];
 
@@ -76,6 +78,7 @@ function AdminPanel({ signedIn = false }) {
     FIELDS.forEach(({ key }) => { f[key] = rule.draft && key in rule.draft ? rule.draft[key] : getPath(rule, key); });
     setForm(f);
     setAudience(pickerFrom(rule.applies));
+    setEsForm({ title: '', agency: '', detail: '', sourceLabel: '', applyLabel: '', ...(rule.es || {}) });
     setConfirmRemove(false);
   }, [rule]);
 
@@ -251,7 +254,7 @@ function AdminPanel({ signedIn = false }) {
                 <div><dt>{a('Status', 'Estado')}</dt><dd>{statusOf(rule, a).label}</dd></div>
                 <div><dt>{a('Version', 'Versión')}</dt><dd>{rule.version}</dd></div>
                 <div><dt>{a('Last verified', 'Última verificación')}</dt><dd>{rule.lastVerified || a('Never', 'Nunca')} <small>{staleness(rule, a)}</small></dd></div>
-                <div><dt>{a('Owner', 'Responsable')}</dt><dd>{rule.owner}</dd></div>
+                <div><dt>{a('Owner', 'Responsable')}</dt><dd>{humanInput(rule.owner, a.lang)}</dd></div>
                 <div><dt>{a('Reviewer', 'Revisor')}</dt><dd>{rule.reviewer || a('none yet', 'ninguno aún')}</dd></div>
                 <div><dt>{a('Agency', 'Agencia')}</dt><dd>{agencyOf(rule)}</dd></div>
                 <div><dt>{a('Draft', 'Borrador')}</dt><dd>{rule.draft ? a('Yes, waiting for approval', 'Sí, esperando aprobación') : 'No'}</dd></div>
@@ -259,6 +262,10 @@ function AdminPanel({ signedIn = false }) {
               {rule.source?.url && <p><ExternalLink className="btn btn-quiet btn-sm" href={rule.source.url}>{a('Open the source page', 'Abrir la página de la fuente')}</ExternalLink></p>}
               {rule.custom ? (
                 <div className="desk-audience">
+                  <SpanishRuleFields idPrefix="ed-es" value={esForm} onChange={setEsForm} />
+                  <div className="row">
+                    <button type="button" className="btn btn-sm" onClick={() => run(() => api.setRuleEs(rule.id, esForm), a('Spanish text saved.', 'Texto en español guardado.'))}>{a('Save Spanish text', 'Guardar texto en español')}</button>
+                  </div>
                   <AppliesPicker idPrefix="ed" fields={fields} value={audience} onChange={setAudience} />
                   <div className="row">
                     <button type="button" className="btn btn-sm" onClick={() => run(() => api.setApplies(rule.id, audience), (r) => a(`Saved. Simulated notices queued: ${r.queuedNotifications}.`, `Guardado. Avisos simulados en cola: ${r.queuedNotifications}.`))}>{a('Save who sees it', 'Guardar quién la ve')}</button>

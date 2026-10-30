@@ -53,7 +53,7 @@ export const RULES_ES = {
     },
     detail: 'Esto se aplica a entidades de Washington (nacionales del estado). Si su entidad se formó en otro estado, los pasos son distintos. Pregunte al Secretario de Estado.',
     apply: 'Iniciar o registrar un negocio en Washington',
-    fallback: 'Si la página no abre, busque "Start a Domestic (WA) Business" en sos.wa.gov.',
+    fallback: 'Si la página no abre, busque "Iniciar un negocio nacional de WA" en sos.wa.gov.',
     guide: {
       meaning: 'Una LLC, corporación o cierta sociedad de Washington se forma presentando documentos ante el Secretario de Estado. El DOR exige esta presentación antes de enviar la Solicitud de Licencia Comercial.',
       who: ['LLC, corporaciones y sociedades nacionales y sociedades de responsabilidad limitada, tal como las enumera el DOR.'],
@@ -77,8 +77,8 @@ export const RULES_ES = {
       no: 'Se omite porque ninguno de los motivos de registro por los que preguntamos se cumple en su caso. Existen otros motivos, así que use el Asistente oficial de licencias comerciales para estar seguro.',
     },
     detail: 'El DOR da estimaciones, no fechas garantizadas. Las estimaciones para solicitudes en línea, solicitudes con endosos de ciudad o estado, y solicitudes por correo aparecen en Montos y tiempos en la guía. La tarifa varía y cada endoso tiene su propia tarifa.',
-    apply: 'Inicie sesión en My DOR para solicitar (se necesita una cuenta SAW)',
-    fallback: 'Si la página de inicio de sesión no abre, empiece en la página "Open a business" del DOR (dor.wa.gov/open-business).',
+    apply: 'Inicie sesión en Mi DOR para solicitar (se necesita una cuenta SAW)',
+    fallback: 'Si la página de inicio de sesión no abre, empiece en la página "Abrir un negocio" del DOR (dor.wa.gov/open-business).',
     guide: {
       meaning: 'Una licencia comercial de Washington registra su negocio ante el Departamento de Ingresos. Se le asigna un número de Identificador Comercial Único (UBI) que usa cuando presenta impuestos o cambia su negocio.',
       who: ['Todo negocio que cumpla al menos un motivo de registro del DOR.'],
@@ -92,7 +92,7 @@ export const RULES_ES = {
       steps: [
         'Revise cuáles motivos de registro se cumplen en su caso.',
         'Use el Asistente de licencias comerciales. Le da una lista de agencias con las que comunicarse y los endosos que correspondan.',
-        'Solicite en línea en el sistema seguro My DOR del DOR. Inicia sesión con un identificador de usuario de Secure Access Washington (SAW), y la página de inicio de sesión tiene un enlace de registro para usuarios nuevos. O solicite por correo con la Solicitud de Licencia Comercial y el pago.',
+        'Solicite en línea en el sistema seguro Mi DOR del DOR. Inicia sesión con un identificador de usuario de Acceso Seguro de Washington (SAW), y la página de inicio de sesión tiene un enlace de registro para usuarios nuevos. O solicite por correo con la Solicitud de Licencia Comercial y el pago.',
         'Guarde su número UBI. Lo necesita para impuestos y cambios.',
       ],
       facts: [
@@ -102,7 +102,7 @@ export const RULES_ES = {
         ['Correo con endosos', 'La página del DOR no da un tiempo aparte para una solicitud por correo que tenga endosos. Necesita verificación con el DOR.'],
         ['Tarifa', 'El DOR indica que la tarifa de solicitud varía y que cada endoso adicional tiene su propia tarifa. El DOR explica cómo calcular la tarifa. Aquí no se muestra ningún monto.'],
       ],
-      whyExternal: 'Las solicitudes se envían en el sistema de cuentas seguro My DOR del DOR, que también se usa para presentar impuestos. El botón abre la página de inicio de sesión de My DOR. Esta demostración nunca le pide sus datos de inicio de sesión y no puede enviar la solicitud.',
+      whyExternal: 'Las solicitudes se envían en el sistema de cuentas seguro Mi DOR del DOR, que también se usa para presentar impuestos. El botón abre la página de inicio de sesión de Mi DOR. Esta demostración nunca le pide sus datos de inicio de sesión y no puede enviar la solicitud.',
     },
   },
   wizard: {
@@ -117,7 +117,7 @@ export const RULES_ES = {
     },
     detail: 'Use el asistente oficial para confirmar sus requisitos reales. Le da las licencias de ciudad, estado y federales que su negocio puede necesitar, con contactos y próximos pasos. Esta demostración es un esbozo y no lo reemplaza.',
     apply: 'Abrir el Asistente de licencias comerciales',
-    fallback: 'Si el asistente no carga, active las cookies o empiece en la página "Open a business" del DOR (dor.wa.gov/open-business).',
+    fallback: 'Si el asistente no carga, active las cookies o empiece en la página "Abrir un negocio" del DOR (dor.wa.gov/open-business).',
     guide: {
       meaning: 'El Asistente de licencias comerciales es la herramienta oficial del Departamento de Ingresos. Le da las licencias de ciudad, estado y federales que su negocio puede necesitar, con contactos y próximos pasos.',
       who: ['Todos. Esta demostración es un esbozo, por eso cada lista incluye este paso.'],
@@ -140,7 +140,7 @@ export const RULES_ES = {
     },
     detail: 'L&I indica que los contratistas de construcción deben registrarse en L&I y tener fianza y seguro. El monto de la fianza depende de su clasificación (general o especialidad). Oficios como plomería, electricidad, ascensores, instalación de casas móviles, calderas y asbesto tienen requisitos adicionales de educación, examen y licencia, y algunas actividades tienen licencia además del registro. Las tarifas y montos que indica L&I aparecen en Montos y tiempos en la guía con la fecha en que se leyeron. Pueden cambiar, así que confirme con L&I.',
     apply: 'Ir al registro de contratistas de L&I',
-    fallback: 'Si el enlace no abre, busque "Register as a contractor" en lni.wa.gov.',
+    fallback: 'Si el enlace no abre, busque "Registrarse como contratista" en lni.wa.gov.',
     guide: {
       meaning: 'Washington exige que los contratistas de construcción se registren en Labor & Industries (L&I). Una vez registrado, un contratista puede presentar ofertas, hacer publicidad y realizar trabajos de construcción. L&I también indica que la ley estatal exige que los contratistas tengan fianza y seguro.',
       who: ['Contratistas de construcción, incluidos trabajos como construir, remodelar, reparar y demoler edificios, caminos y otros bienes inmuebles.'],
@@ -219,7 +219,7 @@ export const RULES_ES = {
     },
     detail: 'L&I indica que los empleadores compran la compensación para trabajadores a L&I, a menos que L&I los apruebe como autoasegurados, y que algunos trabajadores están exentos según definiciones estrictas. Confirme con L&I si sus trabajadores deben estar cubiertos. En esta demostración no se muestran las tarifas.',
     apply: 'Vea cómo obtener una cuenta de compensación para trabajadores (L&I)',
-    fallback: 'Si el enlace no abre, busque "How to get a workers\' compensation account" en lni.wa.gov.',
+    fallback: 'Si el enlace no abre, busque "Cómo obtener una cuenta de compensación para trabajadores" en lni.wa.gov.',
     guide: {
       meaning: 'El seguro de compensación para trabajadores da reemplazo de salario y beneficios médicos a los trabajadores lesionados en el trabajo. En Washington usted compra la cobertura a L&I, o se le aprueba como empleador autoasegurado. No se permite la cobertura privada.',
       who: ['Negocios que tienen trabajadores, sean empleados o contratistas independientes. L&I indica que es posible que deba proporcionar cobertura.'],
@@ -233,7 +233,7 @@ export const RULES_ES = {
         'Planee presentar informes trimestrales y pagos de primas.',
       ],
       facts: [],
-      whyExternal: 'L&I indica que la cuenta se obtiene mediante su solicitud de licencia comercial ante el DOR, que se hace en My DOR. El botón abre la página de L&I que lo explica. Esta demostración no puede abrir una cuenta por usted.',
+      whyExternal: 'L&I indica que la cuenta se obtiene mediante su solicitud de licencia comercial ante el DOR, que se hace en Mi DOR. El botón abre la página de L&I que lo explica. Esta demostración no puede abrir una cuenta por usted.',
     },
   },
   esd: {
@@ -249,7 +249,7 @@ export const RULES_ES = {
     },
     detail: 'El ESD indica que los empleadores presentan informes trimestrales de impuestos y salarios y pagan impuestos de desempleo. Algunos empleadores, como los empleadores de reembolso, pagan de otra manera. Confirme con el ESD la configuración de su cuenta y sus obligaciones. En esta demostración no se muestran las tarifas.',
     apply: 'Vea la guía del ESD sobre impuestos de empleador',
-    fallback: 'Si el enlace no abre, busque "employers\' guide to paying taxes" en esd.wa.gov.',
+    fallback: 'Si el enlace no abre, busque "guía para empleadores sobre el pago de impuestos" en esd.wa.gov.',
     guide: {
       meaning: 'El Departamento de Seguridad del Empleo (ESD) cobra impuestos de desempleo a los empleadores. El ESD indica que todo empleador en Washington presenta dos informes de impuestos y salarios cada trimestre.',
       who: ['Empleadores. La demostración muestra este paso cuando usted planea contratar personal.'],
@@ -259,7 +259,7 @@ export const RULES_ES = {
       steps: [
         'Si es un empleador nuevo, el ESD indica que usted solicita una licencia comercial estatal al DOR antes de poder presentar un informe trimestral de impuestos y salarios. Si ya tiene licencia pero contrata personal por primera vez, actualice su solicitud de licencia comercial.',
         'Presente su informe de impuestos y salarios cada trimestre, aunque no tenga nómina que informar.',
-        'Pague sus impuestos en línea en el Employer Account Management System del ESD con Secure Access Washington, o por correo con los formularios que envía el ESD. Lea la guía del ESD para los detalles.',
+        'Pague sus impuestos en línea en el Sistema de Administración de Cuentas de Empleadores del ESD con Acceso Seguro de Washington, o por correo con los formularios que envía el ESD. Lea la guía del ESD para los detalles.',
       ],
       facts: [],
       pendingNote: 'La guía para empleadores del ESD se leyó el 2026-10-26 y describe estos pasos, pero ningún revisor los ha confirmado todavía, por eso este requisito sigue pendiente. Confirme con el ESD.',
@@ -279,16 +279,16 @@ export const RULES_ES = {
     },
     detail: 'El DSHS indica que se debe informar cada empleado nuevo o recontratado dentro de los 20 días de la contratación o recontratación, sin importar la edad ni las horas trabajadas. Una recontratación cuenta después de una separación de al menos 60 días consecutivos. Las tribus y los negocios de propiedad tribal o de indígenas en reservas están exentos, aunque los informes voluntarios son bienvenidos.',
     apply: 'Ir al informe de nuevas contrataciones del DSHS',
-    fallback: 'Si el enlace no abre, busque "new hire reporting" en dshs.wa.gov.',
+    fallback: 'Si el enlace no abre, busque "informe de nuevas contrataciones" en dshs.wa.gov.',
     guide: {
       meaning: 'La ley federal y estatal exige que los empleadores informen cada empleado recién contratado o recontratado que trabaje en Washington a la División de Manutención de Menores (DSHS). El estado compara los informes con los registros de manutención de menores.',
       who: ['Empleadores, sin importar la edad del empleado ni la cantidad de horas trabajadas.'],
       conditions: ['Una recontratación cuenta después de una separación de al menos 60 días consecutivos, o cuando el empleado empieza con un nuevo Número de Identificación Federal de Empleador.', 'El DSHS indica que las tribus, los negocios de propiedad tribal y los negocios de propiedad de indígenas ubicados en reservas están exentos, aunque los informes voluntarios son bienvenidos.'],
       prepare: ['Empleado: nombre, dirección, número de Seguro Social, fecha de nacimiento y fecha de contratación.', 'Negocio: nombre, dirección y Número de Identificación Federal de Empleador.'],
       prepareNote: '',
-      steps: ['Reúna la información del empleado y del negocio.', 'Informe dentro de los 20 días de la fecha de contratación o recontratación.', 'El DSHS prefiere el informe en línea mediante Secure Access Washington con el servicio DCS Online. El DSHS también enumera opciones por fax, correo y teléfono.'],
+      steps: ['Reúna la información del empleado y del negocio.', 'Informe dentro de los 20 días de la fecha de contratación o recontratación.', 'El DSHS prefiere el informe en línea mediante Acceso Seguro de Washington con el servicio DCS en línea. El DSHS también enumera opciones por fax, correo y teléfono.'],
       facts: [['Plazo', 'Dentro de los 20 días de la fecha de inicio, según indican el DSHS y el ESD.']],
-      whyExternal: 'Los informes se presentan en el servicio DCS Online del DSHS. Esta demostración nunca recopila datos de empleados y no puede presentar informes.',
+      whyExternal: 'Los informes se presentan en el servicio DCS en línea del DSHS. Esta demostración nunca recopila datos de empleados y no puede presentar informes.',
     },
   },
   ic: {
@@ -304,7 +304,7 @@ export const RULES_ES = {
     },
     detail: 'L&I indica que un formulario 1099 no es suficiente y que un UBI o un registro de contratista por sí solos no hacen exento a un trabajador. Los trabajadores deben pasar las pruebas de L&I, con una parte adicional para la construcción. Revise las pruebas con L&I.',
     apply: 'Revise las pruebas de contratistas independientes de L&I',
-    fallback: 'Si el enlace no abre, busque "independent contractors" en lni.wa.gov.',
+    fallback: 'Si el enlace no abre, busque "contratistas independientes" en lni.wa.gov.',
     guide: {
       meaning: 'L&I decide quién debe estar cubierto por la compensación para trabajadores. Contratar a alguien como contratista independiente no significa por sí solo que usted pueda omitir la cobertura.',
       who: ['Negocios que usan subcontratistas o contratistas independientes.'],
@@ -378,13 +378,13 @@ export const TIMELINE_ES = {
 
 // Titles of the official pages. The English title stays in brackets so a person can find the page.
 export const SOURCE_LABEL_ES = {
-  "DOR, Choose an ownership structure": "DOR, Elegir una estructura de propiedad (Choose an ownership structure)",
-  "DOR, Apply for a business license": "DOR, Solicitar una licencia comercial (Apply for a business license)",
-  "DOR, Open a business": "DOR, Abrir un negocio (Open a business)",
-  "L&I, Register as a Contractor": "L&I, Registrarse como contratista (Register as a Contractor)",
-  "L&I, Do I Need a Workers' Comp Account?": "L&I, ¿Necesito una cuenta de compensación para trabajadores? (Do I Need a Workers' Comp Account?)",
-  "ESD, Quarterly reports": "ESD, Informes trimestrales (Quarterly reports)",
-  "DSHS, New Hire Reporting": "DSHS, Informe de nuevas contrataciones (New Hire Reporting)",
-  "L&I, Independent Contractors": "L&I, Contratistas independientes (Independent Contractors)",
-  "DOR, City endorsements": "DOR, Endosos de ciudad (City endorsements)",
+  "DOR, Choose an ownership structure": "DOR, Elegir una estructura de propiedad",
+  "DOR, Apply for a business license": "DOR, Solicitar una licencia comercial",
+  "DOR, Open a business": "DOR, Abrir un negocio",
+  "L&I, Register as a Contractor": "L&I, Registrarse como contratista",
+  "L&I, Do I Need a Workers' Comp Account?": "L&I, ¿Necesito una cuenta de compensación para trabajadores?",
+  "ESD, Quarterly reports": "ESD, Informes trimestrales",
+  "DSHS, New Hire Reporting": "DSHS, Informe de nuevas contrataciones",
+  "L&I, Independent Contractors": "L&I, Contratistas independientes",
+  "DOR, City endorsements": "DOR, Endosos de ciudad",
 };

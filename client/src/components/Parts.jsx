@@ -36,6 +36,11 @@ export function Loading({ what = 'Loading' }) {
   return <p className="hint" role="status">{what}...</p>;
 }
 
+// The placeholder text is "[NEEDS HUMAN INPUT: role]". In Spanish it reads "[NECESITA APORTE HUMANO: rol]".
+const ROLE_ES = { 'content owner': 'responsable del contenido', 'second-person reviewer': 'segunda persona revisora' };
+export const humanInput = (text, lang) => (lang === 'es' && typeof text === 'string'
+  ? text.replace(/\[NEEDS HUMAN INPUT: ([^\]]+)\]/g, (m, role) => `[NECESITA APORTE HUMANO: ${ROLE_ES[role] || role}]`)
+  : text);
 export const OWNER_FALLBACK = '[NEEDS HUMAN INPUT: content owner]';
 export const REVIEWER_FALLBACK = '[NEEDS HUMAN INPUT: second-person reviewer]';
 

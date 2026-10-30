@@ -7,13 +7,29 @@ const isEs = (lang) => lang === 'es';
 // A translated list replaces the English one only when it has the same number of entries.
 const sameLen = (en, es) => (Array.isArray(en) && Array.isArray(es) && en.length === es.length ? es : en);
 
-function mapCond(c) {
+// qmap: English question text or answer label -> Spanish, for the questions an admin added (when a Spanish version was written).
+export function questionMap(questions) {
+  const m = new Map([['Yes', 'Sí'], ['No', 'No'], ['Not sure', 'No estoy seguro']]);
+  for (const q of questions || []) {
+    if (!q.es) continue;
+    if (q.es.text) { m.set(q.text, q.es.text); m.set(q.text.toLowerCase(), q.es.text.toLowerCase()); }
+    const picks = (q.options || []).filter((o) => o.value !== 'unsure');
+    if (Array.isArray(q.es.options) && q.es.options.length === picks.length) picks.forEach((o, i) => m.set(o.label, q.es.options[i]));
+  }
+  return m;
+}
+
+function mapCond(c, qmap) {
   if (!c || typeof c !== 'object') return c;
   const out = { ...c };
-  if (out.label) out.label = COND_ES[out.label] || out.label;
-  if (out.ask) out.ask = COND_ES[out.ask] || out.ask;
-  if (out.any) out.any = out.any.map(mapCond);
-  if (out.all) out.all = out.all.map(mapCond);
+  const tr = (t) => (qmap && qmap.get(t)) || t;
+  if (out.label) {
+    const m = /^you answered "(.+)" to "(.+)"$/.exec(out.label);
+    out.label = COND_ES[out.label] || (m ? `usted respondió "${tr(m[1])}" a "${tr(m[2])}"` : out.label);
+  }
+  if (out.ask) out.ask = COND_ES[out.ask] || tr(out.ask) || out.ask;
+  if (out.any) out.any = out.any.map((x) => mapCond(x, qmap));
+  if (out.all) out.all = out.all.map((x) => mapCond(x, qmap));
   return out;
 }
 
@@ -29,20 +45,25 @@ const CUSTOM_ES = {
 };
 const customEs = (t) => CUSTOM_ES[t] || t;
 
-export function localizeRule(rule, lang) {
+export function localizeRule(rule, lang, qmap) {
   if (!isEs(lang)) return rule;
   if (rule.custom) {
+    const es = rule.es || {};
     return {
       ...rule,
+      title: es.title || rule.title,
+      agency: es.agency || rule.agency,
+      detail: es.detail || rule.detail,
+      source: rule.source ? { ...rule.source, label: es.sourceLabel || rule.source.label } : rule.source,
       reason: rule.reason ? Object.fromEntries(Object.entries(rule.reason).map(([k, v]) => [k, customEs(v)])) : rule.reason,
       verification: rule.verification ? { ...rule.verification, note: customEs(rule.verification.note) } : rule.verification,
-      apply: rule.apply ? { ...rule.apply, label: customEs(rule.apply.label) } : rule.apply,
+      apply: rule.apply ? { ...rule.apply, label: es.applyLabel || customEs(rule.apply.label) } : rule.apply,
       noLink: customEs(rule.noLink),
-      applies: mapCond(rule.applies),
+      applies: mapCond(rule.applies, qmap),
     };
   }
   const es = RULES_ES[rule.id];
-  const out = { ...rule, agency: AGENCY_ES[rule.agency] || rule.agency, applies: mapCond(rule.applies) };
+  const out = { ...rule, agency: AGENCY_ES[rule.agency] || rule.agency, applies: mapCond(rule.applies, qmap) };
   if (rule.source?.label && SOURCE_LABEL_ES[rule.source.label]) out.source = { ...rule.source, label: SOURCE_LABEL_ES[rule.source.label] };
   if (!es || es.version !== rule.version) return out;
   out.title = es.title || rule.title;
@@ -76,7 +97,7 @@ export function localizeRule(rule, lang) {
 
 export function localizeRules(doc, lang) {
   if (!isEs(lang) || !doc) return doc;
-  return { ...doc, phases: { ...doc.phases, ...PHASES_ES }, rules: doc.rules.map((r) => localizeRule(r, lang)) };
+  return { ...doc, phases: { ...doc.phases, ...PHASES_ES }, rules: doc.rules.map((r) => localizeRule(r, lang, questionMap(doc.questions))) };
 }
 
 export function localizeFound(link, lang) {
