@@ -155,10 +155,9 @@ function AdminPanel({ signedIn = false }) {
                     <span className="tile-state">{st.label}</span>
                     {r.draft && <span className="tile-draft">{a('Draft', 'Borrador')}</span>}
                     {r.custom && <span className="tile-draft tile-added">{a('Added', 'Agregada')}</span>}
-                    {r.disabled && <span className="tile-draft tile-off">{a('Hidden from new members', 'Oculta para miembros nuevos')}</span>}
                   </span>
                   <span className="tile-title">{nameOf(r)}</span>
-                  <span className="tile-foot">{agencyOf(r)} · {r.lastVerified ? a(`checked ${shortDay(r.lastVerified, a)}`, `revisada ${shortDay(r.lastVerified, a)}`) : a('never checked', 'nunca revisada')}</span>
+                  <span className="tile-foot">{r.disabled ? `${a('Hidden from new members', 'Oculta para miembros nuevos')} · ` : ''}{agencyOf(r)} · {r.lastVerified ? a(`checked ${shortDay(r.lastVerified, a)}`, `revisada ${shortDay(r.lastVerified, a)}`) : a('never checked', 'nunca revisada')}</span>
                 </button>
               </li>
             );

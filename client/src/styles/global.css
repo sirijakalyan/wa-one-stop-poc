@@ -1401,3 +1401,6 @@ main > .wrap > h1:first-child:not(.mb-banner h1)::after { background: var(--teal
 .chat-id > div { min-width: 0; background: #ffffff; }
 .chat-id > div > span { background: #ffffff; }
 .home .guide-page.is-embedded .guide-chat { position: relative; z-index: 3; }
+
+.tile-top { flex-wrap: wrap; row-gap: .25rem; }
+.tile-draft { white-space: nowrap; flex: 0 0 auto; }
