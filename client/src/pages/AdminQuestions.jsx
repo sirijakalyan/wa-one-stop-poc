@@ -110,7 +110,7 @@ function QuestionForm({ initial, editing, onSave, onCancel }) {
 export default function AdminQuestions() {
   const a = useA();
   const t = useT();
-  const fetchQ = useCallback(() => api.questions(), []);
+  const fetchQ = useCallback(() => api.questions(undefined, true), []);
   const { data, error, loading, reload } = useLoad(fetchQ);
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState('');
@@ -122,6 +122,7 @@ export default function AdminQuestions() {
   if (loading && !data) return <Loading what={a('Loading questions', 'Cargando preguntas')} />;
   if (error) return <ErrorNote message={error} />;
   const questions = data?.questions ?? [];
+  const liveCount = questions.filter((q) => !q.hidden).length;
   const standard = data?.standard ?? [];
   const shown = standard.filter((x) => !x.hidden).length;
 
@@ -129,7 +130,17 @@ export default function AdminQuestions() {
   const toBody = (f) => ({ text: f.text, hint: f.hint, type: f.type, options: f.type === 'choice' ? linesOf(f.options) : undefined, es: esBody(f) });
   async function remove(q) {
     setErr(''); setMsg('');
-    try { await api.removeQuestion(q.id); setConfirm(''); setMsg(a('Question removed. Answers people already gave to it are ignored.', 'Pregunta eliminada. Se ignoran las respuestas que ya se dieron.')); await reload(); } catch (e) { setErr(e.message); setConfirm(''); }
+    try {
+      const r = await api.removeQuestion(q.id);
+      setConfirm('');
+      const base = a('Question deleted. Nobody new is asked it, and answers people already gave are kept. You can restore it any time.', 'Pregunta eliminada. Ya no se le hace a nadie nuevo y se conservan las respuestas que ya se dieron. Puede restaurarla cuando quiera.');
+      setMsg(r.usedBy?.length ? `${base} ${a(`A rule uses its answer (${r.usedBy.join(', ')}). It shows as "may apply" for new members.`, `Una regla usa su respuesta (${r.usedBy.join(', ')}). Aparece como "puede aplicar" para miembros nuevos.`)}` : base);
+      await reload();
+    } catch (e) { setErr(e.message); setConfirm(''); }
+  }
+  async function restore(q) {
+    setErr(''); setMsg('');
+    try { await api.restoreQuestion(q.id); setMsg(a('Question restored. Everyone is asked it again.', 'Pregunta restaurada. Se le vuelve a hacer a todos.')); await reload(); } catch (e) { setErr(e.message); }
   }
 
   async function removeStd(item) {
@@ -153,7 +164,7 @@ export default function AdminQuestions() {
 
       <section aria-labelledby="yq-h" className="q-section">
         <div className="q-section-head">
-          <h2 id="yq-h">{a('Your questions', 'Sus preguntas')} ({questions.length})</h2>
+          <h2 id="yq-h">{a('Your questions', 'Sus preguntas')} ({liveCount})</h2>
           {!adding && <button type="button" className="btn btn-primary btn-sm" onClick={() => { setAdding(true); setEditing(''); setMsg(''); }}>{a('Add a question', 'Agregar una pregunta')}</button>}
         </div>
         {adding && (
@@ -166,7 +177,7 @@ export default function AdminQuestions() {
         {questions.length === 0 && !adding && <p className="desk-empty">{a('No questions of your own yet. Add one and it appears for everyone after the standard questions.', 'Aún no hay preguntas propias. Agregue una y aparecerá para todos después de las preguntas estándar.')}</p>}
         <ul className="q-list">
           {questions.map((q, i) => (
-            <li key={q.id} className="q-card">
+            <li key={q.id} className={`q-card${q.hidden ? ' is-deleted' : ''}`}>
               {editing === q.id ? (
                 <QuestionForm
                   editing={q.id}
@@ -176,19 +187,25 @@ export default function AdminQuestions() {
                 />
               ) : (
                 <>
-                  <p className="q-no">{a('Question', 'Pregunta')} {i + 1}</p>
+                  <p className="q-no">{a('Question', 'Pregunta')} {i + 1}{q.hidden ? ` · ${a('Deleted', 'Eliminada')}` : ''}</p>
                   <h3>{q.text}</h3>
                   {q.hint && <p className="hint">{q.hint}</p>}
                   <p className="q-opts">{q.options.map((o) => <span key={o.value} className="q-opt">{a.lang === 'es' && ((o.value === 'yes' && o.label === 'Yes') || (o.value === 'no' && o.label === 'No') || (o.value === 'unsure' && o.label === 'Not sure')) ? { yes: 'Sí', no: 'No', unsure: 'No estoy seguro' }[o.value] : o.label}</span>)}</p>
                   <div className="row">
-                    <button type="button" className="btn btn-sm" onClick={() => { setEditing(q.id); setAdding(false); setMsg(''); }}>{a('Edit', 'Editar')}<span className="sr-only"> {q.text}</span></button>
-                    {confirm === q.id ? (
-                      <>
-                        <button type="button" className="btn btn-primary btn-sm" onClick={() => remove(q)}>{a('Yes, remove it', 'Sí, eliminarla')}</button>
-                        <button type="button" className="btn btn-quiet btn-sm" onClick={() => setConfirm('')}>{a('Keep it', 'Conservarla')}</button>
-                      </>
+                    {q.hidden ? (
+                      <button type="button" className="btn btn-primary btn-sm" onClick={() => restore(q)}>{a('Restore', 'Restaurar')}<span className="sr-only"> {q.text}</span></button>
                     ) : (
-                      <button type="button" className="btn btn-quiet btn-sm" onClick={() => setConfirm(q.id)}>{a('Remove', 'Eliminar')}<span className="sr-only"> {q.text}</span></button>
+                      <>
+                        <button type="button" className="btn btn-sm" onClick={() => { setEditing(q.id); setAdding(false); setMsg(''); }}>{a('Edit', 'Editar')}<span className="sr-only"> {q.text}</span></button>
+                        {confirm === q.id ? (
+                          <>
+                            <button type="button" className="btn btn-primary btn-sm" onClick={() => remove(q)}>{a('Yes, delete it', 'Sí, eliminarla')}</button>
+                            <button type="button" className="btn btn-quiet btn-sm" onClick={() => setConfirm('')}>{a('Keep it', 'Conservarla')}</button>
+                          </>
+                        ) : (
+                          <button type="button" className="btn btn-quiet btn-sm" onClick={() => setConfirm(q.id)}>{a('Delete', 'Eliminar')}<span className="sr-only"> {q.text}</span></button>
+                        )}
+                      </>
                     )}
                   </div>
                 </>

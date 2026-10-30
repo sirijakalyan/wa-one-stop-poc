@@ -79,3 +79,15 @@ test('the last visible standard question cannot be deleted, and over-long wordin
   assert.equal((await app.call('PUT', '/api/standard-questions/income', { text: 'x'.repeat(201) }, adm)).status, 400);
   assert.equal((await app.call('PUT', '/api/standard-questions/nope', { text: 'x' }, adm)).status, 404);
 });
+
+test('a deleted question of your own is not asked in the chat, and restoring asks it again', async () => {
+  const q = (await app.call('POST', '/api/questions', { text: 'Do you have a pet shop?', type: 'yesno' }, adm)).body.question;
+  const full = { values: {}, status: { structure: 'confirmed', activity: 'confirmed', place: 'confirmed', hiring: 'confirmed', subs: 'confirmed', salestax: 'confirmed', income: 'confirmed', tradename: 'confirmed' } };
+  const others = (await app.call('GET', '/api/questions')).body.questions.filter((x) => x.id !== q.id);
+  for (const o of others) full.status[`x:${o.id}`] = 'confirmed';
+  assert.equal((await turn({ card: full, message: '' })).ask.field, `x:${q.id}`);
+  await app.call('DELETE', `/api/questions/${q.id}`, undefined, adm);
+  assert.equal((await turn({ card: full, message: '' })).complete, true, 'skipped when deleted');
+  await app.call('POST', `/api/questions/${q.id}/restore`, undefined, adm);
+  assert.equal((await turn({ card: full, message: '' })).ask.field, `x:${q.id}`);
+});

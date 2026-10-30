@@ -47,8 +47,15 @@ test('an admin adds a question and a rule that depends on it, and users get the 
   const bad = await app.call('POST', '/api/evaluate', { answers: { ...ANSWERS, extra: { [qid]: 'banana', q_nothere: 'yes' } } });
   assert.equal(bad.body.answers.extra, undefined);
 
-  // the question cannot be removed while a rule depends on it
-  assert.equal((await app.call('DELETE', `/api/questions/${qid}`, undefined, adm)).status, 400);
+  // delete hides the question (it is never lost), says which rule uses it, and restore brings it back
+  const del = await app.call('DELETE', `/api/questions/${qid}`, undefined, adm);
+  assert.equal(del.status, 200);
+  assert.deepEqual(del.body.usedBy, ['Register your drone with the FAA']);
+  assert.ok(!(await app.call('GET', '/api/questions')).body.questions.some((q) => q.id === qid), 'owners are no longer asked it');
+  assert.equal((await app.call('GET', '/api/questions?all=1', undefined, adm)).body.questions.find((q) => q.id === qid).hidden, true, 'admin still lists it');
+  assert.ok(!(await app.call('GET', '/api/questions?all=1')).body.questions.some((q) => q.id === qid), 'only an admin gets deleted ones');
+  assert.equal((await app.call('POST', `/api/questions/${qid}/restore`, undefined, adm)).status, 200);
+  assert.ok((await app.call('GET', '/api/questions')).body.questions.some((q) => q.id === qid), 'asked again after restore');
   assert.equal((await app.call('DELETE', `/api/rules/${ruleId}`, undefined, adm)).status, 200);
   assert.equal((await app.call('DELETE', `/api/questions/${qid}`, undefined, adm)).status, 200);
   // history keeps a record of what was added and removed

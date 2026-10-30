@@ -697,7 +697,9 @@ export function createService(store, options = {}) {
       options: q.options.map((o) => ({ ...o, label: std(o) || (Array.isArray(es.options) && es.options.length === picks.length ? es.options[picks.findIndex((x) => x.value === o.value)] : '') || o.label })),
     };
   }
-  const publicQuestion = (q, lang = 'en') => { const l = localizeQuestion(q, lang); return { id: l.id, text: l.text, hint: l.hint || '', type: l.type, options: l.options, es: q.es || null }; };
+  const publicQuestion = (q, lang = 'en') => { const l = localizeQuestion(q, lang); return { id: l.id, text: l.text, hint: l.hint || '', type: l.type, options: l.options, es: q.es || null, hidden: Boolean(q.hidden) }; };
+  // Owners are only asked the questions an admin has not deleted. A deleted question is hidden, never lost, and answers people already gave stay.
+  const shownQuestions = (doc) => questionsOf(doc).filter((q) => !q.hidden);
 
   // Optional Spanish version of a question: the question, the help text and one line per choice.
   function cleanEs(body, type, count) {
@@ -774,12 +776,13 @@ export function createService(store, options = {}) {
       const text = lang === 'es' ? c.es?.text : c.text;
       if (text) standard[f] = { text };
     }
-    return { extras: questionsOf(doc).map((q) => localizeQuestion(q, lang)), hidden, standard };
+    return { extras: shownQuestions(doc).map((q) => localizeQuestion(q, lang)), hidden, standard };
   }
-  route('GET', '/api/questions', async ({ query }) => {
+  route('GET', '/api/questions', async ({ query, ctx }) => {
     const doc = await loadAll();
     const lang = langIn(query);
-    return { ok: true, questions: questionsOf(doc).map((q) => publicQuestion(q, lang)), standard: standardList(doc, lang) };
+    const list = query?.all && isAdmin(ctx) ? questionsOf(doc) : shownQuestions(doc); // the admin screen also lists deleted ones
+    return { ok: true, questions: list.map((q) => publicQuestion(q, lang)), standard: standardList(doc, lang) };
   });
 
   function stdField(params) {
@@ -857,17 +860,27 @@ export function createService(store, options = {}) {
     return { ok: true, question: publicQuestion(next), questions: doc.questions.map(publicQuestion) };
   });
 
+  // "Delete" hides the question: nobody new is asked it, and answers people already gave are kept. "Restore" brings it back.
   route('DELETE', '/api/questions/:id', async ({ params, ctx }) => {
     requireAdmin(ctx);
     const doc = await loadAll();
     const list = questionsOf(doc);
     const q = list.find((x) => x.id === params.id);
     if (!q) fail('Question not found.', 404);
-    const uses = doc.rules.filter((r) => JSON.stringify(r.applies || {}).includes(`"extra.${q.id}"`));
-    if (uses.length) fail(`This question decides who sees "${uses[0].title}". Remove or change that rule first.`);
-    doc.questions = list.filter((x) => x.id !== q.id);
+    const usedBy = doc.rules.filter((r) => JSON.stringify(r.applies || {}).includes(`"extra.${q.id}"`)).map((r) => r.title);
+    doc.questions = list.map((x) => (x.id === q.id ? { ...x, hidden: true } : x));
     await store.writeRules(doc);
-    return { ok: true, questions: doc.questions.map(publicQuestion) };
+    return { ok: true, usedBy, questions: doc.questions.map((x) => publicQuestion(x)) };
+  });
+
+  route('POST', '/api/questions/:id/restore', async ({ params, ctx }) => {
+    requireAdmin(ctx);
+    const doc = await loadAll();
+    const list = questionsOf(doc);
+    if (!list.some((x) => x.id === params.id)) fail('Question not found.', 404);
+    doc.questions = list.map((x) => { if (x.id !== params.id) return x; const { hidden, ...rest } = x; return rest; });
+    await store.writeRules(doc);
+    return { ok: true, questions: doc.questions.map((x) => publicQuestion(x)) };
   });
 
   // The questions a rule can depend on: the built-in ones and the ones an admin added.
