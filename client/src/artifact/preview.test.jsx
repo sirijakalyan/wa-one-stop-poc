@@ -186,7 +186,7 @@ describe('county in the questionnaire and edit-answers flow', () => {
     item = healthItem();
     expect(within(item).getByRole('link', { name: /Pierce County health department page/ }).getAttribute('href')).toMatch(/^https:\/\/tpchd\.org\//);
     expect(within(item).queryByText(/King/)).toBeNull();
-    expect(screen.getByRole('contentinfo')).toHaveTextContent(/confirm with the relevant agency/i);
+    expect(within(item).getByText('Pending verification')).toBeInTheDocument();
   });
 
   it('says clearly when no health page was found for the county, with no link', async () => {
