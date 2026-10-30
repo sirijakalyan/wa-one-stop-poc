@@ -23,8 +23,8 @@ async function main() {
     await store.init((m) => console.log(`[db] ${m}`));
     console.log('Storage: PostgreSQL');
   } else {
-    store = createStore();
-    console.log('Storage: JSON files in server/data (set DATABASE_URL to use PostgreSQL)');
+    store = createStore(process.env.WA_DATA_DIR || undefined);
+    console.log(process.env.WA_DATA_DIR ? `Storage: JSON files in ${process.env.WA_DATA_DIR}` : 'Storage: JSON files in server/data (set DATABASE_URL to use PostgreSQL)');
   }
   // Serve the built client without any setting: use CLIENT_DIST if given, else client/dist (or ./dist) next to the server.
   const here = path.dirname(fileURLToPath(import.meta.url));

@@ -98,7 +98,7 @@ export default function ChatPanel() {
       )}
       {open && (
         <section id="chat-panel" className="chat" role="dialog" aria-modal="false" aria-labelledby="chat-title">
-          <header className="chat-head">
+          <div className="chat-head">
             <div>
               <h2 id="chat-title">{t('ch.title')}</h2>
               <p>{t('ch.sub')}</p>
@@ -106,7 +106,7 @@ export default function ChatPanel() {
             <button type="button" className="chat-close" onClick={close} aria-label={t('ch.close')}>
               <Icon name="close" size={20} />
             </button>
-          </header>
+          </div>
 
           <div className="chat-log" aria-live="polite" aria-relevant="additions">
             {messages.length === 0 && (

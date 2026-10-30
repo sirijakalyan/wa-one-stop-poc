@@ -1435,3 +1435,5 @@ html { scroll-behavior: auto; }
 .home .workspace, .home .workspace:has(> .guide-page), .home .workspace:has(> div), .home .workspace:has(> form) { margin-top: 1.5rem; }
 /* Real web fonts draw about 1px taller than the line; give the label room so it never touches the line below */
 .chat-id strong { line-height: 1.45; }
+/* Selected admin tile: no movement, so it never overlaps its neighbours */
+.tile.is-on { transform: none; box-shadow: 0 0 0 3px #ffd978; }
