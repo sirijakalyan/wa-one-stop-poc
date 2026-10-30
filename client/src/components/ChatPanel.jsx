@@ -88,8 +88,8 @@ export default function ChatPanel() {
           ref={openerRef}
           className={`chat-fab${away ? ' is-away' : ''}`}
           onFocus={() => setAway(false)}
+          aria-label={t('ch.fab')}
           aria-expanded="false"
-          aria-controls="chat-panel"
           onClick={() => setOpen(true)}
         >
           <Icon name="chat" size={20} />

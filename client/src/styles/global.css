@@ -569,7 +569,7 @@ footer .api-status { background: transparent; color: #a9bdd4; border-color: rgba
 .chat-log { overflow-y: auto; display: flex; flex-direction: column; gap: .6rem; padding: .25rem; min-height: 14rem; max-height: 26rem; }
 .bubble { max-width: 90%; border-radius: 16px; padding: .6rem .9rem; font-size: 1rem; }
 .bubble p { margin: 0; line-height: 1.45; }
-.bubble-who { display: block; font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; margin-bottom: .1rem; opacity: .75; }
+.bubble-who { display: block; font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; margin-bottom: .1rem; }
 .bubble.guide { align-self: flex-start; background: var(--brand-soft); color: var(--ink); border-bottom-left-radius: 4px; }
 .bubble.owner { align-self: flex-end; background: var(--navy-900); color: #fff; border-bottom-right-radius: 4px; }
 .bubble-links { margin: .4rem 0 0; padding-left: 1.1rem; font-size: .92rem; }
@@ -843,7 +843,7 @@ footer .api-status { background: transparent; color: #a9bdd4; border-color: rgba
    ===================================================================================================== */
 :root {
   --navy-950: #0b1f3a; --navy-900: #102a43; --navy-800: #17395c;
-  --teal-700: #0b6f7a; --teal-600: #0f8490; --teal-500: #19a7a0; --teal-100: #d5eeee; --teal-50: #eaf6f7;
+  --teal-700: #0b6f7a; --teal-600: #0c7782; --teal-500: #19a7a0; --teal-100: #d5eeee; --teal-50: #eaf6f7;
   --bg: #f3f6fb; --surface: #ffffff; --surface-2: #f7f9fd;
   --ink: #14263d; --muted: #5b6b82; --line: #dce5ef; --line-strong: #c6d3e2;
   --radius: 10px; --radius-lg: 16px;
@@ -891,8 +891,8 @@ nav a.active { background: rgba(255,255,255,.1); color: #fff; box-shadow: inset 
 
 /* Buttons and fields */
 .btn { border-radius: 10px; }
-.btn-primary { background: linear-gradient(180deg, #12939f, #0f8490); border-color: #0d7782; color: #fff; box-shadow: 0 1px 2px rgba(11,31,58,.2), inset 0 1px 0 rgba(255,255,255,.18); }
-.btn-primary:hover { background: linear-gradient(180deg, #0f8490, #0b6f7a); border-color: #0b6f7a; color: #fff; box-shadow: 0 8px 18px -8px rgba(15,132,144,.7); transform: translateY(-1px); }
+.btn-primary { background: linear-gradient(180deg, #12939f, #0c7782); border-color: #0d7782; color: #fff; box-shadow: 0 1px 2px rgba(11,31,58,.2), inset 0 1px 0 rgba(255,255,255,.18); }
+.btn-primary:hover { background: linear-gradient(180deg, #0c7782, #0b6f7a); border-color: #0b6f7a; color: #fff; box-shadow: 0 8px 18px -8px rgba(15,132,144,.7); transform: translateY(-1px); }
 .btn-quiet { background: var(--surface); }
 input[type="text"], input[type="email"], input[type="date"], input[type="search"], select, textarea { border-radius: 10px; }
 input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid rgba(25,167,160,.45); outline-offset: 1px; border-color: var(--teal-600); }
@@ -920,11 +920,11 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px
   background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.16); color: #e8f0fa; box-shadow: none; transition: background .18s, border-color .18s, transform .18s, box-shadow .18s; }
 .home-split .guide-hero .ways-in .btn:hover { background: rgba(255,255,255,.13); border-color: rgba(255,255,255,.32); transform: translateY(-1px); }
 .home-split .guide-hero .ways-in .btn .icon { width: 30px; height: 30px; padding: 6px; border-radius: 9px; background: rgba(255,255,255,.12); transition: background .18s; }
-.home-split .guide-hero .ways-in .btn.is-current { background: linear-gradient(135deg, #1bb3ab, #0f8490); border-color: rgba(255,255,255,.45); color: #fff; box-shadow: 0 12px 26px -10px rgba(25,167,160,.85), inset 0 1px 0 rgba(255,255,255,.3); transform: none; }
+.home-split .guide-hero .ways-in .btn.is-current { background: linear-gradient(135deg, #1bb3ab, #0c7782); border-color: rgba(255,255,255,.45); color: #fff; box-shadow: 0 12px 26px -10px rgba(25,167,160,.85), inset 0 1px 0 rgba(255,255,255,.3); transform: none; }
 .home-split .guide-hero .ways-in .btn.is-current .icon { background: rgba(255,255,255,.22); }
 .home-split .guide-hero .ways-in .btn.is-current::before { content: none; }
 .home-split .guide-hero .one-sentence-row input { min-height: 46px; border-radius: 12px; border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.96); }
-.home-split .guide-hero .one-sentence-row .btn { min-width: 46px; padding-inline: 0; border-radius: 12px; background: linear-gradient(135deg, #1bb3ab, #0f8490); border-color: rgba(255,255,255,.35); color: #fff; }
+.home-split .guide-hero .one-sentence-row .btn { min-width: 46px; padding-inline: 0; border-radius: 12px; background: linear-gradient(135deg, #1bb3ab, #0c7782); border-color: rgba(255,255,255,.35); color: #fff; }
 .home-split .guide-hero .one-sentence-row .btn:disabled { opacity: .55; }
 .home-split .guide-hero .guide-bubble { border-radius: 14px; box-shadow: 0 14px 30px -14px rgba(0,0,0,.6); }
 .home-split .guide-hero .privacy-note { color: #b9cde4; font-size: .82rem; margin-top: .7rem; }
@@ -1371,3 +1371,33 @@ input[type="password"]:hover, input[type="search"]:hover { border-color: var(--n
 .pw-rules li span[aria-hidden] { display: inline-grid; place-items: center; width: 1.15rem; height: 1.15rem; border-radius: 50%; font-size: .78rem; line-height: 1; border: 1.5px solid currentColor; }
 .pw-rules li.is-met { color: #0b7a4b; font-weight: 600; }
 .pw-rules li.is-met span[aria-hidden] { background: #0b7a4b; border-color: #0b7a4b; color: #fff; }
+
+
+/* =====================================================================================================
+   Accessibility pass. Every colour behind text is a solid colour, so contrast can be measured by a
+   person or a scanner. Decorative glows and dot fields that sat over the page are gone. Teal text and
+   teal buttons use a slightly deeper teal so white-on-teal and teal-on-white both pass 4.5:1.
+   ===================================================================================================== */
+:root { --teal-600: #0c7782; --brand: #0c7782; }
+body { background: var(--bg); }
+.app::before, .hero-grid::before, .home-hero-guide::before, .home-split::after { display: none; }
+.site-head { background: #102a43; }
+.foot, footer { background: #0b1f3a; }
+.hero, .guide-hero, .home-split, .home-hero, .mb-banner, .auth-side { background: #102a43; }
+.board { background: #0f2a47; }
+.brand-mark, .chat-avatar, .acct-initial { background: #0c7782; }
+.btn-primary { background: #0c7782; border-color: #0a6572; }
+.btn-primary:hover { background: #0a6572; border-color: #0a6572; }
+.home-split .guide-hero .ways-in .btn.is-current, .home-split .guide-hero .one-sentence-row .btn { background: #0c7782; }
+.icon-tile { background: #e3f1f4; }
+.home-split .guide-chat, .is-embedded .guide-side .biz-card, .stat-row li, .empty, .next-card { background: #ffffff; }
+.item details { background: #eef6f8; }
+main table th { background: #eef3fa; }
+.is-embedded .bubble.you { background: #17395c; }
+main > .wrap > h1:first-child:not(.mb-banner h1)::after { background: var(--teal-600); }
+.home .guide-page.is-embedded .guide-chat { background: #ffffff; }
+.chat-id { background: #ffffff; position: relative; z-index: 1; }
+.chat-id > div > span { color: #4a5a70; }
+.chat-id > div { min-width: 0; background: #ffffff; }
+.chat-id > div > span { background: #ffffff; }
+.home .guide-page.is-embedded .guide-chat { position: relative; z-index: 3; }

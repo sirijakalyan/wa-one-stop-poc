@@ -44,9 +44,8 @@ export default function NotificationBell() {
       <button
         type="button"
         className="bell-btn"
-        aria-haspopup="true"
         aria-expanded={open}
-        aria-controls="bell-pop"
+        aria-controls={open ? 'bell-pop' : undefined}
         aria-label={t('bell.label', unread)}
         onClick={() => setOpen((o) => !o)}
       >

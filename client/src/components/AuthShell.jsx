@@ -38,7 +38,7 @@ export function PasswordField({ id, label, value, onChange, autoComplete, hint, 
     <div className="field">
       <label htmlFor={id}>{label}</label>
       <div className="pw-row">
-        <input id={id} type={show ? 'text' : 'password'} value={value} onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} onChange={(e) => onChange(e.target.value)} autoComplete={autoComplete} required={required} aria-describedby={rules ? `${id}-rules` : hint ? `${id}-hint` : undefined} />
+        <input id={id} type={show ? 'text' : 'password'} value={value} onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} onChange={(e) => onChange(e.target.value)} autoComplete={autoComplete} required={required} aria-describedby={rules ? (showRules ? `${id}-rules` : undefined) : hint ? `${id}-hint` : undefined} />
         <button type="button" className="btn btn-quiet btn-sm" aria-pressed={show} onClick={() => setShow((s) => !s)}>{show ? t('auth.hide') : t('auth.show')}</button>
       </div>
       {rules ? (showRules ? (
