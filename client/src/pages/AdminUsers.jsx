@@ -36,9 +36,8 @@ function UserDetail({ id, onBack }) {
   const [err, setErr] = useState('');
   if (loading && !data) return <Loading what="Loading this user" />;
   if (error) return <><button type="button" className="btn btn-quiet btn-sm" onClick={onBack}>Back to users</button><ErrorNote message={error} /></>;
-  const { user, checklist, events } = data;
-  const a = checklist?.answers;
-  const done = checklist ? checklist.items.filter((i) => i.done).length : 0;
+  const { user, events } = data;
+  const lists = data.checklists || (data.checklist ? [data.checklist] : []);
 
   async function setRole(role) {
     setErr(''); setMsg('');
@@ -65,44 +64,56 @@ function UserDetail({ id, onBack }) {
       <ErrorNote message={err} />
       {msg && <p className="ok" role="status">{msg}</p>}
 
-      <section className="panel wide" aria-labelledby="ud-answers">
-        <h3 id="ud-answers">Saved answers</h3>
-        {!a ? <p className="hint">No saved plan yet.</p> : (
-          <dl className="answers">
-            <div><dt>Plan name</dt><dd>{checklist.label || 'None'}</dd></div>
-            <div><dt>Business structure</dt><dd>{STRUCT_LABEL[a.structure] || a.structure}</dd></div>
-            <div><dt>What they do</dt><dd>{[a.desc, ...(a.cats || []).map((c) => CAT_LABEL[c] || c)].filter(Boolean).join(' · ') || 'Not given'}</dd></div>
-            <div><dt>City and county</dt><dd>{[a.city, countyLabel(a.county)].filter(Boolean).join(', ') || 'Skipped'}</dd></div>
-            <div><dt>Hiring within 90 days</dt><dd>{YN_LABEL[a.hiring] || 'Not answered'}</dd></div>
-            <div><dt>Subcontractors</dt><dd>{YN_LABEL[a.subs] || 'Not answered'}</dd></div>
-            <div><dt>Collects sales tax</dt><dd>{YN_LABEL[a.salestax] || 'Not answered'}</dd></div>
-            <div><dt>Income $12,000 or more</dt><dd>{YN_LABEL[a.income] || 'Not answered'}</dd></div>
-            <div><dt>Uses a business name</dt><dd>{YN_LABEL[a.tradename] || 'Not answered'}</dd></div>
-            <div><dt>Saved</dt><dd>{when(checklist.savedAt)}</dd></div>
-          </dl>
-        )}
-      </section>
+      {lists.length === 0 && (
+        <section className="panel wide" aria-labelledby="ud-answers">
+          <h3 id="ud-answers">Saved answers</h3>
+          <p className="hint">No saved plan yet.</p>
+        </section>
+      )}
+      {lists.map((checklist, n) => {
+        const a = checklist.answers;
+        const done = checklist.items.filter((i) => i.done).length;
+        const k = lists.length > 1 ? `-${n}` : '';
+        return (
+          <div key={checklist.id} className="ud-business">
+            {lists.length > 1 && <h3 className="ud-business-title">Business {n + 1} of {lists.length}: {checklist.label || 'Untitled'}</h3>}
+            <section className="panel wide" aria-labelledby={`ud-answers${k}`}>
+              <h3 id={`ud-answers${k}`}>Saved answers</h3>
+              <dl className="answers">
+                <div><dt>Plan name</dt><dd>{checklist.label || 'None'}</dd></div>
+                <div><dt>Business structure</dt><dd>{STRUCT_LABEL[a.structure] || a.structure}</dd></div>
+                <div><dt>What they do</dt><dd>{[a.desc, ...(a.cats || []).map((c) => CAT_LABEL[c] || c)].filter(Boolean).join(' · ') || 'Not given'}</dd></div>
+                <div><dt>City and county</dt><dd>{[a.city, countyLabel(a.county)].filter(Boolean).join(', ') || 'Skipped'}</dd></div>
+                <div><dt>Hiring within 90 days</dt><dd>{YN_LABEL[a.hiring] || 'Not answered'}</dd></div>
+                <div><dt>Subcontractors</dt><dd>{YN_LABEL[a.subs] || 'Not answered'}</dd></div>
+                <div><dt>Collects sales tax</dt><dd>{YN_LABEL[a.salestax] || 'Not answered'}</dd></div>
+                <div><dt>Income $12,000 or more</dt><dd>{YN_LABEL[a.income] || 'Not answered'}</dd></div>
+                <div><dt>Uses a business name</dt><dd>{YN_LABEL[a.tradename] || 'Not answered'}</dd></div>
+                <div><dt>Saved</dt><dd>{when(checklist.savedAt)}</dd></div>
+              </dl>
+            </section>
 
-      <section className="panel wide" aria-labelledby="ud-steps">
-        <h3 id="ud-steps">Checklist progress {checklist && <span className="chip-count">{done} of {checklist.items.length} done</span>}</h3>
-        {!checklist ? <p className="hint">Nothing to show until they save a plan.</p> : (
-          <div className="table-scroll">
-            <table className="stack">
-              <thead><tr><th scope="col">Step</th><th scope="col">Agency</th><th scope="col">Status</th><th scope="col">Renewal date</th></tr></thead>
-              <tbody>
-                {checklist.items.map((i) => (
-                  <tr key={i.id}>
-                    <td>{i.title}</td>
-                    <td data-label="Agency">{i.agency}</td>
-                    <td data-label="Status"><span className={`pill ${i.done ? 'applies' : 'pending'}`}>{i.done ? 'Done' : 'Open'}</span></td>
-                    <td data-label="Renewal date">{i.renewal || 'None'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <section className="panel wide" aria-labelledby={`ud-steps${k}`}>
+              <h3 id={`ud-steps${k}`}>Checklist progress <span className="chip-count">{done} of {checklist.items.length} done</span></h3>
+              <div className="table-scroll">
+                <table className="stack">
+                  <thead><tr><th scope="col">Step</th><th scope="col">Agency</th><th scope="col">Status</th><th scope="col">Renewal date</th></tr></thead>
+                  <tbody>
+                    {checklist.items.map((i) => (
+                      <tr key={i.id}>
+                        <td>{i.title}</td>
+                        <td data-label="Agency">{i.agency}</td>
+                        <td data-label="Status"><span className={`pill ${i.done ? 'applies' : 'pending'}`}>{i.done ? 'Done' : 'Open'}</span></td>
+                        <td data-label="Renewal date">{i.renewal || 'None'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
           </div>
-        )}
-      </section>
+        );
+      })}
 
       <section className="panel wide" aria-labelledby="ud-activity">
         <h3 id="ud-activity">Activity ({events.length})</h3>
@@ -151,6 +162,7 @@ export default function AdminUsers() {
       <ul className="stat-chips" aria-label="Summary">
         <li><strong>{users.length}</strong> accounts</li>
         <li><strong>{savedCount}</strong> with a saved plan</li>
+        <li><strong>{users.reduce((n, u) => n + (u.businesses?.length || 0), 0)}</strong> businesses saved</li>
         <li><strong>{users.filter((u) => u.role === 'admin').length}</strong> admins</li>
       </ul>
       <div className="field user-search">
@@ -166,7 +178,7 @@ export default function AdminUsers() {
                 <tr key={u.id}>
                   <td><strong>{u.name}</strong><br /><span className="hint">{u.email}</span></td>
                   <td data-label="Role"><span className={`pill ${u.role === 'admin' ? 'applies' : 'maybe'}`}>{u.role === 'admin' ? 'Admin' : 'Owner'}</span></td>
-                  <td data-label="Plan">{u.saved ? (u.label || 'Saved') : 'No plan yet'}</td>
+                  <td data-label="Plan">{!u.saved ? 'No plan yet' : (u.businesses?.length || 0) > 1 ? <>{u.businesses.length} businesses<br /><span className="hint">{u.businesses.map((b) => b.label || 'Untitled').join(', ')}</span></> : (u.label || 'Saved')}</td>
                   <td data-label="Progress">{u.saved ? <><Bar done={u.done} total={u.total} /> <span className="hint">{u.done} of {u.total}</span></> : 'None'}</td>
                   <td data-label="Last active">{when(u.lastActivity || u.lastLoginAt || u.createdAt)}</td>
                   <td><button type="button" className="btn btn-quiet btn-sm" onClick={() => setOpen(u.id)}>View<span className="sr-only"> {u.name}</span></button></td>

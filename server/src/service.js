@@ -352,12 +352,19 @@ export function createService(store, options = {}) {
   });
 
   /* ---------- Admin: users ---------- */
+  // Every business the account has saved, with progress. The first one also fills the older single-business fields.
   async function progressOf(a, rulesDoc) {
-    const cl = (await businessesOf(acctVisitor(a)))[0];
-    if (!cl) return { saved: false, label: '', done: 0, total: 0, percent: 0 };
-    const built = await buildChecklist(cl, rulesDoc, 'en');
-    const done = built.items.filter((i) => i.done).length;
-    return { saved: true, label: cl.label || '', done, total: built.items.length, percent: built.items.length ? Math.round((done / built.items.length) * 100) : 0 };
+    const all = await businessesOf(acctVisitor(a));
+    if (!all.length) return { saved: false, label: '', done: 0, total: 0, percent: 0, businesses: [] };
+    const businesses = [];
+    for (const cl of all) {
+      const built = await buildChecklist(cl, rulesDoc, 'en');
+      const done = built.items.filter((i) => i.done).length;
+      businesses.push({ id: bizIdOf(cl.id), label: cl.label || '', done, total: built.items.length });
+    }
+    const done = businesses.reduce((n, x) => n + x.done, 0);
+    const total = businesses.reduce((n, x) => n + x.total, 0);
+    return { saved: true, label: businesses[0].label, done, total, percent: total ? Math.round((done / total) * 100) : 0, businesses };
   }
   route('GET', '/api/admin/users', async ({ ctx }) => {
     requireStrictAdmin(ctx);
@@ -374,12 +381,17 @@ export function createService(store, options = {}) {
     requireStrictAdmin(ctx);
     const a = await viaIdp(() => idp.getUser(params.id));
     if (!a) fail('User not found.', 404);
-    const cl = (await businessesOf(acctVisitor(a)))[0] || null;
-    const built = cl ? await buildChecklist(cl, await loadRules(), 'en') : null;
+    const rulesDoc = await loadRules();
+    const checklists = [];
+    for (const cl of await businessesOf(acctVisitor(a))) {
+      const built = await buildChecklist(cl, rulesDoc, 'en');
+      checklists.push({ id: bizIdOf(cl.id), label: cl.label || '', answers: cl.answers, savedAt: cl.savedAt || '', items: built.items.map((i) => ({ id: i.id, title: i.title, status: i.status, done: i.done, renewal: i.renewal || '', agency: i.agency || '' })) });
+    }
     return {
       ok: true,
       user: { ...publicUser(a), createdAt: a.createdAt, lastLoginAt: a.lastLoginAt || '' },
-      checklist: built ? { label: cl.label || '', answers: cl.answers, savedAt: cl.savedAt || '', items: built.items.map((i) => ({ id: i.id, title: i.title, status: i.status, done: i.done, renewal: i.renewal || '', agency: i.agency || '' })) } : null,
+      checklist: checklists[0] || null, // the first business, for older callers
+      checklists,
       events: await store.listEvents(acctVisitor(a), 200),
     };
   });

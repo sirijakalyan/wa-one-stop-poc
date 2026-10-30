@@ -31,3 +31,24 @@ test('one visitor can keep several businesses, switch between them and remove on
   assert.deepEqual((await app.call('GET', '/api/businesses', undefined, vis)).body.businesses.map((b) => b.label), ['Food truck']);
   assert.equal((await app.call('GET', '/api/checklist?biz=bad!id', undefined, vis)).status, 404);
 });
+
+test('the admin People list and detail show every business, not just the first', async () => {
+  const adm = await startApp({ adminKey: 'k-multi' });
+  try {
+    const hdr = { 'x-admin-key': 'k-multi' };
+    const email = 'multi@example.com';
+    const su = await adm.call('POST', '/api/auth/signup', { name: 'Multi Owner', email, password: 'Test-pass-12345!' });
+    const login = await adm.call('POST', '/api/auth/login', { email, password: 'Test-pass-12345!' });
+    const tok = { authorization: `Bearer ${login.body.token}` };
+    assert.equal(su.status < 300 && login.status, 200);
+    await adm.call('POST', '/api/checklist', { answers: ANSWERS, label: 'Food truck' }, tok);
+    await adm.call('POST', '/api/checklist?biz=new', { answers: { ...ANSWERS, structure: 'sole' }, label: 'Other service' }, tok);
+    await adm.call('POST', '/api/checklist?biz=new', { answers: { ...ANSWERS, structure: 'sole' }, label: 'Third one' }, tok);
+    const list = await adm.call('GET', '/api/admin/users', undefined, hdr);
+    const row = list.body.users.find((u) => u.email === email);
+    assert.deepEqual(row.businesses.map((b) => b.label), ['Food truck', 'Other service', 'Third one']);
+    const one = await adm.call('GET', `/api/admin/users/${row.id}`, undefined, hdr);
+    assert.equal(one.body.checklists.length, 3);
+    assert.equal(one.body.checklist.label, 'Food truck');
+  } finally { await adm.stop(); }
+});
