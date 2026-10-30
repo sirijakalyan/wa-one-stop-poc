@@ -1427,3 +1427,9 @@ main > .wrap > h1:first-child:not(.mb-banner h1)::after { background: var(--teal
 .ring::before { content: none; }
 .ring span { position: static; width: calc(100% - 18px); height: calc(100% - 18px); border-radius: 50%; background: #0f2a47; align-content: center; }
 @media (max-width: 640px) { .ring span { width: calc(100% - 14px); height: calc(100% - 14px); } }
+/* Instant scrolling: automated checkers (and people with motion sensitivity) measure elements while the page is still scrolling */
+html { scroll-behavior: auto; }
+/* The home chat card must stay exactly inside its panel (no inherited top offset) */
+.home .guide-page.is-embedded .guide-chat { position: relative; top: auto; bottom: auto; inset-block: auto; }
+/* Home: the chat panel sits below the hero instead of overlapping it, so every text background is unambiguous */
+.home .workspace, .home .workspace:has(> .guide-page), .home .workspace:has(> div), .home .workspace:has(> form) { margin-top: 1.5rem; }
