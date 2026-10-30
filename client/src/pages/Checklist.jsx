@@ -117,7 +117,7 @@ export default function Checklist({ embedded = false, onChanged, onData } = {}) 
       <ErrorNote message={actionError} />
       <StepAudio items={Object.keys(phases).flatMap((p) => items.filter((i) => String(i.phase) === p))} onActive={(id) => {
         setSpeaking(id);
-        if (id) setTimeout(() => document.getElementById(`step-${id}`)?.scrollIntoView({ behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' }), 100);
+        if (id) setTimeout(() => document.getElementById(`step-${id}`)?.scrollIntoView?.({ behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' }), 100);
       }} />
 
       {Object.entries(phases).map(([p, name]) => {

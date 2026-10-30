@@ -118,7 +118,7 @@ function AdminPanel({ signedIn = false }) {
           {a('Pick a rule to edit it. Nothing goes live until a second person approves it.', 'Elija una regla para editarla. Nada se publica hasta que una segunda persona lo apruebe.')}
         </p>
         <p className="desk-add">
-          <button type="button" className="btn btn-primary btn-sm" onClick={() => { setAdding(true); setSelected(''); setMsg(''); setErr(''); setTimeout(() => document.getElementById('add-rule-h')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60); }}>{a('Add a rule', 'Agregar una regla')}</button>
+          <button type="button" className="btn btn-primary btn-sm" onClick={() => { setAdding(true); setSelected(''); setMsg(''); setErr(''); setTimeout(() => document.getElementById('add-rule-h')?.scrollIntoView?.({ behavior: 'smooth', block: 'center' }), 60); }}>{a('Add a rule', 'Agregar una regla')}</button>
         </p>
         <p className="desk-note">
           {signedIn
@@ -146,7 +146,7 @@ function AdminPanel({ signedIn = false }) {
                   className={`tile tile--${st.key}${r.id === selected ? ' is-on' : ''}${dim(r) ? ' is-dim' : ''}`}
                   aria-pressed={r.id === selected}
                   aria-label={`${nameOf(r)}. ${st.label}${r.draft ? a('. Has a draft', '. Tiene un borrador') : ''}`}
-                  onClick={() => { setSelected(r.id); setMsg(''); setErr(''); setTimeout(() => document.getElementById('desk-editor')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60); }}
+                  onClick={() => { setSelected(r.id); setMsg(''); setErr(''); setTimeout(() => document.getElementById('desk-editor')?.scrollIntoView?.({ behavior: 'smooth', block: 'start' }), 60); }}
                 >
                   <span className="tile-top">
                     <span className="tile-no">{String(i + 1).padStart(2, '0')}</span>

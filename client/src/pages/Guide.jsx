@@ -315,7 +315,7 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
         clearInterval(timer);
         focusedBusiness.current = true;
         const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-        el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+        el.scrollIntoView?.({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
       } else if (tries > 26) clearInterval(timer);
     }, 150);
     return () => clearInterval(timer);
