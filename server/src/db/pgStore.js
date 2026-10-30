@@ -55,7 +55,8 @@ export function createPgStore(pool) {
     const phases = (await pool.query("SELECT value FROM rule_meta WHERE key = 'phases'")).rows[0]?.value ?? {};
     const rules = (await pool.query('SELECT data FROM rules ORDER BY position')).rows.map((r) => r.data);
     const changes = (await pool.query('SELECT data FROM rule_changes ORDER BY at, id')).rows.map((r) => r.data);
-    return { phases, rules, changes };
+    const questions = (await pool.query("SELECT value FROM rule_meta WHERE key = 'questions'")).rows[0]?.value ?? [];
+    return { phases, rules, changes, questions };
   }
 
   async function writeRules(doc) {
@@ -70,8 +71,13 @@ export function createPgStore(pool) {
         );
         i += 1;
       }
+      // A rule an admin removed is gone for good. The document always holds every rule, so anything missing was removed.
+      await client.query('DELETE FROM rules WHERE id <> ALL($1::text[])', [doc.rules.map((r) => r.id)]);
       for (const c of doc.changes || []) {
         await client.query('INSERT INTO rule_changes (id, at, data) VALUES ($1, $2, $3::jsonb) ON CONFLICT (id) DO NOTHING', [c.id, c.at, JSON.stringify(c)]);
+      }
+      if (Array.isArray(doc.questions)) {
+        await client.query("INSERT INTO rule_meta (key, value) VALUES ('questions', $1::jsonb) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", [JSON.stringify(doc.questions)]);
       }
       await client.query('COMMIT');
     } catch (err) {

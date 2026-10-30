@@ -6,6 +6,9 @@ import { ErrorNote, Loading } from '../components/Parts.jsx';
 import EvidencePanel from '../components/EvidencePanel.jsx';
 import ExternalLink from '../components/ExternalLink.jsx';
 import AdminUsers from './AdminUsers.jsx';
+import AdminQuestions from './AdminQuestions.jsx';
+import AddRuleForm from '../components/AddRuleForm.jsx';
+import AppliesPicker, { pickerFrom } from '../components/AppliesPicker.jsx';
 import Sources from './Sources.jsx';
 
 const FIELDS = [
@@ -47,6 +50,11 @@ function AdminPanel({ signedIn = false }) {
   const [err, setErr] = useState('');
   const [confirmReset, setConfirmReset] = useState(false);
   const [filter, setFilter] = useState('all');
+  const [adding, setAdding] = useState(false);
+  const [audience, setAudience] = useState({ mode: 'always', field: '', value: '' });
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const fieldsLoad = useLoad(useCallback(() => api.ruleFields().catch(() => ({ fields: [] })), []));
+  const fields = fieldsLoad.data?.fields ?? [];
 
   const rules = rulesLoad.data?.rules ?? [];
   const rule = rules.find((r) => r.id === selected);
@@ -57,6 +65,8 @@ function AdminPanel({ signedIn = false }) {
     const f = {};
     FIELDS.forEach(({ key }) => { f[key] = rule.draft && key in rule.draft ? rule.draft[key] : getPath(rule, key); });
     setForm(f);
+    setAudience(pickerFrom(rule.applies));
+    setConfirmRemove(false);
   }, [rule]);
 
   async function run(fn, success) {
@@ -91,6 +101,9 @@ function AdminPanel({ signedIn = false }) {
           {needsCount === 0 ? 'Every rule has been checked against its official page.' : `${needsCount} of ${rules.length} rules need a check before you can trust them.`}{' '}
           Pick a rule to edit it. Nothing goes live until a second person approves it.
         </p>
+        <p className="desk-add">
+          <button type="button" className="btn btn-primary btn-sm" onClick={() => { setAdding(true); setSelected(''); setMsg(''); setErr(''); setTimeout(() => document.getElementById('add-rule-h')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60); }}>Add a rule</button>
+        </p>
         <p className="desk-note">
           {signedIn
             ? 'Unlocked for this browser. Published changes are live for every visitor.'
@@ -124,6 +137,7 @@ function AdminPanel({ signedIn = false }) {
                     <span className="lamp" aria-hidden="true" />
                     <span className="tile-state">{st.label}</span>
                     {r.draft && <span className="tile-draft">Draft</span>}
+                    {r.custom && <span className="tile-draft tile-added">Added</span>}
                   </span>
                   <span className="tile-title">{r.title}</span>
                   <span className="tile-foot">{r.agency} · {r.lastVerified ? `checked ${shortDay(r.lastVerified)}` : 'never checked'}</span>
@@ -137,13 +151,28 @@ function AdminPanel({ signedIn = false }) {
       <ErrorNote message={err} />
       {msg && <p className="ok" role="status">{msg}</p>}
 
+      {adding && (
+        <AddRuleForm
+          phases={rulesLoad.data?.phases ?? {}}
+          fields={fields}
+          onCancel={() => setAdding(false)}
+          onAdded={async (res) => {
+            setAdding(false);
+            await rulesLoad.reload();
+            await changesLoad.reload();
+            setSelected(res.rule.id);
+            setMsg(`Rule added and live. Simulated notices queued: ${res.queuedNotifications}. It shows "Pending verification" until a second person checks it.`);
+          }}
+        />
+      )}
+
       <div id="desk-editor" className="desk-editor-anchor">
-        {!rule && <p className="desk-empty">Pick a rule on the board to read it, edit it and send it for a second check.</p>}
+        {!rule && !adding && <p className="desk-empty">Pick a rule on the board to read it, edit it and send it for a second check.</p>}
         {rule && (
           <div className="desk-editor">
             <section className="panel editor" aria-labelledby="editor-h">
               <h2 id="editor-h">Edit: {rule.title}</h2>
-              <p className="hint">The condition that decides who sees this rule is fixed in the rules file and is not editable here.</p>
+              <p className="hint">{rule.custom ? 'You added this rule. Change who sees it in the panel on the right.' : 'The condition that decides who sees this built-in rule is fixed in the rules file.'}</p>
               <form onSubmit={(e) => e.preventDefault()}>
                 {FIELDS.map((f) => (
                   <div className="field" key={f.key}>
@@ -217,6 +246,20 @@ function AdminPanel({ signedIn = false }) {
                 <div><dt>Draft</dt><dd>{rule.draft ? 'Yes, waiting for approval' : 'No'}</dd></div>
               </dl>
               {rule.source?.url && <p><ExternalLink className="btn btn-quiet btn-sm" href={rule.source.url}>Open the source page</ExternalLink></p>}
+              {rule.custom ? (
+                <div className="desk-audience">
+                  <AppliesPicker idPrefix="ed" fields={fields} value={audience} onChange={setAudience} />
+                  <div className="row">
+                    <button type="button" className="btn btn-sm" onClick={() => run(() => api.setApplies(rule.id, audience), (r) => `Saved. Simulated notices queued: ${r.queuedNotifications}.`)}>Save who sees it</button>
+                    {confirmRemove ? (
+                      <>
+                        <button type="button" className="btn btn-primary btn-sm" onClick={async () => { const ok = await run(() => api.removeRule(rule.id), 'Rule removed.'); if (ok) setSelected(''); }}>Yes, remove this rule</button>
+                        <button type="button" className="btn btn-quiet btn-sm" onClick={() => setConfirmRemove(false)}>Keep it</button>
+                      </>
+                    ) : <button type="button" className="btn btn-quiet btn-sm" onClick={() => setConfirmRemove(true)}>Remove this rule</button>}
+                  </div>
+                </div>
+              ) : <p className="hint">This is a built-in rule. Who sees it is fixed in the rules file. You can edit its text and links.</p>}
               <h3>History of this rule</h3>
               {ruleChanges.length === 0 ? <p className="hint">No published changes yet.</p> : (
                 <ul className="desk-history">
@@ -351,7 +394,7 @@ export default function Admin() {
       </div>
     );
   }
-  const tabs = [['rules', 'Rules'], ['people', 'People']];
+  const tabs = [['rules', 'Rules'], ['questions', 'Questions'], ['people', 'People']];
   const asked = params.get('tab');
   const wanted = asked === 'users' ? 'people' : asked === 'sources' ? 'rules' : asked;
   const tab = tabs.some(([k]) => k === wanted) ? wanted : (data?.strict ? 'people' : 'rules');
@@ -370,6 +413,7 @@ export default function Admin() {
             <p><Link className="btn btn-primary btn-sm" to="/login" state={{ from: '/admin' }}>Sign in</Link></p>
           </>
         ))}
+        {tab === 'questions' && <AdminQuestions />}
         {tab === 'rules' && <AdminPanel signedIn={Boolean(data?.required && (getAdminKey() || data?.accountAdmin))} />}
       </div>
     </>

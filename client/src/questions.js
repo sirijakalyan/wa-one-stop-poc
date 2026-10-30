@@ -36,10 +36,11 @@ export const QUESTIONS = {
   review: { title: 'Review your answers', hint: 'Change anything, then build the checklist.' },
 };
 
-export function stepList(answers) {
+// extraIds: the ids of questions an admin added. They come after the standard ones, as "x:<id>" steps.
+export function stepList(answers, extraIds = []) {
   // The business type is always asked, even when the description is blank, because it controls
   // type-specific steps such as the Labor & Industries contractor registration.
-  return ['structure', 'desc', 'cats', 'city', 'hiring', 'subs', 'salestax', 'income', 'tradename', 'review'];
+  return ['structure', 'desc', 'cats', 'city', 'hiring', 'subs', 'salestax', 'income', 'tradename', ...extraIds.map((id) => `x:${id}`), 'review'];
 }
 
 export const blankAnswers = () => ({ structure: '', desc: '', cats: [], city: '', county: '', hiring: '', subs: '', salestax: '', income: '', tradename: '' });

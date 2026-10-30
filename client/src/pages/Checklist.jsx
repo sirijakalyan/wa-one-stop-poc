@@ -16,6 +16,7 @@ export default function Checklist({ embedded = false, onChanged, onData } = {}) 
   const { setAnswers, setLabel, setStep, setCatsAuto, setGuide } = useApp();
   const fetchChecklist = useCallback(() => api.checklist(), [t.lang]); // eslint-disable-line react-hooks/exhaustive-deps
   const { data, error, loading, setData } = useLoad(fetchChecklist);
+  const { data: extraData } = useLoad(useCallback(() => api.questions().catch(() => ({ questions: [] })), []));
   const [actionError, setActionError] = useState('');
   const [speaking, setSpeaking] = useState('');
   useEffect(() => { onData?.(data); }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -34,7 +35,7 @@ export default function Checklist({ embedded = false, onChanged, onData } = {}) 
     setAnswers({ ...blankAnswers(), ...data.answers, cats: [...data.answers.cats] });
     setLabel(data.label || '');
     setCatsAuto(false);
-    setStep(stepList(data.answers).length - 1);
+    setStep(stepList(data.answers, (extraData?.questions ?? []).map((x) => x.id)).length - 1);
     // Back to the home page with the saved answers loaded into "Your business", every row confirmed and editable.
     setGuide({ messages: [], card: cardFromAnswers(data.answers), ask: null, awaiting: null, complete: true, chips: [] });
     navigate('/', { state: { mode: 'type', focus: 'business' } });
@@ -82,6 +83,8 @@ export default function Checklist({ embedded = false, onChanged, onData } = {}) 
     `${t('cl.sales')}: ${t.card.yn[answers.salestax] || t('cl.notAnswered')}`,
     `${t('cl.income')}: ${t.card.yn[answers.income] || t('cl.notAnswered')}`,
     `${t('cl.name')}: ${t.card.yn[answers.tradename] || t('cl.notAnswered')}`,
+    // answers to questions an admin added, shown as "Question: Answer"
+    ...(extraData?.questions ?? []).filter((x) => answers.extra?.[x.id]).map((x) => `${x.text.replace(/\?$/, '')}: ${x.options.find((o) => o.value === answers.extra[x.id])?.label || ''}`),
   ];
 
   return (

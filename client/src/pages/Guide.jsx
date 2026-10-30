@@ -333,6 +333,14 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
     return undefined;
   }
   const edit = (field, value) => turn({ action: 'set', field, value }, t('guide.edited', FIELD_LABELS[field]));
+  // Questions an admin added. They are answered by tapping, after the standard rows are confirmed.
+  const [extraQs, setExtraQs] = useState([]);
+  useEffect(() => { api.questions().then((r) => setExtraQs(r.questions || [])).catch(() => {}); }, []);
+  function answerExtra(qid, value) {
+    const card = { ...guide.card, values: { ...guide.card.values, extra: { ...(guide.card.values.extra || {}), [qid]: value } } };
+    setGuide((g) => ({ ...g, card }));
+    refreshPlan(card, false).catch(() => {});
+  }
 
   async function save() {
     setBusy(true);
@@ -467,6 +475,23 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
 
         <section id="guide-side" className={`guide-side${tab === 'plan' ? ' is-active' : ''}`} data-tab="plan" aria-label={t('guide.sideLabel')}>
           <BusinessCard card={guide.card} onEdit={edit} disabled={busy} />
+          {guide.complete && extraQs.length > 0 && (
+            <section className="extra-qs" aria-labelledby="extra-qs-h">
+              <h3 id="extra-qs-h">{t('guide.moreQ')}</h3>
+              <p className="hint">{t('guide.moreHint')}</p>
+              {extraQs.map((q) => (
+                <fieldset key={q.id} className="extra-q">
+                  <legend>{q.text}</legend>
+                  {q.hint && <p className="hint">{q.hint}</p>}
+                  <div className="extra-opts">
+                    {q.options.map((o) => (
+                      <button key={o.value} type="button" aria-pressed={guide.card.values.extra?.[q.id] === o.value} onClick={() => answerExtra(q.id, o.value)} disabled={busy}>{o.label}</button>
+                    ))}
+                  </div>
+                </fieldset>
+              ))}
+            </section>
+          )}
           {!embedded && <PlanPanel plan={view.plan} newIds={newIds} onSimulate={simulate} simulating={Boolean(sim)} busy={busy} />}
           {guide.complete ? (
             <div className="save-box">

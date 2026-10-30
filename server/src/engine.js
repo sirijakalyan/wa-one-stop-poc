@@ -47,6 +47,15 @@ export function normalizeAnswers(input = {}) {
   for (const f of YN_FIELDS) {
     if (YN_VALUES.includes(input[f])) a[f] = input[f];
   }
+  // Answers to the questions an admin added: { q_abc123: 'yes' }. Only the shape is checked here. The service keeps
+  // the ones that match a real question and one of its options.
+  if (input.extra && typeof input.extra === 'object' && !Array.isArray(input.extra)) {
+    const extra = {};
+    for (const [k, v] of Object.entries(input.extra).slice(0, 40)) {
+      if (/^q_[a-z0-9]{3,24}$/.test(k) && typeof v === 'string' && v.length <= 60) extra[k] = v;
+    }
+    if (Object.keys(extra).length) a.extra = extra;
+  }
   return a;
 }
 
@@ -65,13 +74,14 @@ const YES = { state: 'yes', hits: [], unsure: [] };
 const NO = { state: 'no', hits: [], unsure: [] };
 
 function evalLeaf(cond, a) {
-  const value = a[cond.field];
+  const isExtra = String(cond.field).startsWith('extra.');
+  const value = isExtra ? (a.extra?.[cond.field.slice(6)] ?? '') : a[cond.field];
   let matched = false;
   if ('is' in cond) matched = value === cond.is;
   else if ('in' in cond) matched = cond.in.includes(value);
   else if ('includes' in cond) matched = Array.isArray(value) && value.includes(cond.includes);
   if (matched) return { state: 'yes', hits: cond.label ? [cond.label] : [], unsure: [] };
-  const maybeOn = MAYBE_ON[cond.field];
+  const maybeOn = isExtra ? ['unsure', ''] : MAYBE_ON[cond.field];
   if (maybeOn && maybeOn.includes(value)) {
     return { state: 'maybe', hits: [], unsure: cond.ask ? [cond.ask] : [] };
   }

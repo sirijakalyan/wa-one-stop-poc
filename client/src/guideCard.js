@@ -31,6 +31,7 @@ export function answersFromCard(card) {
     if (card.status[f] !== 'confirmed') continue;
     for (const k of map[f]) a[k] = k === 'cats' ? [...card.values.cats] : card.values[k];
   }
+  if (card.values.extra) a.extra = { ...card.values.extra }; // answers to questions an admin added
   return a;
 }
 

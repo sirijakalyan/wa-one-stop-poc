@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '../api.js';
+import { api, useLoad } from '../api.js';
 import { useT } from '../i18n.js';
 import { useApp } from '../AppContext.jsx';
 import { Meter } from '../components/Parts.jsx';
@@ -15,16 +15,21 @@ export default function Questionnaire({ embedded = false } = {}) {
   const [busy, setBusy] = useState(false);
   const [countyFrom, setCountyFrom] = useState('');
 
-  const list = stepList(answers);
+  const { data: extraData } = useLoad(useCallback(() => api.questions().catch(() => ({ questions: [] })), []));
+  const extraQs = extraData?.questions ?? [];
+  const list = stepList(answers, extraQs.map((x) => x.id));
   const index = Math.min(step, list.length - 1);
   const id = list[index];
-  const q = { title: t(`qn.q.${id}.t`), hint: t(`qn.q.${id}.h`) };
+  const custom = id.startsWith('x:') ? extraQs.find((x) => x.id === id.slice(2)) : null;
+  const q = custom ? { title: custom.text, hint: custom.hint } : { title: t(`qn.q.${id}.t`), hint: t(`qn.q.${id}.h`) };
+  const extraOf = (qid) => answers.extra?.[qid] || '';
   const percent = Math.round((index / (list.length - 1)) * 100);
   const set = (patch) => setAnswers((a) => ({ ...a, ...patch }));
 
   async function next() {
     if (id === 'structure' && !answers.structure) return setErr(t('qn.pickOne'));
     if (YN_FIELDS.includes(id) && !answers[id]) return setErr(t('qn.pickYn'));
+    if (custom && !extraOf(custom.id)) return setErr(t('qn.pickOne'));
     setErr('');
     if (id === 'desc') {
       if (!answers.desc.trim()) {
@@ -132,6 +137,7 @@ export default function Questionnaire({ embedded = false } = {}) {
       [t('qn.r.salestax'), 'salestax', t.card.yn[answers.salestax] || t('qn.notAnswered')],
       [t('qn.r.income'), 'income', t.card.yn[answers.income] || t('qn.notAnswered')],
       [t('qn.r.tradename'), 'tradename', t.card.yn[answers.tradename] || t('qn.notAnswered')],
+      ...extraQs.map((x) => [x.text, `x:${x.id}`, x.options.find((o) => o.value === extraOf(x.id))?.label || t('qn.notAnswered')]),
     ];
     body = (
       <dl className="summary">
@@ -142,6 +148,17 @@ export default function Questionnaire({ embedded = false } = {}) {
           </div>
         ))}
       </dl>
+    );
+  } else if (custom) {
+    body = (
+      <div className="opts">
+        {custom.options.map((o) => (
+          <label key={o.value} className="opt">
+            <input type="radio" name={id} value={o.value} checked={extraOf(custom.id) === o.value} onChange={() => set({ extra: { ...(answers.extra || {}), [custom.id]: o.value } })} />
+            <span>{o.label}</span>
+          </label>
+        ))}
+      </div>
     );
   } else {
     body = (

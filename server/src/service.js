@@ -64,7 +64,7 @@ const publicRule = (r) => ({
   id: r.id, order: r.order, phase: r.phase, title: r.title, agency: r.agency, detail: r.detail,
   source: r.source, apply: r.apply, verification: r.verification, owner: r.owner,
   reviewer: r.reviewer, lastVerified: r.lastVerified, version: r.version, status: r.status,
-  applies: r.applies, draft: r.draft,
+  applies: r.applies, draft: r.draft, custom: Boolean(r.custom),
   supports: r.supports || '', limits: r.limits || '', fallback: r.fallback || '', guide: r.guide || null,
 });
 
@@ -421,7 +421,7 @@ export function createService(store, options = {}) {
   // Evaluate answers without saving.
   route('POST', '/api/evaluate', async ({ body, query }) => {
     const rulesDoc = await loadRules();
-    const answers = normalizeAnswers(body?.answers);
+    const answers = cleanExtra(normalizeAnswers(body?.answers), questionsOf(rulesDoc));
     const built = await buildChecklist({ answers, label: '', done: {}, renewals: {} }, rulesDoc, langIn(query, body));
     return { ok: true, ...built, saved: false };
   });
@@ -446,7 +446,7 @@ export function createService(store, options = {}) {
   });
 
   route('POST', '/api/checklist', async ({ body, ctx, query }) => {
-    const answers = normalizeAnswers(body?.answers);
+    const answers = cleanExtra(normalizeAnswers(body?.answers), questionsOf(await loadRules()));
     if (!answers.structure) fail('Choose a business structure first.');
     const label = typeof body?.label === 'string' ? body.label.slice(0, 80) : '';
     const asNew = String(query?.biz || body?.biz || '') === 'new';
@@ -642,6 +642,234 @@ export function createService(store, options = {}) {
   route('GET', '/api/changes', async () => {
     const doc = await loadRules();
     return { ok: true, changes: [...doc.changes].reverse() };
+  });
+
+  /* ---------- Questions and rules an admin adds ----------
+     Questions live in the rules document (doc.questions). Their answers ride along in answers.extra and a rule can test
+     them with a condition on the field "extra.<question id>". Built-in questions can be used the same way. */
+  const BUILTIN_QUESTIONS = {
+    structure: { text: 'How the business is set up', type: 'choice', options: [['sole', 'Sole proprietor'], ['llc', 'LLC'], ['corp', 'Corporation'], ['partnership', 'Partnership or LLP'], ['unsure', 'Not sure yet']] },
+    cats: { text: 'Kind of business', type: 'multi', options: [['food', 'Food service'], ['construction', 'Construction contracting'], ['other', 'Other service or retail']] },
+    hiring: { text: 'Hiring within 90 days', type: 'yesno' },
+    subs: { text: 'Uses subcontractors', type: 'yesno' },
+    salestax: { text: 'Collects sales tax', type: 'yesno' },
+    income: { text: 'Gross income $12,000 or more', type: 'yesno' },
+    tradename: { text: 'Uses a business name', type: 'yesno' },
+  };
+  const YESNO_OPTIONS = [{ value: 'yes', label: 'Yes' }, { value: 'no', label: 'No' }, { value: 'unsure', label: 'Not sure' }];
+  const NOT_SURE = { value: 'unsure', label: 'Not sure' };
+  const questionsOf = (doc) => (Array.isArray(doc.questions) ? doc.questions : []);
+  const qRand = () => Math.random().toString(36).slice(2, 8).padEnd(6, 'x');
+
+  // Keep only answers to questions that exist, with a value that is one of that question's options.
+  function cleanExtra(answers, questions) {
+    if (!answers.extra) return answers;
+    const extra = {};
+    for (const q of questions) {
+      const v = answers.extra[q.id];
+      if (v && q.options.some((o) => o.value === v)) extra[q.id] = v;
+    }
+    const out = { ...answers };
+    if (Object.keys(extra).length) out.extra = extra; else delete out.extra;
+    return out;
+  }
+
+  // The questions as the questionnaire shows them: yes/no ones get the three standard answers, choice ones get "Not sure" last.
+  const publicQuestion = (q) => ({ id: q.id, text: q.text, hint: q.hint || '', type: q.type, options: q.options });
+
+  function cleanQuestion(body, existing) {
+    const text = String(body?.text ?? '').trim();
+    if (!text || text.length > 200) fail('Write the question in 200 characters or fewer.');
+    const hint = String(body?.hint ?? '').trim();
+    if (hint.length > 300) fail('The help text must be 300 characters or fewer.');
+    const type = existing ? existing.type : body?.type;
+    if (!['yesno', 'choice'].includes(type)) fail('Choose Yes / No / Not sure, or a list of choices.');
+    let options = YESNO_OPTIONS;
+    if (type === 'choice') {
+      const given = (Array.isArray(body?.options) ? body.options : []).map((o) => (typeof o === 'string' ? { label: o } : o || {}));
+      const list = given.map((o) => ({ value: String(o.value || ''), label: String(o.label ?? '').trim() })).filter((o) => o.label && o.value !== 'unsure');
+      if (list.length < 2 || list.length > 8) fail('Give between 2 and 8 choices. "Not sure" is added for you.');
+      if (list.some((o) => o.label.length > 80)) fail('Each choice must be 80 characters or fewer.');
+      if (new Set(list.map((o) => o.label.toLowerCase())).size !== list.length) fail('Each choice needs its own wording.');
+      const used = new Set((existing?.options || []).map((o) => o.value));
+      let n = 1;
+      options = list.map((o) => {
+        if (o.value && /^o[0-9]{1,3}$/.test(o.value) && used.has(o.value)) return o;
+        while (used.has(`o${n}`) || list.some((x) => x.value === `o${n}`)) n += 1;
+        const value = `o${n}`;
+        used.add(value);
+        return { value, label: o.label };
+      });
+      options = [...options, NOT_SURE];
+    }
+    return { text, hint, type, options };
+  }
+
+  route('GET', '/api/questions', async () => ({ ok: true, questions: questionsOf(await loadRules()).map(publicQuestion) }));
+
+  route('POST', '/api/questions', async ({ body, ctx }) => {
+    requireAdmin(ctx);
+    const doc = await loadRules();
+    const list = questionsOf(doc);
+    if (list.length >= 12) fail('You can add up to 12 questions. Remove one first.');
+    const q = { id: `q_${qRand()}`, ...cleanQuestion(body, null), createdAt: new Date().toISOString() };
+    doc.questions = [...list, q];
+    await store.writeRules(doc);
+    return { ok: true, question: publicQuestion(q), questions: doc.questions.map(publicQuestion) };
+  });
+
+  route('PUT', '/api/questions/:id', async ({ params, body, ctx }) => {
+    requireAdmin(ctx);
+    const doc = await loadRules();
+    const list = questionsOf(doc);
+    const i = list.findIndex((q) => q.id === params.id);
+    if (i < 0) fail('Question not found.', 404);
+    const next = { ...list[i], ...cleanQuestion(body, list[i]) };
+    doc.questions = list.map((q, k) => (k === i ? next : q));
+    await store.writeRules(doc);
+    return { ok: true, question: publicQuestion(next), questions: doc.questions.map(publicQuestion) };
+  });
+
+  route('DELETE', '/api/questions/:id', async ({ params, ctx }) => {
+    requireAdmin(ctx);
+    const doc = await loadRules();
+    const list = questionsOf(doc);
+    const q = list.find((x) => x.id === params.id);
+    if (!q) fail('Question not found.', 404);
+    const uses = doc.rules.filter((r) => JSON.stringify(r.applies || {}).includes(`"extra.${q.id}"`));
+    if (uses.length) fail(`This question decides who sees "${uses[0].title}". Remove or change that rule first.`);
+    doc.questions = list.filter((x) => x.id !== q.id);
+    await store.writeRules(doc);
+    return { ok: true, questions: doc.questions.map(publicQuestion) };
+  });
+
+  // The questions a rule can depend on: the built-in ones and the ones an admin added.
+  route('GET', '/api/rule-fields', async ({ ctx }) => {
+    requireAdmin(ctx);
+    const fields = Object.entries(BUILTIN_QUESTIONS).map(([field, q]) => ({
+      field, text: q.text, options: q.type === 'yesno' ? YESNO_OPTIONS.map((o) => ({ value: o.value, label: o.label })) : q.options.map(([value, label]) => ({ value, label })),
+    }));
+    for (const q of questionsOf(await loadRules())) fields.push({ field: `extra.${q.id}`, text: q.text, options: q.options });
+    return { ok: true, fields };
+  });
+
+  // "Applies to everyone" or "applies when <question> is <answer>". "Not sure" makes it show as "may apply".
+  function conditionFrom(spec, questions) {
+    if (!spec || spec.mode === 'always' || spec.always) return { always: true };
+    const field = String(spec.field || '');
+    const value = String(spec.value || '');
+    let text;
+    let label;
+    if (field.startsWith('extra.')) {
+      const q = questions.find((x) => x.id === field.slice(6));
+      if (!q) fail('That question no longer exists.');
+      const o = q.options.find((x) => x.value === value);
+      if (!o || value === 'unsure') fail('Choose one of that question\'s answers.');
+      text = q.text; label = o.label;
+    } else {
+      const b = BUILTIN_QUESTIONS[field];
+      if (!b) fail('Choose a question.');
+      const o = b.type === 'yesno' ? YESNO_OPTIONS.find((x) => x.value === value) : b.options.map(([v, l]) => ({ value: v, label: l })).find((x) => x.value === value);
+      if (!o || value === 'unsure') fail('Choose one of that question\'s answers.');
+      text = b.text; label = o.label;
+    }
+    const leaf = field === 'cats' ? { field, includes: value } : { field, is: value };
+    return { ...leaf, label: `you answered "${label}" to "${text}"`, ask: text.toLowerCase() };
+  }
+  const describeCondition = (c) => (c?.always ? 'everyone' : c?.field ? `${c.field}:${c.is ?? c.includes}` : 'custom');
+
+  function recordChange(doc, rule, field, from, to, ctx) {
+    doc.changes.push({ id: uuid(), ruleId: rule.id, ruleTitle: rule.title, version: rule.version, fields: [{ field, from, to }], reviewer: ctx.account?.email || 'admin key', at: new Date().toISOString() });
+  }
+
+  async function notifyAffected(rule, rulesDoc, fields) {
+    let queued = 0;
+    const told = new Set();
+    for (const cl of await store.listChecklists()) {
+      if (!evaluate(rulesDoc.rules, cl.answers).items.some((i) => i.rule.id === rule.id)) continue;
+      if (told.has(baseOf(cl.id))) continue;
+      told.add(baseOf(cl.id));
+      await store.addNotification(baseOf(cl.id), {
+        id: uuid(), type: 'rule-changed', simulated: true, read: false, createdAt: new Date().toISOString(),
+        title: `Rule changed: ${rule.title}`,
+        body: `An update was made (${fields.join(', ')}). Review this step in your checklist.`,
+      });
+      queued += 1;
+    }
+    return queued;
+  }
+
+  route('POST', '/api/rules', async ({ body, ctx }) => {
+    requireAdmin(ctx);
+    const doc = await loadRules();
+    const title = String(body?.title ?? '').trim();
+    if (!title || title.length > 200) fail('Give the requirement a name of 200 characters or fewer.');
+    const agency = String(body?.agency ?? '').trim();
+    if (!agency || agency.length > 120) fail('Name the agency (120 characters or fewer).');
+    const phase = Number(body?.phase);
+    if (!Object.keys(doc.phases).includes(String(phase))) fail('Choose where this step belongs on the road to opening day.');
+    const detail = String(body?.detail ?? '').trim();
+    if (detail.length > 1000) fail('The plain-language detail must be 1000 characters or fewer.');
+    const url = (v, what) => {
+      const x = String(v ?? '').trim();
+      if (x && !/^https:\/\/[^\s]{1,500}$/.test(x)) fail(`${what} must be a full https:// link.`);
+      return x;
+    };
+    const sourceUrl = url(body?.sourceUrl, 'The source link');
+    if (!sourceUrl) fail('Add the official source link. Every requirement shows where it comes from.');
+    const applyUrl = url(body?.applyUrl, 'The apply link');
+    const sourceLabel = String(body?.sourceLabel ?? '').trim().slice(0, 200) || agency;
+    const applyLabel = String(body?.applyLabel ?? '').trim().slice(0, 120) || 'Open the official page';
+    const applies = conditionFrom(body?.applies, questionsOf(doc));
+    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 30) || 'rule';
+    const order = Math.max(0, ...doc.rules.filter((r) => r.phase === phase).map((r) => r.order || 0)) + 10;
+    const rule = {
+      id: `custom-${slug}-${qRand()}`, order, phase, title, agency, applies, custom: true,
+      reason: {
+        applies: applies.always ? 'This step applies to every business.' : 'This step applies because {hits}.',
+        maybe: 'You were not sure about: {unsure}. This step may apply to you.',
+        no: 'Left out because of your answers.',
+      },
+      detail, after: null,
+      source: { label: sourceLabel, url: sourceUrl },
+      apply: applyUrl ? { label: applyLabel, url: applyUrl } : null,
+      verification: { status: 'pending', note: 'Added by an admin. A second person has not checked it against the official page yet.' },
+      owner: '[NEEDS HUMAN INPUT: content owner]', reviewer: null, lastVerified: null, version: 1, status: 'published', draft: null,
+      fallback: '', noLink: applyUrl ? '' : 'This step has no apply button. Use the source link under Source details.', supports: '', limits: '', guide: null,
+    };
+    doc.rules = [...doc.rules, rule];
+    recordChange(doc, rule, 'rule', '', `added, applies to ${describeCondition(applies)}`, ctx);
+    await store.writeRules(doc);
+    const queued = await notifyAffected(rule, doc, ['new step']);
+    return { ok: true, rule: publicRule(rule), queuedNotifications: queued };
+  });
+
+  route('PUT', '/api/rules/:id/applies', async ({ params, body, ctx }) => {
+    requireAdmin(ctx);
+    const doc = await loadRules();
+    const rule = doc.rules.find((r) => r.id === params.id);
+    if (!rule) fail('Rule not found.', 404);
+    if (!rule.custom) fail('Only a rule an admin added can be changed here. The built-in rules are fixed in the rules file.');
+    const from = describeCondition(rule.applies);
+    rule.applies = conditionFrom(body?.applies, questionsOf(doc));
+    rule.reason = { ...rule.reason, applies: rule.applies.always ? 'This step applies to every business.' : 'This step applies because {hits}.' };
+    rule.version += 1;
+    recordChange(doc, rule, 'applies', from, describeCondition(rule.applies), ctx);
+    await store.writeRules(doc);
+    const queued = await notifyAffected(rule, doc, ['who it applies to']);
+    return { ok: true, rule: publicRule(rule), queuedNotifications: queued };
+  });
+
+  route('DELETE', '/api/rules/:id', async ({ params, ctx }) => {
+    requireAdmin(ctx);
+    const doc = await loadRules();
+    const rule = doc.rules.find((r) => r.id === params.id);
+    if (!rule) fail('Rule not found.', 404);
+    if (!rule.custom) fail('Only a rule an admin added can be removed. The built-in rules are fixed in the rules file.');
+    doc.rules = doc.rules.filter((r) => r.id !== rule.id);
+    recordChange(doc, rule, 'rule', 'added', 'removed', ctx);
+    await store.writeRules(doc);
+    return { ok: true };
   });
 
   route('PUT', '/api/rules/:id/draft', async ({ params, body, ctx }) => {

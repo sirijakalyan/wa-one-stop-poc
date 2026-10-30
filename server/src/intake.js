@@ -452,6 +452,7 @@ export function confirmedAnswers(card) {
     if (c.status[f] !== 'confirmed') continue;
     for (const k of FIELD_KEYS[f]) a[k] = c.values[k];
   }
+  if (c.values.extra) a.extra = c.values.extra; // answers to admin-added questions are not card rows
   return a;
 }
 
