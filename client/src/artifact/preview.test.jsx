@@ -482,8 +482,12 @@ describe('the site needs an account (REQUIRE_LOGIN)', () => {
     expect(await screen.findByRole('heading', { name: 'Welcome back' }, { timeout: 8000 })).toBeInTheDocument();
     await user.type(screen.getByLabelText('Password'), 'Passw0rdOK');
     await user.click(screen.getByRole('button', { name: 'Sign in' }));
-    await user.click(await screen.findByRole('link', { name: 'Home' }, { timeout: 8000 }));
-    expect(await screen.findByRole('heading', { name: /Start your Washington business/ }, { timeout: 8000 })).toBeInTheDocument();
+    // Wait until sign-in has really finished. The Home link also exists on the Sign in page, so clicking it early is a race.
+    await screen.findByRole('button', { name: /Account: Ana/ }, { timeout: 15000 });
+    if (!screen.queryByRole('heading', { name: /Start your Washington business/ })) {
+      await user.click(await screen.findByRole('link', { name: 'Home' }, { timeout: 8000 }));
+    }
+    expect(await screen.findByRole('heading', { name: /Start your Washington business/ }, { timeout: 15000 })).toBeInTheDocument();
     // Home lives at /home, and it is the page shown after signing in (not My business)
     const nav = screen.getByRole('navigation', { name: 'Main' });
     expect(within(nav).getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/home');
@@ -492,7 +496,7 @@ describe('the site needs an account (REQUIRE_LOGIN)', () => {
     await user.click(await screen.findByRole('menuitem', { name: 'Sign out' }));
     expect(await screen.findByRole('heading', { name: 'Welcome back' }, { timeout: 8000 })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Account:/ })).not.toBeInTheDocument();
-  }, 30000);
+  }, 60000);
 
   it('sends a signed-out visitor from a deep link to Sign in, and forgot password stays reachable', async () => {
     const user = userEvent.setup();

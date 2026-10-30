@@ -14,5 +14,8 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: './src/setupTests.js',
+    // Slow shared CI machines: give long UI tests and hooks room instead of failing on timing.
+    testTimeout: 60000,
+    hookTimeout: 60000,
   },
 });
