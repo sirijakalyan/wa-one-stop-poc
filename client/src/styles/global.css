@@ -1433,3 +1433,5 @@ html { scroll-behavior: auto; }
 .home .guide-page.is-embedded .guide-chat { position: relative; top: auto; bottom: auto; inset-block: auto; }
 /* Home: the chat panel sits below the hero instead of overlapping it, so every text background is unambiguous */
 .home .workspace, .home .workspace:has(> .guide-page), .home .workspace:has(> div), .home .workspace:has(> form) { margin-top: 1.5rem; }
+/* Real web fonts draw about 1px taller than the line; give the label room so it never touches the line below */
+.chat-id strong { line-height: 1.45; }
