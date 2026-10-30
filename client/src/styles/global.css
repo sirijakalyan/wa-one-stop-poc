@@ -1404,3 +1404,26 @@ main > .wrap > h1:first-child:not(.mb-banner h1)::after { background: var(--teal
 
 .tile-top { flex-wrap: wrap; row-gap: .25rem; }
 .tile-draft { white-space: nowrap; flex: 0 0 auto; }
+
+/* Accessibility: no decorative pseudo-elements layered over text, so contrast can be measured */
+.item::before, .note-item::before, .next-card::before, .renewals-card::before, .board::before { content: none; }
+.item { border-left: 4px solid var(--applies-line); }
+.item.item--maybe { border-left-color: var(--maybe-line); }
+.item.item--pending { border-left-color: var(--pending-line); }
+.note-item { border-left: 5px solid var(--teal-600); }
+.note-item.read { border-left-color: var(--line-strong); }
+.next-card { border-left: 5px solid var(--teal-600); background: #ffffff; }
+.renewals-card { border-top: 4px solid var(--teal-600); }
+/* Admin board: solid colors instead of opacity/transparency so contrast is measurable */
+.tile { background: #1b3a5c; border-color: #4a6a8f; }
+.tile:hover { background: #244a73; border-color: #9fb6d2; }
+.tile-no { opacity: 1; color: #dbe6f3; }
+.tile-foot { opacity: 1; color: #c9d7e8; }
+.tile.is-on { background: #fff; color: var(--navy-900); border-color: #fff; }
+.tile.is-on .tile-foot, .tile.is-on .tile-no { opacity: 1; color: #3d4f66; }
+.tile--off { opacity: 1; background: #17314f; color: #c9d7e8; }
+.tile--off .tile-foot, .tile--off .tile-no { color: #c9d7e8; }
+/* Progress ring: the label sits on its own solid disc instead of a pseudo-element */
+.ring::before { content: none; }
+.ring span { position: static; width: calc(100% - 18px); height: calc(100% - 18px); border-radius: 50%; background: #0f2a47; align-content: center; }
+@media (max-width: 640px) { .ring span { width: calc(100% - 14px); height: calc(100% - 14px); } }
