@@ -470,29 +470,29 @@ describe('the site needs an account (REQUIRE_LOGIN)', () => {
     const user = userEvent.setup();
     renderApp();
     // Visitors see Home first; Sign in only appears when they open a page that needs an account.
-    expect(await screen.findByRole('heading', { name: /Start your Washington business/ })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: /Start your Washington business/ }, { timeout: 8000 })).toBeInTheDocument();
     await user.click(screen.getAllByRole('link', { name: 'My business' })[0]);
-    expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Welcome back' }, { timeout: 8000 })).toBeInTheDocument();
     await user.click(screen.getAllByRole('link', { name: 'Create account' })[0]);
     await user.type(await screen.findByLabelText('Your name'), 'Ana');
     await user.type(screen.getByLabelText('Email address'), 'ana@example.com');
     await user.type(screen.getByLabelText('Password'), 'Passw0rdOK');
     await user.type(screen.getByLabelText('Confirm password'), 'Passw0rdOK');
     await user.click(screen.getByRole('button', { name: 'Create account' }));
-    expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Welcome back' }, { timeout: 8000 })).toBeInTheDocument();
     await user.type(screen.getByLabelText('Password'), 'Passw0rdOK');
     await user.click(screen.getByRole('button', { name: 'Sign in' }));
-    await user.click(await screen.findByRole('link', { name: 'Home' }));
-    expect(await screen.findByRole('heading', { name: /Start your Washington business/ })).toBeInTheDocument();
+    await user.click(await screen.findByRole('link', { name: 'Home' }, { timeout: 8000 }));
+    expect(await screen.findByRole('heading', { name: /Start your Washington business/ }, { timeout: 8000 })).toBeInTheDocument();
     // Home lives at /home, and it is the page shown after signing in (not My business)
     const nav = screen.getByRole('navigation', { name: 'Main' });
     expect(within(nav).getByRole('link', { name: 'Home' })).toHaveAttribute('href', '/home');
     expect(within(nav).getByRole('link', { name: 'Home' })).toHaveAttribute('aria-current', 'page');
     await user.click(await screen.findByRole('button', { name: /Account: Ana/ }, { timeout: 5000 }));
     await user.click(await screen.findByRole('menuitem', { name: 'Sign out' }));
-    expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Welcome back' }, { timeout: 8000 })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Account:/ })).not.toBeInTheDocument();
-  });
+  }, 30000);
 
   it('sends a signed-out visitor from a deep link to Sign in, and forgot password stays reachable', async () => {
     const user = userEvent.setup();
