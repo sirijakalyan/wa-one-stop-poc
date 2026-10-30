@@ -155,7 +155,7 @@ function AdminPanel({ signedIn = false }) {
                     <span className="tile-state">{st.label}</span>
                     {r.draft && <span className="tile-draft">{a('Draft', 'Borrador')}</span>}
                     {r.custom && <span className="tile-draft tile-added">{a('Added', 'Agregada')}</span>}
-                    {r.disabled && <span className="tile-draft tile-off">{a('Hidden from owners', 'Oculta para los dueños')}</span>}
+                    {r.disabled && <span className="tile-draft tile-off">{a('Hidden from new members', 'Oculta para miembros nuevos')}</span>}
                   </span>
                   <span className="tile-title">{nameOf(r)}</span>
                   <span className="tile-foot">{agencyOf(r)} · {r.lastVerified ? a(`checked ${shortDay(r.lastVerified, a)}`, `revisada ${shortDay(r.lastVerified, a)}`) : a('never checked', 'nunca revisada')}</span>
@@ -241,15 +241,15 @@ function AdminPanel({ signedIn = false }) {
               <div className="desk-onoff">
                 {rule.disabled ? (
                   <>
-                    <p className="hint">{a('This rule is disabled. Owners do not see it in checklists, plans or answers.', 'Esta regla está desactivada. Los dueños no la ven en listas, planes ni respuestas.')}</p>
-                    <button type="button" className="btn btn-primary btn-sm" onClick={() => run(() => api.enableRule(rule.id), a('Rule enabled. Owners see it again.', 'Regla activada. Los dueños la ven de nuevo.'))}>{a('Enable this rule', 'Activar esta regla')}</button>
+                    <p className="hint">{a('This rule is disabled. New members do not see it. People who saved a plan before you disabled it keep it.', 'Esta regla está desactivada. Los miembros nuevos no la ven. Quienes guardaron un plan antes de que la desactivara la conservan.')}</p>
+                    <button type="button" className="btn btn-primary btn-sm" onClick={() => run(() => api.enableRule(rule.id), a('Rule enabled. Everyone sees it again.', 'Regla activada. Todos la ven de nuevo.'))}>{a('Enable this rule', 'Activar esta regla')}</button>
                   </>
                 ) : (
                   <>
-                    <p className="hint">{a('Delete hides a rule from owners. Nothing is lost, and you can enable it again.', 'Eliminar oculta una regla para los dueños. No se pierde nada y puede activarla de nuevo.')}</p>
+                    <p className="hint">{a('Delete hides a rule from new members. People who already saved a plan keep it. Nothing is lost, and you can enable it again.', 'Eliminar oculta una regla para los miembros nuevos. Quienes ya guardaron un plan la conservan. No se pierde nada y puede activarla de nuevo.')}</p>
                     {confirmOff ? (
                       <div className="row">
-                        <button type="button" className="btn btn-primary btn-sm" onClick={async () => { await run(() => api.disableRule(rule.id), a('Rule disabled. Owners no longer see it. You can enable it again here.', 'Regla desactivada. Los dueños ya no la ven. Puede activarla de nuevo aquí.')); setConfirmOff(false); }}>{a('Yes, disable it', 'Sí, desactivarla')}</button>
+                        <button type="button" className="btn btn-primary btn-sm" onClick={async () => { await run(() => api.disableRule(rule.id), a('Rule disabled. New members no longer see it, and people who already saved a plan keep it. You can enable it again here.', 'Regla desactivada. Los miembros nuevos ya no la ven y quienes ya guardaron un plan la conservan. Puede activarla de nuevo aquí.')); setConfirmOff(false); }}>{a('Yes, disable it', 'Sí, desactivarla')}</button>
                         <button type="button" className="btn btn-quiet btn-sm" onClick={() => setConfirmOff(false)}>{a('Keep it', 'Conservarla')}</button>
                       </div>
                     ) : <button type="button" className="btn btn-quiet btn-sm" onClick={() => setConfirmOff(true)}>{a('Delete (disable) this rule', 'Eliminar (desactivar) esta regla')}</button>}

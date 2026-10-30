@@ -168,7 +168,7 @@ export function createService(store, options = {}) {
     const result = { checked: 0, sent: 0, failed: 0 };
     if (!mailer) return result;
     const startOfDay = Date.parse(`${now.toISOString().slice(0, 10)}T00:00:00Z`);
-    const rulesDoc = await loadRules();
+    const rulesDoc = await loadAll();
     for (const sub of await store.listEmailSubscribers()) {
       if (onlyVisitor && sub.id !== onlyVisitor) continue;
       const all = (await store.listChecklists()).filter((c) => baseOf(c.id) === sub.id);
@@ -237,7 +237,9 @@ export function createService(store, options = {}) {
 
   // Build the response for a saved checklist.
   async function buildChecklist(cl, rawDoc, lang = 'en') {
-    const rulesDoc = localizeRules(rawDoc, lang);
+    // A rule an admin disabled stays on checklists that were already saved when it was disabled, and is hidden from everyone else.
+    const full = await loadAll();
+    const rulesDoc = localizeRules({ ...full, rules: full.rules.filter((r) => !r.disabled || (cl.id && r.keepFor?.includes(cl.id))) }, lang);
     const { items, skipped } = evaluate(rulesDoc.rules, cl.answers, lang);
     const countyHealth = items.some((i) => i.rule.id === COUNTY_RULE_ID) ? await resolveCountyHealth(cl.answers.county, lang) : null;
     const ids = new Set(items.map((i) => i.rule.id));
@@ -462,7 +464,7 @@ export function createService(store, options = {}) {
     const cl = { answers, label, done: before?.done || {}, renewals: before?.renewals || {}, savedAt: new Date().toISOString() };
     await store.putChecklist(key, cl);
     await track(ctx, asNew ? 'business-added' : 'plan-saved', label || 'Checklist saved');
-    return { ok: true, biz: bizIdOf(key), ...(await buildChecklist(cl, await loadRules(), langIn(query, body))) };
+    return { ok: true, biz: bizIdOf(key), ...(await buildChecklist({ id: key, ...cl }, await loadRules(), langIn(query, body))) };
   });
 
   route('DELETE', '/api/checklist', async ({ ctx, query }) => {
@@ -533,7 +535,7 @@ export function createService(store, options = {}) {
     const cl = await store.getChecklist(visitorOf(ctx));
     const entries = cl ? Object.entries(cl.renewals) : [];
     if (!entries.length) fail('Add a renewal date to a checklist item on the Progress screen first.');
-    const rulesDoc = await loadRules();
+    const rulesDoc = await loadAll();
     const settings = await store.getSettings(visitorOf(ctx));
     const emailing = Boolean(mailer && settings.emailOptIn && settings.emailConfirmed && settings.email);
     let emailed = 0;
@@ -1013,8 +1015,11 @@ export function createService(store, options = {}) {
     const rule = doc.rules.find((r) => r.id === params.id);
     if (!rule) fail('Rule not found.', 404);
     if (off && doc.rules.filter((r) => !r.disabled && r.id !== rule.id).length === 0) fail('Keep at least one rule enabled.');
-    if (off) { rule.disabled = true; rule.disabledAt = new Date().toISOString(); rule.disabledBy = ctx.account?.email || 'admin key'; }
-    else { delete rule.disabled; delete rule.disabledAt; delete rule.disabledBy; }
+    if (off) {
+      rule.disabled = true; rule.disabledAt = new Date().toISOString(); rule.disabledBy = ctx.account?.email || 'admin key';
+      // Everyone who has already saved a plan keeps this step. Only people who save a plan from now on do not get it.
+      rule.keepFor = (await store.listChecklists()).map((c) => c.id);
+    } else { delete rule.disabled; delete rule.disabledAt; delete rule.disabledBy; delete rule.keepFor; }
     await store.writeRules(doc);
     return { ok: true, rule: publicRule(rule) };
   }
