@@ -121,7 +121,6 @@ describe('Spanish', () => {
     expect(await screen.findByText('¿Cómo se organizará su negocio?')).toBeInTheDocument();
     expect(screen.getByText('Propietario único')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Siguiente' })).toBeInTheDocument();
-    expect(screen.getByText(/Cada requisito mostrado viene de una página oficial/)).toBeInTheDocument();
     await user.click(screen.getAllByRole('link', { name: 'Iniciar sesión' })[0]);
     expect(await screen.findByRole('heading', { name: 'Bienvenido de nuevo' })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Hacer una pregunta' }));

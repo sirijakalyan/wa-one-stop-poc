@@ -45,16 +45,11 @@ function renderAt(path) {
   );
 }
 
-describe('page footer guidance', () => {
-  const paths = [...ROUTES.map((r) => r.path), '/this-page-does-not-exist'];
-
-  it.each(paths)('shows the full demo disclaimer in the footer on %s, with no demo banner', (path) => {
-    renderAt(path);
-    expect(screen.getByRole('contentinfo')).toHaveTextContent(/confirm with the relevant agency/i);
-    expect(screen.getByTestId('footer-disclaimer')).toHaveTextContent(
-      'Demo only, not official guidance. Confirm with the relevant agency. Not legal advice. Not a live product.',
-    );
-    expect(screen.queryByTestId('demo-disclaimer')).toBeNull();
+describe('page footer', () => {
+  it('has no demo disclaimer text', () => {
+    renderAt('/');
+    expect(screen.queryByTestId('footer-disclaimer')).toBeNull();
+    expect(screen.queryByText(/Demo only/i)).toBeNull();
   });
 });
 

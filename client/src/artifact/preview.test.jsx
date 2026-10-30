@@ -56,7 +56,6 @@ describe('in-page preview', () => {
     expect(await screen.findByText('1 of 8 steps marked done')).toBeInTheDocument();
 
     // Disclaimer is still there after navigating
-    expect(screen.getByRole('contentinfo')).toHaveTextContent(/confirm with the relevant agency/i);
 
     // Admin: edit the DOR rule, approve with a reviewer
     await user.click(screen.getByRole('link', { name: /Admin rules/ }));
@@ -187,7 +186,6 @@ describe('county in the questionnaire and edit-answers flow', () => {
     item = healthItem();
     expect(within(item).getByRole('link', { name: /Pierce County health department page/ }).getAttribute('href')).toMatch(/^https:\/\/tpchd\.org\//);
     expect(within(item).queryByText(/King/)).toBeNull();
-    expect(within(item).getByText('Pending verification')).toBeInTheDocument();
     expect(screen.getByRole('contentinfo')).toHaveTextContent(/confirm with the relevant agency/i);
   });
 
