@@ -34,6 +34,7 @@ function staleness(rule, a) {
 
 // One verification state per rule, shown as a lamp on its tile.
 function statusOf(r, a) {
+  if (r.disabled) return { key: 'off', label: a('Disabled', 'Desactivada') };
   if (r.verification.status !== 'checked' || !r.lastVerified) return { key: 'needs', label: a('Needs check', 'Falta revisar') };
   if (staleness(r, a) !== a('Current', 'Vigente')) return { key: 'stale', label: a('Stale', 'Vencida') };
   return { key: 'ok', label: a('Checked', 'Revisada') };
@@ -43,11 +44,11 @@ const shortDay = (iso, a) => (iso ? new Date(`${iso}T00:00:00Z`).toLocaleDateStr
 function AdminPanel({ signedIn = false }) {
   const a = useA();
   const FIELDS = fieldsFor(a);
-  const fetchRules = useCallback(() => api.rules(), []);
+  const fetchRules = useCallback(() => api.rules(undefined, true), []);
   const fetchChanges = useCallback(() => api.changes(), []);
   const rulesLoad = useLoad(fetchRules);
   // Spanish names for the built-in rules, for reading only. The edit form always works on the published English text.
-  const fetchLoc = useCallback(() => (a.lang === 'es' ? api.rules('es') : Promise.resolve(null)), [a.lang]);
+  const fetchLoc = useCallback(() => (a.lang === 'es' ? api.rules('es', true) : Promise.resolve(null)), [a.lang]);
   const locLoad = useLoad(fetchLoc);
   const locById = Object.fromEntries((locLoad.data?.rules ?? []).map((r) => [r.id, r]));
   const nameOf = (r) => locById[r.id]?.title || r.title;
@@ -66,6 +67,7 @@ function AdminPanel({ signedIn = false }) {
   const [adding, setAdding] = useState(false);
   const [audience, setAudience] = useState({ mode: 'always', field: '', value: '' });
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const [confirmOff, setConfirmOff] = useState(false);
   const [esForm, setEsForm] = useState({ title: '', agency: '', detail: '', sourceLabel: '', applyLabel: '' });
   const fieldsLoad = useLoad(useCallback(() => api.ruleFields(a.lang).catch(() => ({ fields: [] })), [a.lang]));
   const fields = fieldsLoad.data?.fields ?? [];
@@ -82,6 +84,7 @@ function AdminPanel({ signedIn = false }) {
     setAudience(pickerFrom(rule.applies));
     setEsForm({ title: '', agency: '', detail: '', sourceLabel: '', applyLabel: '', ...(rule.es || {}) });
     setConfirmRemove(false);
+    setConfirmOff(false);
   }, [rule]);
 
   async function run(fn, success) {
@@ -103,8 +106,9 @@ function AdminPanel({ signedIn = false }) {
   if (rulesLoad.loading && !rulesLoad.data) return <Loading what={a('Loading rules', 'Cargando reglas')} />;
   if (rulesLoad.error) return <ErrorNote message={rulesLoad.error} />;
 
-  const checkedCount = rules.filter((r) => statusOf(r, a).key === 'ok').length;
-  const needsCount = rules.length - checkedCount;
+  const live = rules.filter((r) => !r.disabled);
+  const checkedCount = live.filter((r) => statusOf(r, a).key === 'ok').length;
+  const needsCount = live.length - checkedCount;
   const draftCount = rules.filter((r) => r.draft).length;
   const dim = (r) => (filter === 'needs' ? statusOf(r, a).key === 'ok' : filter === 'drafts' ? !r.draft : false);
   const ruleChanges = (changesLoad.data?.changes ?? []).filter((c) => c.ruleId === selected);
@@ -114,7 +118,7 @@ function AdminPanel({ signedIn = false }) {
       <header className="desk-head">
         <h1 tabIndex={-1}>{a('Rule desk', 'Mesa de reglas')}</h1>
         <p className="lead">
-          {needsCount === 0 ? a('Every rule has been checked against its official page.', 'Todas las reglas se revisaron contra su página oficial.') : a(`${needsCount} of ${rules.length} rules need a check before you can trust them.`, `${needsCount} de ${rules.length} reglas necesitan una revisión antes de confiar en ellas.`)}{' '}
+          {needsCount === 0 ? a('Every rule has been checked against its official page.', 'Todas las reglas se revisaron contra su página oficial.') : a(`${needsCount} of ${live.length} rules need a check before you can trust them.`, `${needsCount} de ${live.length} reglas necesitan una revisión antes de confiar en ellas.`)}{' '}
           {a('Pick a rule to edit it. Nothing goes live until a second person approves it.', 'Elija una regla para editarla. Nada se publica hasta que una segunda persona lo apruebe.')}
         </p>
         <p className="desk-add">
@@ -154,6 +158,7 @@ function AdminPanel({ signedIn = false }) {
                     <span className="tile-state">{st.label}</span>
                     {r.draft && <span className="tile-draft">{a('Draft', 'Borrador')}</span>}
                     {r.custom && <span className="tile-draft tile-added">{a('Added', 'Agregada')}</span>}
+                    {r.disabled && <span className="tile-draft tile-off">{a('Hidden from owners', 'Oculta para los dueños')}</span>}
                   </span>
                   <span className="tile-title">{nameOf(r)}</span>
                   <span className="tile-foot">{agencyOf(r)} · {r.lastVerified ? a(`checked ${shortDay(r.lastVerified, a)}`, `revisada ${shortDay(r.lastVerified, a)}`) : a('never checked', 'nunca revisada')}</span>
@@ -262,6 +267,24 @@ function AdminPanel({ signedIn = false }) {
                 <div><dt>{a('Draft', 'Borrador')}</dt><dd>{rule.draft ? a('Yes, waiting for approval', 'Sí, esperando aprobación') : 'No'}</dd></div>
               </dl>
               {rule.source?.url && <p><ExternalLink className="btn btn-quiet btn-sm" href={rule.source.url}>{a('Open the source page', 'Abrir la página de la fuente')}</ExternalLink></p>}
+              <div className="desk-onoff">
+                {rule.disabled ? (
+                  <>
+                    <p className="hint">{a('This rule is disabled. Owners do not see it in checklists, plans or answers.', 'Esta regla está desactivada. Los dueños no la ven en listas, planes ni respuestas.')}</p>
+                    <button type="button" className="btn btn-primary btn-sm" onClick={() => run(() => api.enableRule(rule.id), a('Rule enabled. Owners see it again.', 'Regla activada. Los dueños la ven de nuevo.'))}>{a('Enable this rule', 'Activar esta regla')}</button>
+                  </>
+                ) : (
+                  <>
+                    <p className="hint">{a('Delete hides a rule from owners. Nothing is lost, and you can enable it again.', 'Eliminar oculta una regla para los dueños. No se pierde nada y puede activarla de nuevo.')}</p>
+                    {confirmOff ? (
+                      <div className="row">
+                        <button type="button" className="btn btn-primary btn-sm" onClick={async () => { await run(() => api.disableRule(rule.id), a('Rule disabled. Owners no longer see it. You can enable it again here.', 'Regla desactivada. Los dueños ya no la ven. Puede activarla de nuevo aquí.')); setConfirmOff(false); }}>{a('Yes, disable it', 'Sí, desactivarla')}</button>
+                        <button type="button" className="btn btn-quiet btn-sm" onClick={() => setConfirmOff(false)}>{a('Keep it', 'Conservarla')}</button>
+                      </div>
+                    ) : <button type="button" className="btn btn-quiet btn-sm" onClick={() => setConfirmOff(true)}>{a('Delete (disable) this rule', 'Eliminar (desactivar) esta regla')}</button>}
+                  </>
+                )}
+              </div>
               {rule.custom ? (
                 <div className="desk-audience">
                   <SpanishRuleFields idPrefix="ed-es" value={esForm} onChange={setEsForm} />
@@ -279,7 +302,7 @@ function AdminPanel({ signedIn = false }) {
                     ) : <button type="button" className="btn btn-quiet btn-sm" onClick={() => setConfirmRemove(true)}>{a('Remove this rule', 'Eliminar esta regla')}</button>}
                   </div>
                 </div>
-              ) : <p className="hint">{a('This is a built-in rule. Who sees it is fixed in the rules file. You can edit its text and links.', 'Esta es una regla integrada. Quién la ve está fijo en el archivo de reglas. Puede editar su texto y sus enlaces.')}</p>}
+              ) : <p className="hint">{a('This is a built-in rule. Who sees it is fixed in the rules file. You can edit its text and links, or disable it.', 'Esta es una regla integrada. Quién la ve está fijo en el archivo de reglas. Puede editar su texto y sus enlaces, o desactivarla.')}</p>}
               <h3>{a('History of this rule', 'Historial de esta regla')}</h3>
               {ruleChanges.length === 0 ? <p className="hint">{a('No published changes yet.', 'Aún no hay cambios publicados.')}</p> : (
                 <ul className="desk-history">

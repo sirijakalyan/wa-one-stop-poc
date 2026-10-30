@@ -1324,6 +1324,10 @@ input[type="password"]:hover, input[type="search"]:hover { border-color: var(--n
 /* Admin: questions and added rules */
 .desk-add { margin: 0 0 .6rem; }
 .tile-added { background: #ffd978; color: #3d2a00; }
+.tile-off { background: #d9dde6; color: #2b3445; }
+.tile--off { opacity: .72; border-style: dashed; }
+.tile--off .lamp { background: #98a2b3; box-shadow: none; }
+.desk-onoff { margin: .8rem 0; }
 .add-rule { max-width: none; margin: 0 0 1.4rem; }
 .applies-picker { margin: 1rem 0; padding: .9rem 1rem; border: 1.5px solid var(--line-strong); border-radius: var(--radius); }
 .applies-picker legend { font-weight: 650; font-size: 1rem; line-height: 1.3; padding: 0 .4rem; }

@@ -65,7 +65,7 @@ const publicRule = (r) => ({
   id: r.id, order: r.order, phase: r.phase, title: r.title, agency: r.agency, detail: r.detail,
   source: r.source, apply: r.apply, verification: r.verification, owner: r.owner,
   reviewer: r.reviewer, lastVerified: r.lastVerified, version: r.version, status: r.status,
-  applies: r.applies, draft: r.draft, custom: Boolean(r.custom), es: r.es || null,
+  applies: r.applies, draft: r.draft, custom: Boolean(r.custom), es: r.es || null, disabled: Boolean(r.disabled), disabledAt: r.disabledAt || null, disabledBy: r.disabledBy || null,
   supports: r.supports || '', limits: r.limits || '', fallback: r.fallback || '', guide: r.guide || null,
 });
 
@@ -98,7 +98,10 @@ function safeEqual(a, b) {
 // options.processingTimes: the agency times recorded in doc 11 (server/seed/processing_times.json). Nothing else is ever shown as a time.
 // options.llm: optional async ({ system, user }) => text, used only to rephrase grounded chat answers.
 export function createService(store, options = {}) {
-  const loadRules = () => store.readRules();
+  // loadAll is the whole rules document, for admin screens and for anything that writes it back. loadRules is what owners see:
+  // a rule an admin disabled is left out of checklists, plans, answers, reminders and the sources page until it is enabled again.
+  const loadAll = () => store.readRules();
+  const loadRules = async () => { const d = await store.readRules(); return { ...d, rules: d.rules.filter((r) => !r.disabled) }; };
   const adminRequired = Boolean(options.adminKey) || Boolean(options.adminLocked);
   const keyOk = (ctx) => Boolean(options.adminKey) && safeEqual(ctx.adminKey, options.adminKey);
   const accountAdmin = (ctx) => ctx.account?.role === 'admin';
@@ -273,7 +276,7 @@ export function createService(store, options = {}) {
     try { await store.addEvent(visitorOf(ctx), { at: new Date().toISOString(), type, detail: String(detail).slice(0, 200) }); } catch { /* the log must never break the action */ }
   }
   async function ruleTitle(id) {
-    try { return (await loadRules()).rules.find((r) => r.id === id)?.title || String(id).slice(0, 80); } catch { return String(id).slice(0, 80); }
+    try { return (await loadAll()).rules.find((r) => r.id === id)?.title || String(id).slice(0, 80); } catch { return String(id).slice(0, 80); }
   }
 
   /* ---------- Accounts ----------
@@ -636,13 +639,14 @@ export function createService(store, options = {}) {
   });
 
   /* ---------- Admin rules management (locked by ADMIN_KEY when configured) ---------- */
-  route('GET', '/api/rules', async ({ query }) => {
-    const doc = localizeRules(await loadRules(), langIn(query));
+  route('GET', '/api/rules', async ({ query, ctx }) => {
+    const wantAll = query?.all && isAdmin(ctx); // the admin board also lists disabled rules
+    const doc = localizeRules(wantAll ? await loadAll() : await loadRules(), langIn(query));
     return { ok: true, phases: doc.phases, rules: doc.rules.map(publicRule) };
   });
 
   route('GET', '/api/changes', async () => {
-    const doc = await loadRules();
+    const doc = await loadAll();
     return { ok: true, changes: [...doc.changes].reverse() };
   });
 
@@ -771,7 +775,7 @@ export function createService(store, options = {}) {
     return { extras: questionsOf(doc).map((q) => localizeQuestion(q, lang)), hidden, standard };
   }
   route('GET', '/api/questions', async ({ query }) => {
-    const doc = await loadRules();
+    const doc = await loadAll();
     const lang = langIn(query);
     return { ok: true, questions: questionsOf(doc).map((q) => publicQuestion(q, lang)), standard: standardList(doc, lang) };
   });
@@ -802,7 +806,7 @@ export function createService(store, options = {}) {
   route('PUT', '/api/standard-questions/:field', async ({ params, body, ctx }) => {
     requireAdmin(ctx);
     const field = stdField(params);
-    const doc = await loadRules();
+    const doc = await loadAll();
     const entry = {
       label: trimTo(body?.label, 60, 'The short name'), text: trimTo(body?.text, 200, 'The question'), hint: trimTo(body?.hint, 300, 'The help text'),
       es: { label: trimTo(body?.es?.label, 60, 'The Spanish short name'), text: trimTo(body?.es?.text, 200, 'The Spanish question'), hint: trimTo(body?.es?.hint, 300, 'The Spanish help text') },
@@ -815,7 +819,7 @@ export function createService(store, options = {}) {
   route('DELETE', '/api/standard-questions/:field', async ({ params, ctx }) => {
     requireAdmin(ctx);
     const field = stdField(params);
-    const doc = await loadRules();
+    const doc = await loadAll();
     const shown = CARD_FIELDS.filter((f) => !standardOf(doc)[f]?.hidden);
     if (shown.length <= 1 && shown[0] === field) fail('Keep at least one standard question.');
     return { ok: true, standard: await saveStandard(doc, field, { ...(standardOf(doc)[field] || {}), hidden: true }) };
@@ -824,13 +828,13 @@ export function createService(store, options = {}) {
   route('POST', '/api/standard-questions/:field/restore', async ({ params, ctx }) => {
     requireAdmin(ctx);
     const field = stdField(params);
-    const doc = await loadRules();
+    const doc = await loadAll();
     return { ok: true, standard: await saveStandard(doc, field, { ...(standardOf(doc)[field] || {}), hidden: false }) };
   });
 
   route('POST', '/api/questions', async ({ body, ctx }) => {
     requireAdmin(ctx);
-    const doc = await loadRules();
+    const doc = await loadAll();
     const list = questionsOf(doc);
     if (list.length >= 12) fail('You can add up to 12 questions. Remove one first.');
     const q = { id: `q_${qRand()}`, ...cleanQuestion(body, null), createdAt: new Date().toISOString() };
@@ -841,7 +845,7 @@ export function createService(store, options = {}) {
 
   route('PUT', '/api/questions/:id', async ({ params, body, ctx }) => {
     requireAdmin(ctx);
-    const doc = await loadRules();
+    const doc = await loadAll();
     const list = questionsOf(doc);
     const i = list.findIndex((q) => q.id === params.id);
     if (i < 0) fail('Question not found.', 404);
@@ -853,7 +857,7 @@ export function createService(store, options = {}) {
 
   route('DELETE', '/api/questions/:id', async ({ params, ctx }) => {
     requireAdmin(ctx);
-    const doc = await loadRules();
+    const doc = await loadAll();
     const list = questionsOf(doc);
     const q = list.find((x) => x.id === params.id);
     if (!q) fail('Question not found.', 404);
@@ -870,7 +874,7 @@ export function createService(store, options = {}) {
     const fields = Object.entries(BUILTIN_QUESTIONS).map(([field, q]) => ({
       field, text: q.text, options: q.type === 'yesno' ? YESNO_OPTIONS.map((o) => ({ value: o.value, label: o.label })) : q.options.map(([value, label]) => ({ value, label })),
     }));
-    for (const q of questionsOf(await loadRules())) { const l = localizeQuestion(q, langIn(query)); fields.push({ field: `extra.${q.id}`, text: l.text, options: l.options }); }
+    for (const q of questionsOf(await loadAll())) { const l = localizeQuestion(q, langIn(query)); fields.push({ field: `extra.${q.id}`, text: l.text, options: l.options }); }
     return { ok: true, fields };
   });
 
@@ -930,7 +934,7 @@ export function createService(store, options = {}) {
 
   route('PUT', '/api/rules/:id/es', async ({ params, body, ctx }) => {
     requireAdmin(ctx);
-    const doc = await loadRules();
+    const doc = await loadAll();
     const rule = doc.rules.find((r) => r.id === params.id);
     if (!rule) fail('Rule not found.', 404);
     if (!rule.custom) fail('Only a rule an admin added has its Spanish text edited here. The built-in rules already have Spanish.');
@@ -942,7 +946,7 @@ export function createService(store, options = {}) {
 
   route('POST', '/api/rules', async ({ body, ctx }) => {
     requireAdmin(ctx);
-    const doc = await loadRules();
+    const doc = await loadAll();
     const title = String(body?.title ?? '').trim();
     if (!title || title.length > 200) fail('Give the requirement a name of 200 characters or fewer.');
     const agency = String(body?.agency ?? '').trim();
@@ -988,7 +992,7 @@ export function createService(store, options = {}) {
 
   route('PUT', '/api/rules/:id/applies', async ({ params, body, ctx }) => {
     requireAdmin(ctx);
-    const doc = await loadRules();
+    const doc = await loadAll();
     const rule = doc.rules.find((r) => r.id === params.id);
     if (!rule) fail('Rule not found.', 404);
     if (!rule.custom) fail('Only a rule an admin added can be changed here. The built-in rules are fixed in the rules file.');
@@ -1002,9 +1006,24 @@ export function createService(store, options = {}) {
     return { ok: true, rule: publicRule(rule), queuedNotifications: queued };
   });
 
+  // "Delete" for any rule is "disable": owners stop seeing it, and an admin can enable it again. Nothing is lost.
+  async function setDisabled(params, ctx, off) {
+    requireAdmin(ctx);
+    const doc = await loadAll();
+    const rule = doc.rules.find((r) => r.id === params.id);
+    if (!rule) fail('Rule not found.', 404);
+    if (off && doc.rules.filter((r) => !r.disabled && r.id !== rule.id).length === 0) fail('Keep at least one rule enabled.');
+    if (off) { rule.disabled = true; rule.disabledAt = new Date().toISOString(); rule.disabledBy = ctx.account?.email || 'admin key'; }
+    else { delete rule.disabled; delete rule.disabledAt; delete rule.disabledBy; }
+    await store.writeRules(doc);
+    return { ok: true, rule: publicRule(rule) };
+  }
+  route('POST', '/api/rules/:id/disable', async ({ params, ctx }) => setDisabled(params, ctx, true));
+  route('POST', '/api/rules/:id/enable', async ({ params, ctx }) => setDisabled(params, ctx, false));
+
   route('DELETE', '/api/rules/:id', async ({ params, ctx }) => {
     requireAdmin(ctx);
-    const doc = await loadRules();
+    const doc = await loadAll();
     const rule = doc.rules.find((r) => r.id === params.id);
     if (!rule) fail('Rule not found.', 404);
     if (!rule.custom) fail('Only a rule an admin added can be removed. The built-in rules are fixed in the rules file.');
@@ -1016,7 +1035,7 @@ export function createService(store, options = {}) {
 
   route('PUT', '/api/rules/:id/draft', async ({ params, body, ctx }) => {
     requireAdmin(ctx);
-    const doc = await loadRules();
+    const doc = await loadAll();
     const rule = doc.rules.find((r) => r.id === params.id);
     if (!rule) fail('Rule not found.', 404);
     const { clean, error } = validateDraft(body?.fields);
@@ -1033,7 +1052,7 @@ export function createService(store, options = {}) {
 
   route('DELETE', '/api/rules/:id/draft', async ({ params, ctx }) => {
     requireAdmin(ctx);
-    const doc = await loadRules();
+    const doc = await loadAll();
     const rule = doc.rules.find((r) => r.id === params.id);
     if (!rule) fail('Rule not found.', 404);
     rule.draft = null;
@@ -1047,7 +1066,7 @@ export function createService(store, options = {}) {
     requireAdmin(ctx);
     const reviewer = String(body?.reviewer || '').trim().slice(0, 80);
     if (!reviewer) fail('Enter the reviewer name to approve this change.');
-    const doc = await loadRules();
+    const doc = await loadAll();
     const rule = doc.rules.find((r) => r.id === params.id);
     if (!rule) fail('Rule not found.', 404);
     if (!rule.draft) fail('There is no draft to publish.');
@@ -1100,7 +1119,7 @@ export function createService(store, options = {}) {
 
   route('POST', '/api/source-reviews', async ({ body, ctx }) => {
     requireAdmin(ctx);
-    const rulesDoc = await loadRules();
+    const rulesDoc = await loadAll();
     const ruleId = String(body?.ruleId ?? '');
     if (!rulesDoc.rules.some((r) => r.id === ruleId)) fail('Choose a rule from the list.');
     const sourceUrl = String(body?.sourceUrl ?? '').trim();
@@ -1140,7 +1159,7 @@ export function createService(store, options = {}) {
       .filter((t) => t && (t.role === 'user' || t.role === 'assistant') && typeof t.content === 'string')
       .slice(-8)
       .map((t) => ({ role: t.role, content: t.content.slice(0, 1000) }));
-    const rulesDoc = await loadRules();
+    const rulesDoc = await loadAll();
     const cl = await store.getChecklist(chKey(ctx, query, body));
     const checklist = cl ? await buildChecklist(cl, rulesDoc) : null;
     const es = cleanLang(body?.lang) === 'es';
