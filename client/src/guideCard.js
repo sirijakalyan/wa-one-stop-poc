@@ -20,6 +20,7 @@ export const blankCard = () => ({ values: blankAnswers(), status: {}, employees:
 export function cardFromAnswers(answers) {
   const status = {};
   for (const f of CARD_FIELDS) status[f] = 'confirmed';
+  for (const id of Object.keys(answers?.extra || {})) status[xField(id)] = 'confirmed';
   return { values: { ...blankAnswers(), ...answers, cats: [...(answers?.cats || [])] }, status, employees: null, language: 'en' };
 }
 
@@ -64,5 +65,19 @@ export function rowText(card, field, lang = 'en') {
   }
 }
 
-export const isComplete = (card) => CARD_FIELDS.every((f) => card.status[f] === 'confirmed');
-export const confirmedCount = (card) => CARD_FIELDS.filter((f) => card.status[f] === 'confirmed').length;
+// The rows of the card: the standard questions an admin has not deleted, then one row for each question an admin added.
+// Ask for "of 9" or "of 10" and the count grows with them.
+export const xField = (id) => `x:${id}`;
+export const isExtraField = (f) => String(f).startsWith('x:');
+export function fieldsOf(standard = [], extraQs = []) {
+  const hidden = new Set(standard.filter((s) => s.hidden).map((s) => s.field));
+  return [...CARD_FIELDS.filter((f) => !hidden.has(f)), ...extraQs.map((q) => xField(q.id))];
+}
+export const isComplete = (card, fields = CARD_FIELDS) => fields.every((f) => card.status[f] === 'confirmed');
+export const confirmedCount = (card, fields = CARD_FIELDS) => fields.filter((f) => card.status[f] === 'confirmed').length;
+
+// The answer to an admin-added question, as its label.
+export function extraText(card, q) {
+  const v = card.values?.extra?.[q.id];
+  return q.options.find((o) => o.value === v)?.label || '';
+}

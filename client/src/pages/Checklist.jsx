@@ -35,7 +35,7 @@ export default function Checklist({ embedded = false, onChanged, onData } = {}) 
     setAnswers({ ...blankAnswers(), ...data.answers, cats: [...data.answers.cats] });
     setLabel(data.label || '');
     setCatsAuto(false);
-    setStep(stepList(data.answers, (extraData?.questions ?? []).map((x) => x.id)).length - 1);
+    setStep(stepList(data.answers, (extraData?.questions ?? []).map((x) => x.id), (extraData?.standard ?? []).filter((x) => x.hidden).map((x) => x.field)).length - 1);
     // Back to the home page with the saved answers loaded into "Your business", every row confirmed and editable.
     setGuide({ messages: [], card: cardFromAnswers(data.answers), ask: null, awaiting: null, complete: true, chips: [] });
     navigate('/', { state: { mode: 'type', focus: 'business' } });

@@ -17,11 +17,14 @@ export default function Questionnaire({ embedded = false } = {}) {
 
   const { data: extraData } = useLoad(useCallback(() => api.questions(t.lang).catch(() => ({ questions: [] })), [t.lang]));
   const extraQs = extraData?.questions ?? [];
-  const list = stepList(answers, extraQs.map((x) => x.id));
+  const standard = extraData?.standard ?? [];
+  const hiddenStd = standard.filter((x) => x.hidden).map((x) => x.field);
+  const list = stepList(answers, extraQs.map((x) => x.id), hiddenStd);
   const index = Math.min(step, list.length - 1);
   const id = list[index];
   const custom = id.startsWith('x:') ? extraQs.find((x) => x.id === id.slice(2)) : null;
-  const q = custom ? { title: custom.text, hint: custom.hint } : { title: t(`qn.q.${id}.t`), hint: t(`qn.q.${id}.h`) };
+  const std = standard.find((x) => x.field === ({ desc: 'activity', city: 'place' }[id] || id));
+  const q = custom ? { title: custom.text, hint: custom.hint } : { title: std?.text || t(`qn.q.${id}.t`), hint: std?.hint || t(`qn.q.${id}.h`) };
   const extraOf = (qid) => answers.extra?.[qid] || '';
   const percent = Math.round((index / (list.length - 1)) * 100);
   const set = (patch) => setAnswers((a) => ({ ...a, ...patch }));

@@ -1,11 +1,9 @@
 import { useCallback, useState } from 'react';
 import { api, useLoad } from '../api.js';
 import { ErrorNote, Loading } from '../components/Parts.jsx';
-import { QUESTIONS } from '../questions.js';
 import { useA } from '../adminText.js';
 import { useT } from '../i18n.js';
 
-const STANDARD = ['structure', 'desc', 'cats', 'city', 'hiring', 'subs', 'salestax', 'income', 'tradename'];
 const BLANK = { text: '', hint: '', type: 'yesno', options: '', es: { text: '', hint: '', options: '' } };
 const linesOf = (txt) => txt.split('\n').map((l) => l.trim()).filter(Boolean);
 
@@ -21,6 +19,42 @@ function optionsFromLines(text, existing) {
     if (slot && !labels.has(slot.label.toLowerCase())) return { value: slot.value, label };
     return { label };
   });
+}
+
+const STD_KEY = { structure: 'structure', activity: 'desc', place: 'city', hiring: 'hiring', subs: 'subs', salestax: 'salestax', income: 'income', tradename: 'tradename' };
+
+// Reword one standard question. Anything left empty keeps the built-in wording.
+function StandardForm({ item, onSave, onCancel }) {
+  const a = useA();
+  const [f, setF] = useState({ label: item.en.label, text: item.en.text, hint: item.en.hint, es: { ...item.es } });
+  const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
+  async function go(body) {
+    setErr(''); setBusy(true);
+    try { await onSave(body); } catch (x) { setErr(x.message); } finally { setBusy(false); }
+  }
+  const id = `sq-${item.field}`;
+  const setEs = (k, v) => setF({ ...f, es: { ...f.es, [k]: v } });
+  return (
+    <form className="panel q-form" onSubmit={(e) => { e.preventDefault(); go(f); }}>
+      <div className="field"><label htmlFor={`${id}-t`}>{a('Question', 'Pregunta')}</label><input id={`${id}-t`} type="text" value={f.text} maxLength={200} onChange={(e) => setF({ ...f, text: e.target.value })} placeholder={item.defaults.text} /></div>
+      <div className="field"><label htmlFor={`${id}-l`}>{a('Short name on the business card', 'Nombre corto en la tarjeta del negocio')}</label><input id={`${id}-l`} type="text" value={f.label} maxLength={60} onChange={(e) => setF({ ...f, label: e.target.value })} placeholder={item.defaults.label} /></div>
+      <div className="field"><label htmlFor={`${id}-h`}>{a('Help text in the step-by-step form (optional)', 'Texto de ayuda en el formulario paso a paso (opcional)')}</label><input id={`${id}-h`} type="text" value={f.hint} maxLength={300} onChange={(e) => setF({ ...f, hint: e.target.value })} placeholder={a('Leave empty for the built-in help text', 'Deje vacío para usar el texto de ayuda integrado')} /></div>
+      <details className="es-fields" open={Boolean(item.es.text || item.es.label || item.es.hint)}>
+        <summary>{a('Spanish version (optional)', 'Versión en español (opcional)')}</summary>
+        <p className="hint">{a('Leave a box empty to keep the built-in Spanish.', 'Deje un cuadro vacío para conservar el español integrado.')}</p>
+        <div className="field"><label htmlFor={`${id}-et`}>{a('Question in Spanish', 'Pregunta en español')}</label><input id={`${id}-et`} type="text" value={f.es.text} maxLength={200} onChange={(e) => setEs('text', e.target.value)} /></div>
+        <div className="field"><label htmlFor={`${id}-el`}>{a('Short name in Spanish', 'Nombre corto en español')}</label><input id={`${id}-el`} type="text" value={f.es.label} maxLength={60} onChange={(e) => setEs('label', e.target.value)} /></div>
+        <div className="field"><label htmlFor={`${id}-eh`}>{a('Help text in Spanish', 'Texto de ayuda en español')}</label><input id={`${id}-eh`} type="text" value={f.es.hint} maxLength={300} onChange={(e) => setEs('hint', e.target.value)} /></div>
+      </details>
+      <ErrorNote message={err} />
+      <div className="row">
+        <button type="submit" className="btn btn-primary" disabled={busy}>{a('Save changes', 'Guardar cambios')}</button>
+        <button type="button" className="btn btn-quiet" onClick={onCancel}>{a('Cancel', 'Cancelar')}</button>
+        <button type="button" className="btn btn-quiet" disabled={busy} onClick={() => go({ label: '', text: '', hint: '', es: { label: '', text: '', hint: '' } })}>{a('Use the original wording', 'Usar el texto original')}</button>
+      </div>
+    </form>
+  );
 }
 
 function QuestionForm({ initial, editing, onSave, onCancel }) {
@@ -83,9 +117,13 @@ export default function AdminQuestions() {
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [editingStd, setEditingStd] = useState('');
+  const [confirmStd, setConfirmStd] = useState('');
   if (loading && !data) return <Loading what={a('Loading questions', 'Cargando preguntas')} />;
   if (error) return <ErrorNote message={error} />;
   const questions = data?.questions ?? [];
+  const standard = data?.standard ?? [];
+  const shown = standard.filter((x) => !x.hidden).length;
 
   const esBody = (f) => ({ text: f.es?.text || '', hint: f.es?.hint || '', options: f.type === 'choice' ? linesOf(f.es?.options || '') : undefined });
   const toBody = (f) => ({ text: f.text, hint: f.hint, type: f.type, options: f.type === 'choice' ? linesOf(f.options) : undefined, es: esBody(f) });
@@ -94,11 +132,21 @@ export default function AdminQuestions() {
     try { await api.removeQuestion(q.id); setConfirm(''); setMsg(a('Question removed. Answers people already gave to it are ignored.', 'Pregunta eliminada. Se ignoran las respuestas que ya se dieron.')); await reload(); } catch (e) { setErr(e.message); setConfirm(''); }
   }
 
+  async function removeStd(item) {
+    setErr(''); setMsg('');
+    try { await api.removeStandard(item.field); setConfirmStd(''); setMsg(a('Question deleted. Nobody is asked it now. You can restore it any time.', 'Pregunta eliminada. Ya no se le hace a nadie. Puede restaurarla cuando quiera.')); await reload(); } catch (e) { setErr(e.message); setConfirmStd(''); }
+  }
+  async function restoreStd(item) {
+    setErr(''); setMsg('');
+    try { await api.restoreStandard(item.field); setMsg(a('Question restored. Everyone is asked it again.', 'Pregunta restaurada. Se le vuelve a hacer a todos.')); await reload(); } catch (e) { setErr(e.message); }
+  }
+  const stdText = (item) => item.text || (a.lang === 'es' ? t(`qn.q.${STD_KEY[item.field]}.t`) : item.defaults.text);
+
   return (
     <>
       <header className="desk-head">
         <h1 tabIndex={-1}>{a('Questions', 'Preguntas')}</h1>
-        <p className="lead">{a('Add your own questions. Everyone sees them after the standard ones, in the step-by-step form and in the guide. A rule can then use the answer to decide who sees it.', 'Agregue sus propias preguntas. Todos las ven después de las estándar, en el formulario paso a paso y en la guía. Una regla puede usar la respuesta para decidir quién la ve.')}</p>
+        <p className="lead">{a('Add your own questions. The guide asks them in the chat after the standard ones, and they appear as more rows on the business card and in the step-by-step form. A rule can then use the answer to decide who sees it.', 'Agregue sus propias preguntas. La guía las hace en el chat después de las estándar, y aparecen como más filas en la tarjeta del negocio y en el formulario paso a paso. Una regla puede usar la respuesta para decidir quién la ve.')}</p>
       </header>
       {msg && <p className="ok" role="status">{msg}</p>}
       <ErrorNote message={err} />
@@ -150,13 +198,41 @@ export default function AdminQuestions() {
         </ul>
       </section>
 
-      <details className="desk-more-one">
-        <summary>{a('The standard questions everyone is asked first', 'Las preguntas estándar que se hacen primero a todos')}</summary>
-        <ol className="q-standard">
-          {STANDARD.map((k) => <li key={k}>{a.lang === 'es' ? t(`qn.q.${k}.t`) : QUESTIONS[k].title}</li>)}
+      <section aria-labelledby="sq-h" className="q-section">
+        <div className="q-section-head"><h2 id="sq-h">{a('Standard questions', 'Preguntas estándar')} ({shown})</h2></div>
+        <p className="hint">{a('Everyone is asked these first. Edit the wording, or delete one you do not need. A deleted question is not asked, and a rule that uses its answer shows as "may apply". Restore it any time.', 'Se hacen primero a todos. Edite el texto, o elimine una que no necesite. Una pregunta eliminada no se hace, y una regla que usa su respuesta aparece como "puede aplicar". Restáurela cuando quiera.')}</p>
+        <ol className="q-list">
+          {standard.map((item, i) => (
+            <li key={item.field} className={`q-card${item.hidden ? ' is-deleted' : ''}`}>
+              {editingStd === item.field ? (
+                <StandardForm item={item} onCancel={() => setEditingStd('')} onSave={async (body) => { await api.editStandard(item.field, body); setEditingStd(''); setMsg(a('Question saved.', 'Pregunta guardada.')); await reload(); }} />
+              ) : (
+                <>
+                  <p className="q-no">{a('Question', 'Pregunta')} {i + 1}{item.hidden ? ` · ${a('Deleted', 'Eliminada')}` : ''}{!item.hidden && (item.en.text || item.es.text) ? ` · ${a('Reworded', 'Con texto propio')}` : ''}</p>
+                  <h3>{stdText(item)}</h3>
+                  <div className="row">
+                    {item.hidden ? (
+                      <button type="button" className="btn btn-primary btn-sm" onClick={() => restoreStd(item)}>{a('Restore', 'Restaurar')}<span className="sr-only"> {stdText(item)}</span></button>
+                    ) : (
+                      <>
+                        <button type="button" className="btn btn-sm" onClick={() => { setEditingStd(item.field); setEditing(''); setAdding(false); setMsg(''); }}>{a('Edit', 'Editar')}<span className="sr-only"> {stdText(item)}</span></button>
+                        {confirmStd === item.field ? (
+                          <>
+                            <button type="button" className="btn btn-primary btn-sm" onClick={() => removeStd(item)}>{a('Yes, delete it', 'Sí, eliminarla')}</button>
+                            <button type="button" className="btn btn-quiet btn-sm" onClick={() => setConfirmStd('')}>{a('Keep it', 'Conservarla')}</button>
+                          </>
+                        ) : (
+                          <button type="button" className="btn btn-quiet btn-sm" disabled={shown <= 1} onClick={() => setConfirmStd(item.field)}>{a('Delete', 'Eliminar')}<span className="sr-only"> {stdText(item)}</span></button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+            </li>
+          ))}
         </ol>
-        <p className="hint">{a('These are built in and cannot be changed here. Rules can still use them to decide who sees a step.', 'Estas vienen integradas y no se pueden cambiar aquí. Las reglas aún pueden usarlas para decidir quién ve un paso.')}</p>
-      </details>
+      </section>
     </>
   );
 }

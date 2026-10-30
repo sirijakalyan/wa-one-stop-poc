@@ -11,7 +11,7 @@ import ExternalLink from '../components/ExternalLink.jsx';
 import Icon from '../components/Icon.jsx';
 import { ErrorNote } from '../components/Parts.jsx';
 import { canListen, canSpeak, createListener, hasVoice, listenErrorText, speak, speakable, stopSpeaking } from '../voice.js';
-import { answersFromCard, confirmedCount } from '../guideCard.js';
+import { answersFromCard, confirmedCount, fieldsOf, isComplete } from '../guideCard.js';
 import { speechLang, useT } from '../i18n.js';
 
 // True when what the microphone heard is the guide's own voice coming back through the speakers. Single words are never
@@ -54,6 +54,11 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
   const [sim, setSim] = useState(null);
   const [tab, setTab] = useState('chat');
   const [newIds, setNewIds] = useState(new Set());
+  // The questions an admin added, and which standard ones were reworded or deleted. They are asked in the chat and listed on the card.
+  const [extraQs, setExtraQs] = useState([]);
+  const [standard, setStandard] = useState([]);
+  const [qsLoaded, setQsLoaded] = useState(false);
+  useEffect(() => { api.questions(t.lang).then((r) => { setExtraQs(r.questions || []); setStandard(r.standard || []); setQsLoaded(true); }).catch(() => setQsLoaded(true)); }, [t.lang]);
   const guideRef = useRef(guide);
   guideRef.current = guide;
   const seenIds = useRef(new Set());
@@ -128,6 +133,13 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
   }, [refreshPlan, setGuide]);
 
   turnRef.current = turn;
+  // A card finished before an admin added (or deleted) a question picks up the change: the guide asks the new question, or finishes.
+  useEffect(() => {
+    if (!qsLoaded || busy) return;
+    const done = isComplete(guide.card, fieldsOf(standard, extraQs));
+    if (guide.complete && !done) turnRef.current({});
+    else if (!guide.complete && done && guide.messages.length > 1) turnRef.current({});
+  }, [qsLoaded, standard, extraQs, guide.complete, guide.card, guide.messages.length, busy]);
   // Switching Talk and Type on the home page: Talk turns the guide's voice on (the switch is the tap), Type turns voice and microphone off.
   useEffect(() => {
     if (prevMode.current === mode) return;
@@ -341,15 +353,10 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
     if (guide.ask) return turn({ action: 'set', field: guide.ask.field, value: c.value }, c.label);
     return undefined;
   }
-  const edit = (field, value) => turn({ action: 'set', field, value }, t('guide.edited', FIELD_LABELS[field]));
-  // Questions an admin added. They are answered by tapping, after the standard rows are confirmed.
-  const [extraQs, setExtraQs] = useState([]);
-  useEffect(() => { api.questions(t.lang).then((r) => setExtraQs(r.questions || [])).catch(() => {}); }, [t.lang]);
-  function answerExtra(qid, value) {
-    const card = { ...guide.card, values: { ...guide.card.values, extra: { ...(guide.card.values.extra || {}), [qid]: value } } };
-    setGuide((g) => ({ ...g, card }));
-    refreshPlan(card, false).catch(() => {});
-  }
+  const edit = (field, value) => {
+    const label = field.startsWith('x:') ? extraQs.find((q) => `x:${q.id}` === field)?.text : standard.find((s) => s.field === field)?.label || FIELD_LABELS[field];
+    return turn({ action: 'set', field, value }, t('guide.edited', label || FIELD_LABELS[field] || ''));
+  };
 
   async function save() {
     // Visitors can try everything first; the account is only needed to keep the plan.
@@ -485,24 +492,7 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
         </section>
 
         <section id="guide-side" className={`guide-side${tab === 'plan' ? ' is-active' : ''}`} data-tab="plan" aria-label={t('guide.sideLabel')}>
-          <BusinessCard card={guide.card} onEdit={edit} disabled={busy} />
-          {guide.complete && extraQs.length > 0 && (
-            <section className="extra-qs" aria-labelledby="extra-qs-h">
-              <h3 id="extra-qs-h">{t('guide.moreQ')}</h3>
-              <p className="hint">{t('guide.moreHint')}</p>
-              {extraQs.map((q) => (
-                <fieldset key={q.id} className="extra-q">
-                  <legend>{q.text}</legend>
-                  {q.hint && <p className="hint">{q.hint}</p>}
-                  <div className="extra-opts">
-                    {q.options.map((o) => (
-                      <button key={o.value} type="button" aria-pressed={guide.card.values.extra?.[q.id] === o.value} onClick={() => answerExtra(q.id, o.value)} disabled={busy}>{o.label}</button>
-                    ))}
-                  </div>
-                </fieldset>
-              ))}
-            </section>
-          )}
+          <BusinessCard card={guide.card} onEdit={edit} disabled={busy} standard={standard} extraQs={extraQs} />
           {!embedded && <PlanPanel plan={view.plan} newIds={newIds} onSimulate={simulate} simulating={Boolean(sim)} busy={busy} />}
           {guide.complete ? (
             <div className="save-box">

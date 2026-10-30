@@ -56,7 +56,8 @@ export function createPgStore(pool) {
     const rules = (await pool.query('SELECT data FROM rules ORDER BY position')).rows.map((r) => r.data);
     const changes = (await pool.query('SELECT data FROM rule_changes ORDER BY at, id')).rows.map((r) => r.data);
     const questions = (await pool.query("SELECT value FROM rule_meta WHERE key = 'questions'")).rows[0]?.value ?? [];
-    return { phases, rules, changes, questions };
+    const standard = (await pool.query("SELECT value FROM rule_meta WHERE key = 'standard'")).rows[0]?.value ?? {};
+    return { phases, rules, changes, questions, standard };
   }
 
   async function writeRules(doc) {
@@ -78,6 +79,9 @@ export function createPgStore(pool) {
       }
       if (Array.isArray(doc.questions)) {
         await client.query("INSERT INTO rule_meta (key, value) VALUES ('questions', $1::jsonb) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", [JSON.stringify(doc.questions)]);
+      }
+      if (doc.standard && typeof doc.standard === 'object') {
+        await client.query("INSERT INTO rule_meta (key, value) VALUES ('standard', $1::jsonb) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value", [JSON.stringify(doc.standard)]);
       }
       await client.query('COMMIT');
     } catch (err) {

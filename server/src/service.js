@@ -17,7 +17,7 @@ import { SAMPLES } from './samples.js';
 import { answerQuestion } from './chat.js';
 import { cleanLang, ES, ES_RX, esToEn } from './i18n.js';
 import { localizeRules, localizeFound, localizeCountyNote, localizeCountyAgency, localizeTimes } from './localize.js';
-import { intakeTurn, spokenConfirmation, planFromCard, buildTimeline, blankCard, CARD_FIELDS, extractFacts } from './intake.js';
+import { intakeTurn, spokenConfirmation, planFromCard, buildTimeline, blankCard, CARD_FIELDS, FIELD_LABELS, ASKS, extractFacts } from './intake.js';
 
 const DEFAULT_VISITOR = 'public-demo';
 const EMAIL_RX = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/;
@@ -741,7 +741,92 @@ export function createService(store, options = {}) {
     return { text, hint, type, options, ...(es ? { es } : { es: undefined }) };
   }
 
-  route('GET', '/api/questions', async ({ query }) => ({ ok: true, questions: questionsOf(await loadRules()).map((q) => publicQuestion(q, langIn(query))) }));
+  // The eight standard questions an admin can reword or delete. A deleted one is hidden: it is no longer asked, and the rules that
+  // use it treat the answer as not known. "Restore" brings it back. The wording is optional; blank means the built-in wording.
+  const standardOf = (doc) => (doc.standard && typeof doc.standard === 'object' ? doc.standard : {});
+  const standardList = (doc, lang) => CARD_FIELDS.map((f) => {
+    const c = standardOf(doc)[f] || {};
+    const es = c.es || {};
+    const L = lang === 'es';
+    return {
+      field: f, hidden: Boolean(c.hidden),
+      label: (L ? es.label : c.label) || '', text: (L ? es.text : c.text) || '', hint: (L ? es.hint : c.hint) || '',
+      en: { label: c.label || '', text: c.text || '', hint: c.hint || '' },
+      es: { label: es.label || '', text: es.text || '', hint: es.hint || '' },
+      defaults: { label: FIELD_LABELS[f], text: ASKS[f].question },
+    };
+  });
+  // What the guide needs each turn: the questions an admin added (in the owner's language), and which standard ones are deleted or reworded.
+  function guideCtx(doc, lang) {
+    const std = standardOf(doc);
+    const standard = {};
+    const hidden = [];
+    for (const f of CARD_FIELDS) {
+      const c = std[f];
+      if (!c) continue;
+      if (c.hidden) hidden.push(f);
+      const text = lang === 'es' ? c.es?.text : c.text;
+      if (text) standard[f] = { text };
+    }
+    return { extras: questionsOf(doc).map((q) => localizeQuestion(q, lang)), hidden, standard };
+  }
+  route('GET', '/api/questions', async ({ query }) => {
+    const doc = await loadRules();
+    const lang = langIn(query);
+    return { ok: true, questions: questionsOf(doc).map((q) => publicQuestion(q, lang)), standard: standardList(doc, lang) };
+  });
+
+  function stdField(params) {
+    if (!CARD_FIELDS.includes(params.field)) fail('Question not found.', 404);
+    return params.field;
+  }
+  const trimTo = (v, max, what) => {
+    const t = String(v ?? '').trim();
+    if (t.length > max) fail(`${what} must be ${max} characters or fewer.`);
+    return t;
+  };
+  async function saveStandard(doc, field, entry) {
+    const next = { ...standardOf(doc) };
+    const clean = {};
+    for (const k of ['label', 'text', 'hint']) if (entry[k]) clean[k] = entry[k];
+    const es = {};
+    for (const k of ['label', 'text', 'hint']) if (entry.es?.[k]) es[k] = entry.es[k];
+    if (Object.keys(es).length) clean.es = es;
+    if (entry.hidden) clean.hidden = true;
+    if (Object.keys(clean).length) next[field] = clean; else delete next[field];
+    doc.standard = next;
+    await store.writeRules(doc);
+    return standardList(doc, 'en');
+  }
+
+  route('PUT', '/api/standard-questions/:field', async ({ params, body, ctx }) => {
+    requireAdmin(ctx);
+    const field = stdField(params);
+    const doc = await loadRules();
+    const entry = {
+      label: trimTo(body?.label, 60, 'The short name'), text: trimTo(body?.text, 200, 'The question'), hint: trimTo(body?.hint, 300, 'The help text'),
+      es: { label: trimTo(body?.es?.label, 60, 'The Spanish short name'), text: trimTo(body?.es?.text, 200, 'The Spanish question'), hint: trimTo(body?.es?.hint, 300, 'The Spanish help text') },
+      hidden: Boolean(standardOf(doc)[field]?.hidden),
+    };
+    return { ok: true, standard: await saveStandard(doc, field, entry) };
+  });
+
+  // "Delete" hides the question. It can be restored, and nobody's saved answers are lost.
+  route('DELETE', '/api/standard-questions/:field', async ({ params, ctx }) => {
+    requireAdmin(ctx);
+    const field = stdField(params);
+    const doc = await loadRules();
+    const shown = CARD_FIELDS.filter((f) => !standardOf(doc)[f]?.hidden);
+    if (shown.length <= 1 && shown[0] === field) fail('Keep at least one standard question.');
+    return { ok: true, standard: await saveStandard(doc, field, { ...(standardOf(doc)[field] || {}), hidden: true }) };
+  });
+
+  route('POST', '/api/standard-questions/:field/restore', async ({ params, ctx }) => {
+    requireAdmin(ctx);
+    const field = stdField(params);
+    const doc = await loadRules();
+    return { ok: true, standard: await saveStandard(doc, field, { ...(standardOf(doc)[field] || {}), hidden: false }) };
+  });
 
   route('POST', '/api/questions', async ({ body, ctx }) => {
     requireAdmin(ctx);
@@ -1105,6 +1190,7 @@ export function createService(store, options = {}) {
     const spoken = !body?.action ? spokenConfirmation(card, message, body?.asking) : null;
     const input = { card, message: spoken ? '' : message, action: spoken || body?.action, field: body?.field, value: body?.value, asking: body?.asking, lang };
     const places = options.places || [];
+    const gctx = guideCtx(await loadRules(), lang);
     const said = message && !body?.action && !spoken;
     const hasFacts = said && Object.keys(extractFacts(message, places)).length > 0;
     const strictQ = es ? ES_RX.strictQuestion : STRICT_Q_RX;
@@ -1120,12 +1206,12 @@ export function createService(store, options = {}) {
       const q = (es ? esToEn(text) : text).replace(/\bstill\b/gi, ' ').replace(/\s+/g, ' ').trim();
       const answered = await answerQuestion({ message: q, conversation: [], rules: rulesDoc.rules, checklist, llm: options.llm });
       if (keepOnFallback && answered.mode === 'fallback') return null;
-      const turn = intakeTurn({ ...input, message: '' }, { places });
+      const turn = intakeTurn({ ...input, message: '' }, { places, ...gctx });
       const replyText = es ? (answered.mode === 'fallback' ? ES.noMatch : `${ES.englishNote}\n${answered.answer}`) : answered.answer;
       return { ok: true, ...turn, reply: replyText, answer: { links: answered.links || [], matched: answered.matched || [] }, followUp: turn.ask?.question || (turn.awaiting === 'confirm' ? turn.reply : '') };
     };
     const reply = async (text) => {
-      const turn = intakeTurn({ ...input, message: '' }, { places });
+      const turn = intakeTurn({ ...input, message: '' }, { places, ...gctx });
       return { ok: true, ...turn, reply: text, answer: { links: [], matched: [] }, followUp: turn.ask?.question || (turn.awaiting === 'confirm' ? turn.reply : '') };
     };
     // Fixed answers, in the language the owner chose.
@@ -1157,7 +1243,7 @@ export function createService(store, options = {}) {
       if (ES_RX.thanks.test(message)) return reply(ES.thanks);
       if (ES_RX.greeting.test(message)) return reply(ES.greeting);
     }
-    const turn = intakeTurn(input, { places });
+    const turn = intakeTurn(input, { places, ...gctx });
     // Not a business detail and not an answer to the question: the owner may be talking, not answering, so try the grounded helper.
     if (said && turn.note === 'no-facts' && (es ? ES_RX.confused : /\b(confused|don'?t understand|do not understand|lost|stuck|no idea)\b/i).test(message)) {
       return reply(es ? ES.confused : 'No problem. Tell me, in your own words, what kind of business you want to start, for example "a food truck in Spokane". Or tap one of the answers below. You can also use the step-by-step form instead.');
@@ -1176,9 +1262,10 @@ export function createService(store, options = {}) {
 
   route('POST', '/api/intake/plan', async ({ body, query }) => {
     const lang = langIn(query, body);
-    const rulesDoc = localizeRules(await loadRules(), lang);
+    const raw = await loadRules();
+    const rulesDoc = localizeRules(raw, lang);
     const card = cardOf(body);
-    const plan = planFromCard(card, rulesDoc.rules, lang);
+    const plan = planFromCard(card, rulesDoc.rules, lang, guideCtx(raw, lang));
     const timeline = buildTimeline(plan, rulesDoc.phases, localizeTimes(options.processingTimes, lang), new Date(), { simulate: Boolean(body?.simulate), lang });
     return { ok: true, plan, timeline, complete: plan.complete, answers: plan.answers };
   });
@@ -1191,9 +1278,10 @@ export function createService(store, options = {}) {
     const times = localizeTimes(options.processingTimes, lang);
     const sim = times?.simulation;
     if (!sim) fail('Simulation is not set up.', 404);
-    const rulesDoc = localizeRules(await loadRules(), lang);
+    const raw = await loadRules();
+    const rulesDoc = localizeRules(raw, lang);
     const rule = rulesDoc.rules.find((r) => r.id === sim.ruleId);
-    const plan = planFromCard(cardOf(body), rulesDoc.rules, lang);
+    const plan = planFromCard(cardOf(body), rulesDoc.rules, lang, guideCtx(raw, lang));
     const affected = plan.items.some((i) => i.id === sim.ruleId);
     const before = times.times.find((t) => t.ruleId === sim.ruleId);
     const timelineBefore = buildTimeline(plan, rulesDoc.phases, times, new Date(), { lang });

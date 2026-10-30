@@ -22,6 +22,15 @@ export const FIELD_LABELS = {
   tradename: 'Uses a business name',
 };
 
+// A row for each question an admin added is "x:<question id>". An admin can also hide (delete) a standard question.
+// ctx = { extras: [{ id, text, hint, options: [{ value, label }] }], hidden: ['hiring'], standard: { field: { text } } }
+export const xField = (id) => `x:${id}`;
+export const isExtraField = (f) => typeof f === 'string' && /^x:q_[a-z0-9]{3,24}$/.test(f);
+export function fieldsOf(ctx) {
+  const hidden = new Set(ctx?.hidden || []);
+  return [...CARD_FIELDS.filter((f) => !hidden.has(f)), ...(ctx?.extras || []).map((q) => xField(q.id))];
+}
+
 export function blankCard() {
   return { values: blankAnswers(), status: {}, employees: null, language: 'en' };
 }
@@ -249,12 +258,15 @@ const FIELD_KEYS = {
   tradename: ['tradename'],
 };
 
-function cleanCard(card) {
+function cleanCard(card, ctx) {
   const values = normalizeAnswers(card?.values);
   const status = {};
+  const hidden = new Set(ctx?.hidden || []);
   for (const f of CARD_FIELDS) {
+    if (hidden.has(f)) continue;
     if (card?.status?.[f] === 'heard' || card?.status?.[f] === 'confirmed') status[f] = card.status[f];
   }
+  for (const f of Object.keys(card?.status || {})) if (isExtraField(f) && card.status[f] === 'confirmed') status[f] = 'confirmed';
   const employees = Number.isInteger(card?.employees) && card.employees > 0 && card.employees < 1000 ? card.employees : null;
   return { values, status, employees, language: 'en' };
 }
@@ -307,11 +319,11 @@ export function describeField(card, field, lang = 'en') {
   }
 }
 
-export const isComplete = (card) => CARD_FIELDS.every((f) => card.status[f] === 'confirmed');
+export const isComplete = (card, ctx) => fieldsOf(ctx).every((f) => card.status[f] === 'confirmed');
 
 // ---- What the guide says -------------------------------------------------------------------------------------------
 
-const ASKS = {
+export const ASKS = {
   structure: {
     question: 'How will your business be set up? If you are not sure, that is fine.',
     chips: [['sole', 'Sole proprietor'], ['llc', 'LLC'], ['corp', 'Corporation'], ['partnership', 'Partnership or LLP'], ['unsure', 'Not sure']],
@@ -333,13 +345,33 @@ const ASKS = {
 const YN_CHIPS = [['yes', 'Yes'], ['no', 'No'], ['unsure', 'Not sure']];
 
 const ES_YN_CHIPS = [['yes', 'Sí'], ['no', 'No'], ['unsure', 'No estoy seguro']];
-export function nextAsk(card, lang = 'en') {
-  const field = CARD_FIELDS.find((f) => !card.status[f]);
+export function nextAsk(card, lang = 'en', ctx) {
+  const field = fieldsOf(ctx).find((f) => !card.status[f]);
   if (!field) return null;
+  if (isExtraField(field)) {
+    const q = (ctx?.extras || []).find((x) => xField(x.id) === field);
+    return { field, question: [q.text, q.hint].filter(Boolean).join(' '), chips: q.options.map((o) => ({ value: o.value, label: o.label })) };
+  }
   const es = cleanLang(lang) === 'es';
   const a = es ? ES.asks[field] : ASKS[field];
   const chips = a.chips === 'yn' || !a.chips ? (es ? ES_YN_CHIPS : YN_CHIPS) : a.chips;
-  return { field, question: a.question, chips: chips.map(([value, label]) => ({ value, label })) };
+  return { field, question: ctx?.standard?.[field]?.text || a.question, chips: chips.map(([value, label]) => ({ value, label })) };
+}
+
+// A typed or spoken answer to an admin-added question: one of its choices, by its words, or yes / no / not sure.
+export function parseExtra(q, text) {
+  const t = String(text || '').trim().toLowerCase().replace(/[.!?]+$/, '');
+  if (!t) return null;
+  const opts = q.options || [];
+  const exact = opts.find((o) => o.label.toLowerCase() === t || o.value === t);
+  if (exact) return exact.value;
+  if (opts.some((o) => o.value === 'unsure') && (UNSURE_RX.test(t) || ES_UNSURE.test(t))) return 'unsure';
+  if (q.type === 'yesno') {
+    const d = parseDirect('hiring', text);
+    return d?.hiring && opts.some((o) => o.value === d.hiring) ? d.hiring : null;
+  }
+  const hits = opts.filter((o) => o.value !== 'unsure' && o.label.length > 1 && (t.includes(o.label.toLowerCase()) || (t.length > 2 && o.label.toLowerCase().includes(t))));
+  return hits.length === 1 ? hits[0].value : null;
 }
 
 function readback(card, fields, lang = 'en') {
@@ -362,10 +394,11 @@ const CONFIRM_CHIPS = [{ value: 'confirm', label: "Yes, that's right" }, { value
 // One turn of the conversation. Pure: the card goes in, a new card and the guide's reply come out.
 //   input: { message, action, field, value, asking }
 //   action: 'confirm' (read-back accepted), 'change' (read-back rejected), 'set' (tap a chip or edit a row), 'skip'
-export function intakeTurn({ card: rawCard, message, action, field, value, asking, lang: rawLang }, { places } = {}) {
+export function intakeTurn({ card: rawCard, message, action, field, value, asking, lang: rawLang }, { places, ...ctx } = {}) {
   const lang = cleanLang(rawLang);
   const es = lang === 'es';
-  let card = cleanCard(rawCard);
+  let card = cleanCard(rawCard, ctx);
+  const fields = fieldsOf(ctx);
   const said = String(message || '').trim().slice(0, 500);
   let ack = '';
 
@@ -373,33 +406,43 @@ export function intakeTurn({ card: rawCard, message, action, field, value, askin
     for (const f of CARD_FIELDS) if (card.status[f] === 'heard') card.status[f] = 'confirmed';
     ack = es ? ES.ackConfirmed : 'Thank you. That is on your card.';
   } else if (action === 'change') {
-    return finish(card, es ? ES.change : 'No problem. Tap any row on your card to change it, or tell me what to fix.', { ask: nextAskUnlessHeard(card, lang), chips: [], lang });
-  } else if (action === 'set' && CARD_FIELDS.includes(field)) {
-    card = applySet(card, field, value, places);
+    return finish(card, es ? ES.change : 'No problem. Tap any row on your card to change it, or tell me what to fix.', { ask: nextAskUnlessHeard(card, lang, ctx), chips: [], lang, ctx });
+  } else if (action === 'set' && fields.includes(field)) {
+    card = applySet(card, field, value, places, ctx);
     ack = es ? ES.ackGot : 'Got it.';
   } else if (said) {
-    const direct = asking && CARD_FIELDS.includes(asking) ? parseDirect(asking, said, places) : null;
+    const askedExtra = isExtraField(asking) && fields.includes(asking) ? (ctx.extras || []).find((x) => xField(x.id) === asking) : null;
+    const extraValue = askedExtra ? parseExtra(askedExtra, said) : null;
+    const direct = askedExtra ? (extraValue ? { extra: extraValue } : null) : asking && CARD_FIELDS.includes(asking) && fields.includes(asking) ? parseDirect(asking, said, places) : null;
     if (direct) {
-      card = setConfirmed(card, asking, direct);
+      card = askedExtra ? applySet(card, asking, extraValue, places, ctx) : setConfirmed(card, asking, direct);
       ack = es ? ES.ackGot : 'Got it.';
     }
     // Anything else in the message is heard, not confirmed. The asked field is skipped so a one-word answer is not re-read.
-    const found = extractFacts(said, places);
-    if (direct) for (const k of FIELD_KEYS[asking]) delete found[k];
+    const found = direct && askedExtra ? {} : extractFacts(said, places); // an answer to an added question is not also read as a business detail
+    if (direct && !askedExtra) for (const k of FIELD_KEYS[asking]) delete found[k];
+    for (const h of ctx.hidden || []) for (const k of FIELD_KEYS[h] || []) delete found[k]; // a deleted question is never asked or noted
     const merged = mergeHeard(card, found);
     card = merged.card;
     if (!direct && !merged.changed.length) {
-      return finish(card, es ? (asking === 'place' ? ES.noFacts.place : asking ? ES.noFacts.asking : ES.noFacts.none) : asking === 'place' ? 'I did not catch a Washington city in that. Say or type the city again, or tap Skip for now.' : asking ? "I did not catch that. Please tap one of the answers below or type it again." : 'I did not pick out a business detail from that. Tell me what you want to start, or answer the question below.', { ask: nextAskUnlessHeard(card, lang), note: 'no-facts', lang });
+      return finish(card, es ? (asking === 'place' ? ES.noFacts.place : asking ? ES.noFacts.asking : ES.noFacts.none) : asking === 'place' ? 'I did not catch a Washington city in that. Say or type the city again, or tap Skip for now.' : asking ? "I did not catch that. Please tap one of the answers below or type it again." : 'I did not pick out a business detail from that. Tell me what you want to start, or answer the question below.', { ask: nextAskUnlessHeard(card, lang, ctx), note: 'no-facts', lang, ctx });
     }
   } else {
     // No message and no action (for example the owner just switched language): say the current question or read-back again.
-    if (CARD_FIELDS.some((f) => card.status[f] === 'heard')) return finishTurn(card, '', lang);
-    return finish(card, nextAsk(card, lang)?.question || (es ? ES.completeCard : 'Your card is complete.'), { ask: nextAsk(card, lang), lang });
+    if (CARD_FIELDS.some((f) => card.status[f] === 'heard')) return finishTurn(card, '', lang, ctx);
+    return finish(card, nextAsk(card, lang, ctx)?.question || (es ? ES.completeCard : 'Your card is complete.'), { ask: nextAsk(card, lang, ctx), lang, ctx });
   }
-  return finishTurn(card, ack, lang);
+  return finishTurn(card, ack, lang, ctx);
 }
 
-function applySet(card, field, value, places) {
+function applySet(card, field, value, places, ctx) {
+  if (isExtraField(field)) {
+    const q = (ctx?.extras || []).find((x) => xField(x.id) === field);
+    const ok = q && q.options.some((o) => o.value === value) ? value : '';
+    const next = { ...card, values: { ...card.values, extra: { ...(card.values.extra || {}) } }, status: { ...card.status } };
+    if (ok) { next.values.extra[q.id] = ok; next.status[field] = 'confirmed'; } else delete next.status[field];
+    return next;
+  }
   if (field === 'place') {
     const v = typeof value === 'object' && value ? value : parseDirect('place', String(value ?? ''), places) || { city: '', county: '' };
     return setConfirmed(card, 'place', { city: String(v.city || '').slice(0, 80), county: String(v.county || '').slice(0, 80) });
@@ -416,20 +459,20 @@ function applySet(card, field, value, places) {
   return next;
 }
 
-function nextAskUnlessHeard(card, lang = 'en') {
-  return CARD_FIELDS.some((f) => card.status[f] === 'heard') ? null : nextAsk(card, lang);
+function nextAskUnlessHeard(card, lang = 'en', ctx) {
+  return CARD_FIELDS.some((f) => card.status[f] === 'heard') ? null : nextAsk(card, lang, ctx);
 }
 
-function finishTurn(card, ack, lang = 'en') {
+function finishTurn(card, ack, lang = 'en', ctx) {
   const heard = CARD_FIELDS.filter((f) => card.status[f] === 'heard');
   if (heard.length) {
     return { card, reply: [ack, readback(card, heard, lang)].filter(Boolean).join(' '), ask: null, chips: cleanLang(lang) === 'es' ? ES.confirmChips : CONFIRM_CHIPS, awaiting: 'confirm', complete: false };
   }
-  return finish(card, '', { ack, ask: nextAsk(card, lang), lang });
+  return finish(card, '', { ack, ask: nextAsk(card, lang, ctx), lang, ctx });
 }
 
-function finish(card, reply, { ask = null, ack = '', chips = null, note = '', lang = 'en' } = {}) {
-  const complete = isComplete(card);
+function finish(card, reply, { ask = null, ack = '', chips = null, note = '', lang = 'en', ctx } = {}) {
+  const complete = isComplete(card, ctx);
   const es = cleanLang(lang) === 'es';
   if (complete) {
     return {
@@ -445,8 +488,8 @@ function finish(card, reply, { ask = null, ack = '', chips = null, note = '', la
 // ---- Plan and timeline ---------------------------------------------------------------------------------------------
 
 // The rules engine reads only confirmed fields. Everything else is blank, which the engine treats as unknown.
-export function confirmedAnswers(card) {
-  const c = cleanCard(card);
+export function confirmedAnswers(card, ctx) {
+  const c = cleanCard(card, ctx);
   const a = blankAnswers();
   for (const f of CARD_FIELDS) {
     if (c.status[f] !== 'confirmed') continue;
@@ -456,11 +499,11 @@ export function confirmedAnswers(card) {
   return a;
 }
 
-export function planFromCard(card, rules, lang = 'en') {
-  const c = cleanCard(card);
-  const confirmedCount = CARD_FIELDS.filter((f) => c.status[f] === 'confirmed').length;
-  const complete = isComplete(c);
-  const answers = confirmedAnswers(c);
+export function planFromCard(card, rules, lang = 'en', ctx) {
+  const c = cleanCard(card, ctx);
+  const confirmedCount = fieldsOf(ctx).filter((f) => c.status[f] === 'confirmed').length;
+  const complete = isComplete(c, ctx);
+  const answers = confirmedAnswers(c, ctx);
   if (!confirmedCount) return { complete: false, answers, items: [], skipped: [] };
   const { items, skipped } = evaluate(rules, answers, lang);
   // While the card is still filling in, show only steps that a confirmed answer already triggers.

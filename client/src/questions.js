@@ -37,10 +37,13 @@ export const QUESTIONS = {
 };
 
 // extraIds: the ids of questions an admin added. They come after the standard ones, as "x:<id>" steps.
-export function stepList(answers, extraIds = []) {
+// hidden: standard questions an admin deleted (card names: structure, activity, place, hiring, ...).
+const STEP_FIELD = { desc: 'activity', cats: 'activity', city: 'place' };
+export function stepList(answers, extraIds = [], hidden = []) {
   // The business type is always asked, even when the description is blank, because it controls
   // type-specific steps such as the Labor & Industries contractor registration.
-  return ['structure', 'desc', 'cats', 'city', 'hiring', 'subs', 'salestax', 'income', 'tradename', ...extraIds.map((id) => `x:${id}`), 'review'];
+  const steps = ['structure', 'desc', 'cats', 'city', 'hiring', 'subs', 'salestax', 'income', 'tradename'].filter((id) => !hidden.includes(STEP_FIELD[id] || id));
+  return [...steps, ...extraIds.map((id) => `x:${id}`), 'review'];
 }
 
 export const blankAnswers = () => ({ structure: '', desc: '', cats: [], city: '', county: '', hiring: '', subs: '', salestax: '', income: '', tradename: '' });
