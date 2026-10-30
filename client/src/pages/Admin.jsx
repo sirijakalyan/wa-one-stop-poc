@@ -20,8 +20,6 @@ const fieldsFor = (a) => [
   { key: 'source.url', label: a('Source link (https)', 'Enlace de la fuente (https)'), type: 'text' },
   { key: 'apply.label', label: a('Apply button text', 'Texto del botón de solicitud'), type: 'text' },
   { key: 'apply.url', label: a('Apply link (https)', 'Enlace de solicitud (https)'), type: 'text' },
-  { key: 'verification.status', label: a('Verification status', 'Estado de verificación'), type: 'select' },
-  { key: 'verification.note', label: a('Verification note', 'Nota de verificación'), type: 'text' },
 ];
 const getPath = (o, p) => p.split('.').reduce((x, k) => (x == null ? x : x[k]), o) ?? '';
 const STALE_DAYS = 365;
@@ -54,12 +52,12 @@ function AdminPanel({ signedIn = false }) {
   const nameOf = (r) => locById[r.id]?.title || r.title;
   const agencyOf = (r) => locById[r.id]?.agency || r.agency;
   // The change log keeps field keys like "source.url". Show them as the labels the editor uses.
-  const fieldName = (k) => (k === 'rule' ? a('rule', 'regla') : k === 'applies' ? a('who sees it', 'quién la ve') : (FIELDS.find((x) => x.key === k)?.label || k));
+  const fieldName = (k) => (k === 'rule' ? a('rule', 'regla') : k === 'applies' ? a('who sees it', 'quién la ve') : k === 'verification.status' ? a('marked as checked or needs check', 'marcada como revisada o falta revisar') : (FIELDS.find((x) => x.key === k)?.label || k));
   const reviewerName = (n) => (n === 'admin key' ? a('admin key', 'clave de administración') : n);
   const changesLoad = useLoad(fetchChanges);
   const [selected, setSelected] = useState('');
   const [form, setForm] = useState({});
-  const [reviewer, setReviewer] = useState('');
+  const [checkNote, setCheckNote] = useState('');
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
   const [confirmReset, setConfirmReset] = useState(false);
@@ -75,7 +73,7 @@ function AdminPanel({ signedIn = false }) {
   const rules = rulesLoad.data?.rules ?? [];
   const rule = rules.find((r) => r.id === selected);
 
-  // Fill the form with the published values, plus any saved draft.
+  // Fill the form with the saved values (an old saved draft still shows, and saving applies it).
   useEffect(() => {
     if (!rule) return;
     const f = {};
@@ -109,8 +107,7 @@ function AdminPanel({ signedIn = false }) {
   const live = rules.filter((r) => !r.disabled);
   const checkedCount = live.filter((r) => statusOf(r, a).key === 'ok').length;
   const needsCount = live.length - checkedCount;
-  const draftCount = rules.filter((r) => r.draft).length;
-  const dim = (r) => (filter === 'needs' ? statusOf(r, a).key === 'ok' : filter === 'drafts' ? !r.draft : false);
+  const dim = (r) => (filter === 'needs' ? statusOf(r, a).key === 'ok' : false);
   const ruleChanges = (changesLoad.data?.changes ?? []).filter((c) => c.ruleId === selected);
 
   return (
@@ -119,7 +116,7 @@ function AdminPanel({ signedIn = false }) {
         <h1 tabIndex={-1}>{a('Rule desk', 'Mesa de reglas')}</h1>
         <p className="lead">
           {needsCount === 0 ? a('Every rule has been checked against its official page.', 'Todas las reglas se revisaron contra su página oficial.') : a(`${needsCount} of ${live.length} rules need a check before you can trust them.`, `${needsCount} de ${live.length} reglas necesitan una revisión antes de confiar en ellas.`)}{' '}
-          {a('Pick a rule to edit it. Nothing goes live until a second person approves it.', 'Elija una regla para editarla. Nada se publica hasta que una segunda persona lo apruebe.')}
+          {a('Pick a rule to edit it or check it. Saved changes go live right away.', 'Elija una regla para editarla o revisarla. Los cambios guardados se publican de inmediato.')}
         </p>
         <p className="desk-add">
           <button type="button" className="btn btn-primary btn-sm" onClick={() => { setAdding(true); setSelected(''); setMsg(''); setErr(''); setTimeout(() => document.getElementById('add-rule-h')?.scrollIntoView?.({ behavior: 'smooth', block: 'center' }), 60); }}>{a('Add a rule', 'Agregar una regla')}</button>
@@ -135,7 +132,7 @@ function AdminPanel({ signedIn = false }) {
         <div className="board-top">
           <h2 id="board-h" className="board-title"><strong>{checkedCount}</strong> {a('of', 'de')} {rules.length} {a('rules checked', 'reglas revisadas')}</h2>
           <div className="board-filters" role="group" aria-label={a('Show', 'Mostrar')}>
-            {[['all', `${a('All', 'Todas')} ${rules.length}`], ['needs', `${a('Needs check', 'Falta revisar')} ${needsCount}`], ['drafts', `${a('Has a draft', 'Con borrador')} ${draftCount}`]].map(([k, label]) => (
+            {[['all', `${a('All', 'Todas')} ${rules.length}`], ['needs', `${a('Needs check', 'Falta revisar')} ${needsCount}`]].map(([k, label]) => (
               <button key={k} type="button" aria-pressed={filter === k} onClick={() => setFilter(k)}>{label}</button>
             ))}
           </div>
@@ -182,13 +179,13 @@ function AdminPanel({ signedIn = false }) {
             await rulesLoad.reload();
             await changesLoad.reload();
             setSelected(res.rule.id);
-            setMsg(a(`Rule added and live. Simulated notices queued: ${res.queuedNotifications}. It shows "Pending verification" until a second person checks it.`, `Regla agregada y publicada. Avisos simulados en cola: ${res.queuedNotifications}. Muestra "Verificación pendiente" hasta que una segunda persona la revise.`));
+            setMsg(a(`Rule added and live. Simulated notices queued: ${res.queuedNotifications}. It shows "Pending verification" until you mark it as checked.`, `Regla agregada y publicada. Avisos simulados en cola: ${res.queuedNotifications}. Muestra "Verificación pendiente" hasta que la marque como revisada.`));
           }}
         />
       )}
 
       <div id="desk-editor" className="desk-editor-anchor">
-        {!rule && !adding && <p className="desk-empty">{a('Pick a rule on the board to read it, edit it and send it for a second check.', 'Elija una regla del tablero para leerla, editarla y enviarla a una segunda revisión.')}</p>}
+        {!rule && !adding && <p className="desk-empty">{a('Pick a rule on the board to read it, edit it and check it.', 'Elija una regla del tablero para leerla, editarla y revisarla.')}</p>}
         {rule && (
           <div className="desk-editor">
             <section className="panel editor" aria-labelledby="editor-h">
@@ -204,55 +201,12 @@ function AdminPanel({ signedIn = false }) {
                     {f.type === 'text' && (
                       <input type="text" id={`f-${f.key}`} value={form[f.key] ?? ''} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} />
                     )}
-                    {f.type === 'select' && (
-                      <select id={`f-${f.key}`} value={form[f.key] ?? 'pending'} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })}>
-                        <option value="checked">{a('Checked against the official page', 'Revisada contra la página oficial')}</option>
-                        <option value="pending">{a('Pending a second-person check', 'Pendiente de revisión por una segunda persona')}</option>
-                      </select>
-                    )}
                   </div>
                 ))}
                 <div className="row">
-                  <button type="button" className="btn btn-sm" onClick={() => run(() => api.saveDraft(rule.id, form), a('Draft saved. Nothing is live until it is approved.', 'Borrador guardado. Nada se publica hasta que se apruebe.'))}>{a('Save draft', 'Guardar borrador')}</button>
-                  {rule.draft && (
-                    <button type="button" className="btn btn-quiet btn-sm" onClick={() => run(() => api.discardDraft(rule.id), a('Draft discarded.', 'Borrador descartado.'))}>{a('Discard draft', 'Descartar borrador')}</button>
-                  )}
+                  <button type="button" className="btn btn-primary btn-sm" onClick={() => run(() => api.saveRule(rule.id, form), (r) => (r.changed ? a(`Saved. Owners see the change now (version ${r.rule.version}). Simulated notices queued: ${r.queuedNotifications}.`, `Guardado. Los dueños ven el cambio ahora (versión ${r.rule.version}). Avisos simulados en cola: ${r.queuedNotifications}.`) : a('Nothing changed, so nothing was saved.', 'No hubo cambios, así que no se guardó nada.')))}>{a('Save changes', 'Guardar cambios')}</button>
                 </div>
               </form>
-
-              {rule.draft && (
-                <>
-                  <h3>{a('Side-by-side change', 'Cambio lado a lado')}</h3>
-                  <div className="table-scroll">
-                    <table>
-                      <thead><tr><th scope="col">{a('Field', 'Campo')}</th><th scope="col">{a('Published now', 'Publicado ahora')}</th><th scope="col">{a('Draft', 'Borrador')}</th></tr></thead>
-                      <tbody>
-                        {Object.entries(rule.draft).map(([k, v]) => (
-                          <tr key={k}>
-                            <td>{FIELDS.find((f) => f.key === k)?.label || k}</td>
-                            <td className="from">{getPath(rule, k) || a('Empty', 'Vacío')}</td>
-                            <td className="to">{v || a('Empty', 'Vacío')}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  <div className="field">
-                    <label htmlFor="reviewer">{a('Reviewer name (required to approve)', 'Nombre del revisor (obligatorio para aprobar)')}</label>
-                    <input type="text" id="reviewer" value={reviewer} onChange={(e) => setReviewer(e.target.value)} placeholder={a('Name of the person approving', 'Nombre de la persona que aprueba')} maxLength={80} />
-                  </div>
-                  <button
-                    type="button"
-                    className="btn btn-primary"
-                    onClick={() => run(
-                      () => api.publish(rule.id, reviewer),
-                      (r) => a(`Published as version ${r.rule.version}. Simulated notices queued: ${r.queuedNotifications}.`, `Publicada como versión ${r.rule.version}. Avisos simulados en cola: ${r.queuedNotifications}.`),
-                    )}
-                  >
-                    {a('Approve and publish', 'Aprobar y publicar')}
-                  </button>
-                </>
-              )}
             </section>
 
             <aside className="desk-side" aria-label={a('This rule today', 'Esta regla hoy')}>
@@ -262,11 +216,28 @@ function AdminPanel({ signedIn = false }) {
                 <div><dt>{a('Version', 'Versión')}</dt><dd>{rule.version}</dd></div>
                 <div><dt>{a('Last verified', 'Última verificación')}</dt><dd>{rule.lastVerified || a('Never', 'Nunca')} <small>{staleness(rule, a)}</small></dd></div>
                 <div><dt>{a('Owner', 'Responsable')}</dt><dd>{humanInput(rule.owner, a.lang)}</dd></div>
-                <div><dt>{a('Reviewer', 'Revisor')}</dt><dd>{rule.reviewer || a('none yet', 'ninguno aún')}</dd></div>
+                <div><dt>{a('Checked by', 'Revisada por')}</dt><dd>{rule.reviewer || a('none yet', 'ninguno aún')}</dd></div>
                 <div><dt>{a('Agency', 'Agencia')}</dt><dd>{agencyOf(rule)}</dd></div>
-                <div><dt>{a('Draft', 'Borrador')}</dt><dd>{rule.draft ? a('Yes, waiting for approval', 'Sí, esperando aprobación') : 'No'}</dd></div>
-              </dl>
-              {rule.source?.url && <p><ExternalLink className="btn btn-quiet btn-sm" href={rule.source.url}>{a('Open the source page', 'Abrir la página de la fuente')}</ExternalLink></p>}
+                              </dl>
+              <div className="desk-check">
+                <h3>{a('Check this rule', 'Revisar esta regla')}</h3>
+                <ol className="hint">
+                  <li>{a('Open the official page.', 'Abra la página oficial.')}</li>
+                  <li>{a('Read it and compare it with the rule text.', 'Léala y compárela con el texto de la regla.')}</li>
+                  <li>{a('If they match, click Mark as checked. If not, edit the rule and save.', 'Si coinciden, haga clic en Marcar como revisada. Si no, edite la regla y guarde.')}</li>
+                </ol>
+                {rule.source?.url && <p><ExternalLink className="btn btn-quiet btn-sm" href={rule.source.url}>{a('Open the source page', 'Abrir la página de la fuente')}</ExternalLink></p>}
+                <div className="field">
+                  <label htmlFor="check-note">{a('Note (optional)', 'Nota (opcional)')}</label>
+                  <input type="text" id="check-note" maxLength={300} value={checkNote} onChange={(e) => setCheckNote(e.target.value)} placeholder={a('For example: fee is still $19', 'Por ejemplo: la tarifa sigue en $19')} />
+                </div>
+                <div className="row">
+                  <button type="button" className="btn btn-primary btn-sm" onClick={async () => { await run(() => api.checkRule(rule.id, 'checked', checkNote), a('Marked as checked today.', 'Marcada como revisada hoy.')); setCheckNote(''); }}>{a('Mark as checked', 'Marcar como revisada')}</button>
+                  {rule.verification?.status === 'checked' && (
+                    <button type="button" className="btn btn-quiet btn-sm" onClick={() => run(() => api.checkRule(rule.id, 'pending', ''), a('Marked as needs check.', 'Marcada como falta revisar.'))}>{a('Mark as needs check', 'Marcar como falta revisar')}</button>
+                  )}
+                </div>
+              </div>
               <div className="desk-onoff">
                 {rule.disabled ? (
                   <>
@@ -307,7 +278,7 @@ function AdminPanel({ signedIn = false }) {
               {ruleChanges.length === 0 ? <p className="hint">{a('No published changes yet.', 'Aún no hay cambios publicados.')}</p> : (
                 <ul className="desk-history">
                   {ruleChanges.map((c) => (
-                    <li key={c.id}><strong>{a('Version', 'Versión')} {c.version}</strong> {a('approved by', 'aprobada por')} {reviewerName(c.reviewer)}, {new Date(c.at).toLocaleDateString(a.locale)}. {a('Changed:', 'Cambió:')} {c.fields.map((f) => fieldName(f.field)).join(', ')}.</li>
+                    <li key={c.id}><strong>{a('Version', 'Versión')} {c.version}</strong> {a('by', 'por')} {reviewerName(c.reviewer)}, {new Date(c.at).toLocaleDateString(a.locale)}. {a('Changed:', 'Cambió:')} {c.fields.map((f) => fieldName(f.field)).join(', ')}.</li>
                   ))}
                 </ul>
               )}
@@ -331,19 +302,14 @@ function AdminPanel({ signedIn = false }) {
                 'El secreto compartido del servidor (ADMIN_KEY) también desbloquea esta página para quien lo tenga, pero la aplicación no puede saber quién usa la clave. Un servidor de producción sin clave mantiene esta página bloqueada.')}
             </li>
             <li>
-              <strong>{a('The reviewer.', 'El revisor.')}</strong>{' '}
-              {a('The reviewer compares a draft with the official agency page and approves it. They type their own name when they publish. The app saves that name and the date but cannot check that it is really them. The reviewer should be a different person from whoever wrote the draft.',
-                'El revisor compara un borrador con la página oficial de la agencia y lo aprueba. Escribe su propio nombre al publicar. La aplicación guarda ese nombre y la fecha, pero no puede comprobar que sea esa persona. El revisor debe ser alguien distinto de quien escribió el borrador.')}
-            </li>
-            <li>
-              <strong>{a('Draft and publish.', 'Borrador y publicación.')}</strong>{' '}
-              {a('Save draft stores your edits only. Approve and publish makes the change live for every visitor, adds one to the version number, records the reviewer and the date, and queues a simulated notice for checklists that include the rule. Publishing cannot change who a rule applies to.',
-                'Guardar borrador solo guarda sus cambios. Aprobar y publicar hace el cambio visible para todos los visitantes, suma uno al número de versión, registra al revisor y la fecha, y pone en cola un aviso simulado para las listas que incluyen la regla. Publicar no puede cambiar a quién se aplica una regla.')}
+              <strong>{a('Saving a change.', 'Guardar un cambio.')}</strong>{' '}
+              {a('Save changes makes the edit live for every visitor at once. It adds one to the version number, records who saved it and the date, and queues a simulated notice for checklists that include the rule. It does not mark the rule as checked.',
+                'Guardar cambios hace que la edición se vea de inmediato para todos los visitantes. Suma uno al número de versión, registra quién la guardó y la fecha, y pone en cola un aviso simulado para las listas que incluyen la regla. No marca la regla como revisada.')}
             </li>
             <li>
               <strong>{a('Verification status.', 'Estado de verificación.')}</strong>{' '}
-              {a('Set "Checked" only after a person has read the official page and compared it with the rule. Recording a source review does not change a rule\'s status by itself. Each rule has an owner field that reads "NEEDS HUMAN INPUT" until your team names a person.',
-                'Marque "Revisada" solo después de que una persona haya leído la página oficial y la haya comparado con la regla. Registrar una revisión de fuente no cambia por sí solo el estado de una regla. Cada regla tiene un campo de responsable que dice "NEEDS HUMAN INPUT" hasta que su equipo nombre a una persona.')}
+              {a('Click Mark as checked only after you have read the official page and compared it with the rule. It sets today\'s date, adds a source review to the evidence log and adds a line to the history. A rule turns Stale after 12 months. Each rule has an owner field that reads "NEEDS HUMAN INPUT" until your team names a person.',
+                'Haga clic en Marcar como revisada solo después de leer la página oficial y compararla con la regla. Pone la fecha de hoy, agrega una revisión de fuente al registro de evidencia y una línea al historial. Una regla pasa a Vencida después de 12 meses. Cada regla tiene un campo de responsable que dice "NEEDS HUMAN INPUT" hasta que su equipo nombre a una persona.')}
             </li>
           </ul>
         </details>
@@ -367,7 +333,7 @@ function AdminPanel({ signedIn = false }) {
             {(changesLoad.data?.changes ?? []).map((c) => (
               <li key={c.id} className="note-item">
                 <h3>{locById[c.ruleId]?.title || c.ruleTitle} ({a('version', 'versión')} {c.version})</h3>
-                <p>{a('Approved by', 'Aprobada por')} {reviewerName(c.reviewer)} {a('on', 'el')} {new Date(c.at).toLocaleString(a.locale)}. {a('Fields changed:', 'Campos cambiados:')} {c.fields.map((f) => fieldName(f.field)).join(', ')}.</p>
+                <p>{a('Saved by', 'Guardada por')} {reviewerName(c.reviewer)} {a('on', 'el')} {new Date(c.at).toLocaleString(a.locale)}. {a('Fields changed:', 'Campos cambiados:')} {c.fields.map((f) => fieldName(f.field)).join(', ')}.</p>
               </li>
             ))}
           </ul>

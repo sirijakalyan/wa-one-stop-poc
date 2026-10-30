@@ -39,8 +39,8 @@ export default function EvidencePanel({ rules }) {
     <section aria-labelledby="evidence-h">
       <h2 id="evidence-h">{a('Evidence for Pending verification', 'Evidencia para Verificación pendiente')}</h2>
       <p className="note">
-        {a('Recording a review or a county page does not change any rule status or approval. A named reviewer still publishes in the editor above. Enter a reviewer name only. Do not put personal details in notes.',
-          'Registrar una revisión o una página de condado no cambia el estado ni la aprobación de ninguna regla. Un revisor con nombre sigue publicando en el editor de arriba. Escriba solo el nombre del revisor. No ponga datos personales en las notas.')}
+        {a('Recording a review or a county page here does not change a rule\'s status. To mark a rule as checked, open it in the editor above and click Mark as checked. Do not put personal details in notes.',
+          'Registrar aquí una revisión o una página de condado no cambia el estado de una regla. Para marcar una regla como revisada, ábrala en el editor de arriba y haga clic en Marcar como revisada. No ponga datos personales en las notas.')}
       </p>
       <ErrorNote message={err} />
       {msg && <p className="ok" role="status">{msg}</p>}

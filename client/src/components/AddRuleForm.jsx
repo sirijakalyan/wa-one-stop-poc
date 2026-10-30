@@ -8,7 +8,7 @@ import SpanishRuleFields from './SpanishRuleFields.jsx';
 const BLANK = { title: '', agency: '', phase: '', detail: '', sourceLabel: '', sourceUrl: '', applyLabel: '', applyUrl: '' };
 const BLANK_ES = { title: '', agency: '', detail: '', sourceLabel: '', applyLabel: '' };
 
-// Add a new requirement. It goes live straight away, marked "Pending verification" until a second person checks it.
+// Add a new requirement. It goes live straight away, marked "Pending verification" until you mark it as checked.
 export default function AddRuleForm({ phases, fields, onAdded, onCancel }) {
   const a = useA();
   const [f, setF] = useState(BLANK);
@@ -35,7 +35,7 @@ export default function AddRuleForm({ phases, fields, onAdded, onCancel }) {
   return (
     <form className="panel add-rule" onSubmit={submit} aria-labelledby="add-rule-h">
       <h2 id="add-rule-h">{a('Add a rule', 'Agregar una regla')}</h2>
-      <p className="hint">{a('The new step is live for the people it applies to right away. It shows "Pending verification" until a second person checks it against the official page.', 'El nuevo paso se ve de inmediato para las personas a quienes aplica. Muestra "Verificación pendiente" hasta que una segunda persona lo revise contra la página oficial.')}</p>
+      <p className="hint">{a('The new step is live for the people it applies to right away. It shows "Pending verification" until you check it against the official page and mark it as checked.', 'El nuevo paso se ve de inmediato para las personas a quienes aplica. Muestra "Verificación pendiente" hasta que usted lo revise contra la página oficial y lo marque como revisado.')}</p>
       <div className="field"><label htmlFor="ar-title">{a('Requirement name', 'Nombre del requisito')}</label><input id="ar-title" type="text" value={f.title} onChange={set('title')} maxLength={200} required /></div>
       <div className="field"><label htmlFor="ar-agency">{a('Agency', 'Agencia')}</label><input id="ar-agency" type="text" value={f.agency} onChange={set('agency')} maxLength={120} required /></div>
       <div className="field">

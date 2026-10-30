@@ -57,19 +57,19 @@ describe('in-page preview', () => {
 
     // Disclaimer is still there after navigating
 
-    // Admin: edit the DOR rule, approve with a reviewer
+    // Admin: edit the DOR rule and save, then mark it checked
     await user.click(screen.getByRole('link', { name: /Admin rules/ }));
     const who = await screen.findByTestId('who-can-edit');
-    for (const part of [/admin key/i, /reviewer/i, /draft and publish/i, /approve and publish/i, /cannot tell who/i, /different person/i]) expect(who).toHaveTextContent(part);
+    for (const part of [/admin key/i, /saving a change/i, /save changes/i, /cannot tell who/i]) expect(who).toHaveTextContent(part);
     await user.click(await screen.findByRole('button', { name: /^Apply for your Washington business license\./ }));
     const detail = await screen.findByLabelText('Plain-language detail');
     await user.clear(detail);
     await user.type(detail, 'Updated detail for the preview test.');
-    await user.click(screen.getByRole('button', { name: 'Save draft' }));
-    expect(await screen.findByText('Side-by-side change')).toBeInTheDocument();
-    await user.type(screen.getByLabelText(/Reviewer name/), 'Demo reviewer');
-    await user.click(screen.getByRole('button', { name: 'Approve and publish' }));
-    expect(await screen.findByText(/Published as version 2. Simulated notices queued: 1/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Save changes' }));
+    expect(await screen.findByText(/Saved\. Owners see the change now \(version 2\)\. Simulated notices queued: 1/)).toBeInTheDocument();
+    // Checking a rule is its own step
+    await user.click(screen.getByRole('button', { name: 'Mark as checked' }));
+    expect(await screen.findByText('Marked as checked today.')).toBeInTheDocument();
 
     // Notification appears
     await user.click(screen.getByRole('button', { name: /^Notifications, / }));

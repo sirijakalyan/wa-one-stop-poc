@@ -1050,6 +1050,62 @@ export function createService(store, options = {}) {
     return { ok: true, rule: publicRule(rule) };
   });
 
+  // One admin, one step: "Save changes" applies the edit at once (no reviewer name, no draft). Owners who have the rule get a notice.
+  // It does not mark the rule as checked. Checking against the official page is its own action, below.
+  const whoIs = (ctx) => ctx.account?.email || 'Admin';
+  route('PUT', '/api/rules/:id', async ({ params, body, ctx }) => {
+    requireAdmin(ctx);
+    const doc = await loadAll();
+    const rule = doc.rules.find((r) => r.id === params.id);
+    if (!rule) fail('Rule not found.', 404);
+    const { clean, error } = validateDraft(body?.fields);
+    if (error) fail(error);
+    delete clean['verification.status']; // only "Mark as checked" changes this
+    const fields = [];
+    for (const [k, v] of Object.entries(clean)) {
+      const from = getPath(rule, k) ?? '';
+      if (from === v) continue;
+      if (k.startsWith('apply.') && rule.apply == null) rule.apply = { label: 'Official page', url: '' };
+      setPath(rule, k, v);
+      fields.push({ field: k, from, to: v });
+    }
+    rule.draft = null;
+    if (!fields.length) return { ok: true, changed: false, rule: publicRule(rule), queuedNotifications: 0 };
+    rule.version += 1;
+    doc.changes.push({ id: uuid(), ruleId: rule.id, ruleTitle: rule.title, version: rule.version, fields, reviewer: whoIs(ctx), at: new Date().toISOString() });
+    await store.writeRules(doc);
+    const queued = await notifyAffected(rule, doc, fields.map((f) => f.field));
+    return { ok: true, changed: true, rule: publicRule(rule), queuedNotifications: queued };
+  });
+
+  // "Mark as checked": the admin read the official page and it matches the rule. One click sets the status and today's date,
+  // keeps a source review in the evidence log, and adds a line to the change history. "Needs check" undoes it.
+  route('POST', '/api/rules/:id/check', async ({ params, body, ctx }) => {
+    requireAdmin(ctx);
+    const doc = await loadAll();
+    const rule = doc.rules.find((r) => r.id === params.id);
+    if (!rule) fail('Rule not found.', 404);
+    const result = body?.result === 'pending' ? 'pending' : 'checked';
+    const note = String(body?.note ?? '').trim();
+    if (note.length > 1000) fail('The note must be 1000 characters or fewer.');
+    const who = whoIs(ctx);
+    const from = rule.verification?.status || 'pending';
+    rule.verification = { ...(rule.verification || {}), status: result };
+    if (result === 'checked') {
+      rule.lastVerified = today();
+      rule.reviewer = who;
+      rule.verification.note = note || `Checked against the official page on ${today()} by ${who}.`;
+      if (/^https:\/\/[^\s]{1,500}$/.test(rule.source?.url || '')) {
+        await store.addSourceReview({ id: uuid(), ruleId: rule.id, sourceUrl: rule.source.url, reviewedBy: String(who).slice(0, 80), reviewedAt: new Date().toISOString(), result: 'checked', notes: rule.verification.note.slice(0, 1000) });
+      }
+    } else if (note) {
+      rule.verification.note = note;
+    }
+    doc.changes.push({ id: uuid(), ruleId: rule.id, ruleTitle: rule.title, version: rule.version, fields: [{ field: 'verification.status', from, to: result }], reviewer: who, at: new Date().toISOString() });
+    await store.writeRules(doc);
+    return { ok: true, rule: publicRule(rule) };
+  });
+
   route('DELETE', '/api/rules/:id/draft', async ({ params, ctx }) => {
     requireAdmin(ctx);
     const doc = await loadAll();

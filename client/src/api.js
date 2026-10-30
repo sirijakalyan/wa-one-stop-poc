@@ -155,6 +155,8 @@ export const api = {
   renewalReminder: () => request('POST', '/api/notifications/renewal-reminder'),
   setEmailOptIn: (emailOptIn, email) => request('PUT', '/api/settings', { emailOptIn, email }),
   rules: (lang, all) => request('GET', `/api/rules${[lang === 'es' && 'lang=es', all && 'all=1'].filter(Boolean).length ? `?${[lang === 'es' && 'lang=es', all && 'all=1'].filter(Boolean).join('&')}` : ''}`),
+  saveRule: (id, fields) => request('PUT', `/api/rules/${id}`, { fields }),
+  checkRule: (id, result, note) => request('POST', `/api/rules/${id}/check`, { result, note }),
   disableRule: (id) => request('POST', `/api/rules/${id}/disable`),
   enableRule: (id) => request('POST', `/api/rules/${id}/enable`),
   changes: () => request('GET', '/api/changes'),
