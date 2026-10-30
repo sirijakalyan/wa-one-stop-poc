@@ -46,10 +46,10 @@ function renderAt(path) {
 }
 
 describe('page footer', () => {
-  it('has no demo disclaimer text', () => {
+  it('keeps the footer guidance without demo wording', () => {
     renderAt('/');
-    expect(screen.queryByTestId('footer-disclaimer')).toBeNull();
-    expect(screen.queryByText(/Demo only/i)).toBeNull();
+    expect(screen.getByRole('contentinfo')).toHaveTextContent(/confirm details with the agency/i);
+    expect(screen.queryByText(/Demo only|Not a live product/i)).toBeNull();
   });
 });
 
