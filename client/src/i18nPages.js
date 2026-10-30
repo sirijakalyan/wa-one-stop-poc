@@ -808,7 +808,7 @@ export const pagesEs = {
   'guide.checkedOn': 'Revisado ',
   'guide.source': ' Fuente: ',
   'guide.whyExt': 'Por qué sale de este sitio:',
-  'county.page': (c) => `Página del departamento de salud de ${c}`,
+  'county.page': (c) => `Página del departamento de salud del ${c}`,
   'county.by': (r) => `Revisado por ${r}`,
   'county.on': ' el ',
   'county.found': 'Encontrado por búsqueda',

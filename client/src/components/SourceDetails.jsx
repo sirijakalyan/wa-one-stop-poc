@@ -25,7 +25,7 @@ export default function SourceDetails({ rule }) {
         <dd className="mono"><ExternalLink href={rule.source.url}>{rule.source.url}</ExternalLink></dd>
         {rule.supports && (<><dt>{t('src.supports')}</dt><dd>{rule.supports}</dd></>)}
         <dt>{t('src.last')}</dt><dd>{rule.lastVerified || t('sr.notVerified')}</dd>
-        <dt>{t('src.status')}</dt><dd>{statusLabel(v, t)}{v.note ? `. ${v.note}` : ''}</dd>
+        <dt>{t('src.status')}</dt><dd>{statusLabel(v, t)}{v.note && v.note.toLowerCase().startsWith(statusLabel(v, t).toLowerCase()) ? v.note.slice(statusLabel(v, t).length) : v.note ? `. ${v.note}` : ''}</dd>
         <dt>{t('src.approval')}</dt><dd>{approvalLabel(rule, t)}</dd>
         <dt>{t('src.owner')}</dt><dd>{rule.owner || OWNER_FALLBACK}</dd>
         <dt>{t('src.reviewer')}</dt><dd>{rule.reviewer || REVIEWER_FALLBACK}</dd>

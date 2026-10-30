@@ -1,3 +1,4 @@
+import { ruleTextMap, toSpanish, linkToSpanish, esChatToEn } from './chatEs.js';
 import { renderEmail, renderMessagePage, longDate } from './emailTemplate.js';
 import { normalizeEmail, AuthError } from './auth.js';
 import { createLocalIdp } from './localIdp.js';
@@ -1003,9 +1004,22 @@ export function createService(store, options = {}) {
     const cl = await store.getChecklist(chKey(ctx, query, body));
     const checklist = cl ? await buildChecklist(cl, rulesDoc) : null;
     const es = cleanLang(body?.lang) === 'es';
-    const result = await answerQuestion({ message: es ? esToEn(message) : message, conversation: es ? [] : conversation, rules: rulesDoc.rules, checklist, llm: options.llm });
-    // Spanish questions are matched to the English guides through a word list. The agency text stays English, and the answer says so.
-    if (es) return { ok: true, ...result, answer: result.mode === 'fallback' ? ES.noMatch : `${ES.englishNote}\n${result.answer}`, suggestions: [] };
+    // Spanish: the question is matched to the English records, then the answer is turned into Spanish (rule text from the Spanish records,
+    // the sentences around it from a table). The friendly rewrite is skipped so the answer stays exactly what the records say.
+    const result = await answerQuestion({ message: es ? esChatToEn(message, esToEn) : message, conversation: es ? [] : conversation, rules: rulesDoc.rules, checklist, llm: es ? null : options.llm });
+    if (es) {
+      if (result.mode === 'fallback') return { ok: true, ...result, answer: ES.noMatch, links: [], suggestions: [] };
+      const map = ruleTextMap(rulesDoc.rules, localizeRules(rulesDoc, 'es').rules);
+      const titles = new Map((result.matched || []).map((m) => [m.id, map.get(m.title) || m.title]));
+      return {
+        ok: true,
+        ...result,
+        answer: toSpanish(result.answer, map),
+        links: (result.links || []).map((l) => linkToSpanish(l, map)),
+        matched: (result.matched || []).map((m) => ({ ...m, title: titles.get(m.id) })),
+        suggestions: [],
+      };
+    }
     return { ok: true, ...result };
   });
 

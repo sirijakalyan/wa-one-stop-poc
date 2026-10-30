@@ -17,8 +17,30 @@ function mapCond(c) {
   return out;
 }
 
+// Rules an admin adds carry sentences the app wrote. These are their Spanish forms; whatever the admin typed stays as typed.
+const CUSTOM_ES = {
+  'This step applies to every business.': 'Este paso aplica a todos los negocios.',
+  'This step applies because {hits}.': 'Este paso aplica porque {hits}.',
+  'You were not sure about: {unsure}. This step may apply to you.': 'No estaba seguro de: {unsure}. Este paso puede aplicarle.',
+  'Left out because of your answers.': 'Se omite por sus respuestas.',
+  'Added by an admin. A second person has not checked it against the official page yet.': 'Agregada por un administrador. Una segunda persona aún no la ha revisado contra la página oficial.',
+  'Open the official page': 'Abrir la página oficial',
+  'This step has no apply button. Use the source link under Source details.': 'Este paso no tiene botón de solicitud. Use el enlace de la fuente en Detalles de la fuente.',
+};
+const customEs = (t) => CUSTOM_ES[t] || t;
+
 export function localizeRule(rule, lang) {
   if (!isEs(lang)) return rule;
+  if (rule.custom) {
+    return {
+      ...rule,
+      reason: rule.reason ? Object.fromEntries(Object.entries(rule.reason).map(([k, v]) => [k, customEs(v)])) : rule.reason,
+      verification: rule.verification ? { ...rule.verification, note: customEs(rule.verification.note) } : rule.verification,
+      apply: rule.apply ? { ...rule.apply, label: customEs(rule.apply.label) } : rule.apply,
+      noLink: customEs(rule.noLink),
+      applies: mapCond(rule.applies),
+    };
+  }
   const es = RULES_ES[rule.id];
   const out = { ...rule, agency: AGENCY_ES[rule.agency] || rule.agency, applies: mapCond(rule.applies) };
   if (rule.source?.label && SOURCE_LABEL_ES[rule.source.label]) out.source = { ...rule.source, label: SOURCE_LABEL_ES[rule.source.label] };

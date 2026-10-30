@@ -503,13 +503,19 @@ test('Spanish: questions are answered from the rules with an honest note that th
   }
 });
 
-test('Spanish: the side chat answers a Spanish question with the English-text note, and an unknown one honestly', async () => {
+test('Spanish: the side chat answers a Spanish question in Spanish, and an unknown one honestly', async () => {
   const app = await startApp();
   try {
     const ask = async (message, lang) => (await app.call('POST', '/api/chat', { message, lang })).body;
     const a = await ask('¿Necesito una licencia comercial?', 'es');
-    assert.match(a.answer, /que por ahora están en inglés/);
-    assert.match(a.answer, /business license/i);
+    assert.doesNotMatch(a.answer, /por ahora están en inglés/);
+    assert.match(a.answer, /licencia comercial/i);
+    assert.doesNotMatch(a.answer, /Who it applies to|Source checked|Not yet Approved/);
+    assert.ok(a.links.every((l) => !/^Source: |^Start this step/.test(l.label)));
+    const next = await ask('¿Cuál es mi siguiente paso?', 'es');
+    assert.doesNotMatch(next.answer, /Next step|Confirm with/);
+    const thanks = await ask('gracias', 'es');
+    assert.match(thanks.answer, /De nada/);
     const en = await ask('Do I need a business license?', 'en');
     assert.doesNotMatch(en.answer, /por ahora están en inglés/);
     const none = await ask('¿Cuál es la capital de Francia?', 'es');

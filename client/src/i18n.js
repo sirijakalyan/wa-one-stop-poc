@@ -127,7 +127,7 @@ const es = {
   'nav./dashboard': 'Progreso',
   'nav./notifications': 'Avisos',
   'nav./sources': 'Fuentes',
-  'draft.note': 'Traducción preliminar al español, pendiente de revisión por una persona. El plan, las reglas y los textos de las agencias siguen en inglés por ahora.',
+  'draft.note': 'Traducción preliminar al español, pendiente de revisión por una persona.',
   'home.greeting': 'Hola, estoy aquí para ayudarle a iniciar su negocio en Washington. Cuénteme qué quiere hacer, con sus propias palabras.',
   'home.title': 'Inicie su negocio en Washington',
   'home.lead': 'Diga lo que quiere crear. La guía toma notas, usted confirma cada dato y frente a usted se arma un plan hasta el día de apertura.',
