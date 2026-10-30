@@ -106,6 +106,26 @@ export function localizeFound(link, lang) {
   return es ? { ...link, ...es } : link;
 }
 
+// County health office names, in Spanish, by pattern ("Clark County Public Health" -> "Salud Pública del Condado de Clark").
+const COUNTY_AGENCY_RULES = [
+  [/^Public Health, Seattle & King County$/, 'Salud Pública, Seattle y Condado de King'],
+  [/^Tacoma-Pierce County Health Department$/, 'Departamento de Salud de Tacoma y Condado de Pierce'],
+  [/^Benton-Franklin Health District$/, 'Distrito de Salud de Benton y Franklin'],
+  [/^Spokane Regional Health District$/, 'Distrito Regional de Salud de Spokane'],
+  [/^Kitsap Public Health District$/, 'Distrito de Salud Pública de Kitsap'],
+  [/^Yakima Health District$/, 'Distrito de Salud de Yakima'],
+  [/^(.+) County Health District$/, 'Distrito de Salud del Condado de $1'],
+  [/^(.+) County Public Health$/, 'Salud Pública del Condado de $1'],
+  [/^(.+) County Environmental Health$/, 'Salud Ambiental del Condado de $1'],
+  [/^(.+) County Health Department$/, 'Departamento de Salud del Condado de $1'],
+  [/^(.+) County Health & Human Services$/, 'Servicios Humanos y de Salud del Condado de $1'],
+];
+export function localizeCountyAgency(name, lang) {
+  if (!isEs(lang) || !name) return name;
+  for (const [rx, to] of COUNTY_AGENCY_RULES) if (rx.test(name)) return name.replace(rx, to);
+  return name;
+}
+
 export function localizeCountyNote(note, lang) {
   return isEs(lang) ? (COUNTY_NOTE_ES[note] || note) : note;
 }

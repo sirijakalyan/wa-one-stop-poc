@@ -673,7 +673,7 @@ export const pagesEs = {
   'qn.q.desc.t': '¿A qué se dedicará su negocio?',
   'qn.q.desc.h': 'Opcional. Una o dos frases con sus propias palabras.',
   'qn.q.cats.t': '¿Qué tipo de negocio es?',
-  'qn.q.cats.h': 'Usted elige. Marque todos los tipos que correspondan. Solo "Construcción y contratistas" agrega el paso de registro de contratista de Labor & Industries.',
+  'qn.q.cats.h': 'Usted elige. Marque todos los tipos que correspondan. Solo "Construcción y contratistas" agrega el paso de registro de contratista del Departamento de Trabajo e Industrias.',
   'qn.q.city.t': '¿En qué ciudad y condado trabajará?',
   'qn.q.city.h': 'Opcional. Lo usamos solo para nombrar su condado en el paso de salud del condado. No confirma ninguna regla local.',
   'qn.q.hiring.t': '¿Contratará empleados en los próximos 90 días?',

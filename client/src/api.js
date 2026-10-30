@@ -164,7 +164,7 @@ export const api = {
   addQuestion: (q) => request('POST', '/api/questions', q),
   editQuestion: (id, q) => request('PUT', `/api/questions/${id}`, q),
   removeQuestion: (id) => request('DELETE', `/api/questions/${id}`),
-  ruleFields: () => request('GET', '/api/rule-fields'),
+  ruleFields: (lang) => request('GET', lang === 'es' ? '/api/rule-fields?lang=es' : '/api/rule-fields'),
   addRule: (r) => request('POST', '/api/rules', r),
   setApplies: (id, applies) => request('PUT', `/api/rules/${id}/applies`, { applies }),
   removeRule: (id) => request('DELETE', `/api/rules/${id}`),

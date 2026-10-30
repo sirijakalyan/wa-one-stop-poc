@@ -52,6 +52,8 @@ function AdminPanel({ signedIn = false }) {
   const locById = Object.fromEntries((locLoad.data?.rules ?? []).map((r) => [r.id, r]));
   const nameOf = (r) => locById[r.id]?.title || r.title;
   const agencyOf = (r) => locById[r.id]?.agency || r.agency;
+  // The change log keeps field keys like "source.url". Show them as the labels the editor uses.
+  const fieldName = (k) => (k === 'rule' ? a('rule', 'regla') : k === 'applies' ? a('who sees it', 'quién la ve') : (FIELDS.find((x) => x.key === k)?.label || k));
   const reviewerName = (n) => (n === 'admin key' ? a('admin key', 'clave de administración') : n);
   const changesLoad = useLoad(fetchChanges);
   const [selected, setSelected] = useState('');
@@ -65,7 +67,7 @@ function AdminPanel({ signedIn = false }) {
   const [audience, setAudience] = useState({ mode: 'always', field: '', value: '' });
   const [confirmRemove, setConfirmRemove] = useState(false);
   const [esForm, setEsForm] = useState({ title: '', agency: '', detail: '', sourceLabel: '', applyLabel: '' });
-  const fieldsLoad = useLoad(useCallback(() => api.ruleFields().catch(() => ({ fields: [] })), []));
+  const fieldsLoad = useLoad(useCallback(() => api.ruleFields(a.lang).catch(() => ({ fields: [] })), [a.lang]));
   const fields = fieldsLoad.data?.fields ?? [];
 
   const rules = rulesLoad.data?.rules ?? [];
@@ -282,7 +284,7 @@ function AdminPanel({ signedIn = false }) {
               {ruleChanges.length === 0 ? <p className="hint">{a('No published changes yet.', 'Aún no hay cambios publicados.')}</p> : (
                 <ul className="desk-history">
                   {ruleChanges.map((c) => (
-                    <li key={c.id}><strong>{a('Version', 'Versión')} {c.version}</strong> {a('approved by', 'aprobada por')} {reviewerName(c.reviewer)}, {new Date(c.at).toLocaleDateString(a.locale)}. {a('Changed:', 'Cambió:')} {c.fields.map((f) => f.field).join(', ')}.</li>
+                    <li key={c.id}><strong>{a('Version', 'Versión')} {c.version}</strong> {a('approved by', 'aprobada por')} {reviewerName(c.reviewer)}, {new Date(c.at).toLocaleDateString(a.locale)}. {a('Changed:', 'Cambió:')} {c.fields.map((f) => fieldName(f.field)).join(', ')}.</li>
                   ))}
                 </ul>
               )}
@@ -342,7 +344,7 @@ function AdminPanel({ signedIn = false }) {
             {(changesLoad.data?.changes ?? []).map((c) => (
               <li key={c.id} className="note-item">
                 <h3>{locById[c.ruleId]?.title || c.ruleTitle} ({a('version', 'versión')} {c.version})</h3>
-                <p>{a('Approved by', 'Aprobada por')} {reviewerName(c.reviewer)} {a('on', 'el')} {new Date(c.at).toLocaleString(a.locale)}. {a('Fields changed:', 'Campos cambiados:')} {c.fields.map((f) => f.field).join(', ')}.</p>
+                <p>{a('Approved by', 'Aprobada por')} {reviewerName(c.reviewer)} {a('on', 'el')} {new Date(c.at).toLocaleString(a.locale)}. {a('Fields changed:', 'Campos cambiados:')} {c.fields.map((f) => fieldName(f.field)).join(', ')}.</p>
               </li>
             ))}
           </ul>

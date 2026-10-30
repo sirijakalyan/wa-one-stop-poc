@@ -32,7 +32,7 @@ export const LEFT_OUT_ES = {
 export const AGENCY_ES = {
   'Secretary of State': 'Secretario de Estado',
   'Dept. of Revenue (BLS)': 'Depto. de Ingresos (BLS)',
-  'Labor & Industries': 'Labor & Industries (L&I)',
+  'Labor & Industries': 'Depto. de Trabajo e Industrias (L&I)',
   'County health department': 'Departamento de salud del condado',
   'Employment Security Dept.': 'Depto. de Seguridad del Empleo (ESD)',
   'DSHS': 'DSHS',
@@ -133,7 +133,7 @@ export const RULES_ES = {
     supports: 'L&I indica que todos los contratistas de construcción deben registrarse, tener fianza y contar con seguro de responsabilidad civil. Da la tarifa de solicitud, el monto de la fianza de cada clasificación, los montos del seguro de responsabilidad civil, y los tiempos de la solicitud por correo y de la tarjeta de registro. Nombra oficios con requisitos adicionales.',
     limits: 'El monto de la fianza depende de la clasificación. Los requisitos específicos de un oficio o de una actividad se aplican solo a esos oficios y actividades. Los montos y tiempos son declaraciones de L&I leídas el 2026-10-26 y pueden cambiar.',
     vnote: 'Texto de la página de L&I releído completo el 2026-10-26 y las cifras de tarifa, fianza, seguro y tiempos comparadas con la página. Las declaraciones de tiempos de procesamiento que se superponen están marcadas como Necesita verificación.',
-    title: 'Regístrese como contratista en Labor & Industries',
+    title: 'Regístrese como contratista en el Departamento de Trabajo e Industrias',
     reason: {
       applies: 'Usted eligió construcción y contratistas. L&I exige que los contratistas de construcción se registren en L&I. La licencia comercial no cubre esto.',
       maybe: '', no: 'Se omite porque no eligió construcción y contratistas.',
@@ -142,7 +142,7 @@ export const RULES_ES = {
     apply: 'Ir al registro de contratistas de L&I',
     fallback: 'Si el enlace no abre, busque "Registrarse como contratista" en lni.wa.gov.',
     guide: {
-      meaning: 'Washington exige que los contratistas de construcción se registren en Labor & Industries (L&I). Una vez registrado, un contratista puede presentar ofertas, hacer publicidad y realizar trabajos de construcción. L&I también indica que la ley estatal exige que los contratistas tengan fianza y seguro.',
+      meaning: 'Washington exige que los contratistas de construcción se registren en el Departamento de Trabajo e Industrias (L&I). Una vez registrado, un contratista puede presentar ofertas, hacer publicidad y realizar trabajos de construcción. L&I también indica que la ley estatal exige que los contratistas tengan fianza y seguro.',
       who: ['Contratistas de construcción, incluidos trabajos como construir, remodelar, reparar y demoler edificios, caminos y otros bienes inmuebles.'],
       conditions: [
         'L&I tiene dos clasificaciones. Los contratistas generales pueden realizar la mayoría de los tipos de trabajo de construcción y pueden contratar subcontratistas de varias especialidades. Los contratistas de especialidad solo pueden trabajar en su especialidad y no pueden contratar subcontratistas.',
@@ -241,7 +241,7 @@ export const RULES_ES = {
     supports: 'El ESD indica que todo empleador de Washington presenta dos informes cada trimestre, y su página de impuestos de desempleo cubre el pago de impuestos y los empleadores de reembolso.',
     limits: 'Las páginas del ESD que se leyeron no indican el paso de registro de la cuenta en sí.',
     vnote: 'Páginas del ESD leídas el 2026-10-26: la página de informes trimestrales y la guía para empleadores sobre el pago de impuestos. Describen los pasos, pero ningún revisor los ha confirmado todavía.',
-    title: 'Regístrese para los impuestos de empleador en Employment Security',
+    title: 'Regístrese para los impuestos de empleador en el Departamento de Seguridad del Empleo',
     reason: {
       applies: 'Usted planea contratar personal. El ESD indica que todo empleador en Washington presenta dos informes de impuestos y salarios cada trimestre.',
       maybe: 'No estaba seguro sobre contratar personal. El ESD indica que todo empleador en Washington presenta dos informes de impuestos y salarios cada trimestre.',
@@ -332,7 +332,7 @@ export const RULES_ES = {
     },
     detail: 'La zonificación, las licencias de la ciudad y las reglas del condado se fijan localmente. El DOR enumera las ciudades cuyos endosos usted puede agregar a su solicitud estatal. El DOR indica comunicarse directamente con una ciudad si no aparece en la lista. Bellevue no estaba en la lista del DOR cuando se revisó el 2026-10-26, así que confirme los requisitos de Bellevue con la Ciudad de Bellevue. No se revisó ninguna fuente local para esta demostración.',
     apply: 'Vea los endosos de ciudad del DOR',
-    fallback: 'Busque en el sitio web de su ciudad o condado "business license" y "zoning".',
+    fallback: 'Busque en el sitio web de su ciudad o condado "licencia comercial" y "zonificación".',
     guide: {
       meaning: 'Las ciudades y los condados pueden tener sus propias licencias comerciales, zonificación y reglas además de las licencias estatales.',
       who: ['Negocios ubicados en, o que viajan a, una ciudad o condado con requisitos locales. Esta demostración no sabe cuáles aplican.'],

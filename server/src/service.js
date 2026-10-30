@@ -16,7 +16,7 @@ import { evaluate, normalizeAnswers, suggestCategories, countyLabel } from './en
 import { SAMPLES } from './samples.js';
 import { answerQuestion } from './chat.js';
 import { cleanLang, ES, ES_RX, esToEn } from './i18n.js';
-import { localizeRules, localizeFound, localizeCountyNote, localizeTimes } from './localize.js';
+import { localizeRules, localizeFound, localizeCountyNote, localizeCountyAgency, localizeTimes } from './localize.js';
 import { intakeTurn, spokenConfirmation, planFromCard, buildTimeline, blankCard, CARD_FIELDS, extractFacts } from './intake.js';
 
 const DEFAULT_VISITOR = 'public-demo';
@@ -216,7 +216,7 @@ export function createService(store, options = {}) {
     }
     const found = (options.countyHealthPages?.counties || []).find((c) => countyKeyOf(c.county) === key && c.url);
     if (found) {
-      return { state: 'found', county: name, url: found.url, agency: found.agency || '', note: localizeCountyNote(found.note || '', lang), searchedOn: options.countyHealthPages.searchedOn || '' };
+      return { state: 'found', county: name, url: found.url, agency: localizeCountyAgency(found.agency || '', lang), note: localizeCountyNote(found.note || '', lang), searchedOn: options.countyHealthPages.searchedOn || '' };
     }
     return {
       state: 'not-found', county: name,
@@ -780,12 +780,12 @@ export function createService(store, options = {}) {
   });
 
   // The questions a rule can depend on: the built-in ones and the ones an admin added.
-  route('GET', '/api/rule-fields', async ({ ctx }) => {
+  route('GET', '/api/rule-fields', async ({ ctx, query }) => {
     requireAdmin(ctx);
     const fields = Object.entries(BUILTIN_QUESTIONS).map(([field, q]) => ({
       field, text: q.text, options: q.type === 'yesno' ? YESNO_OPTIONS.map((o) => ({ value: o.value, label: o.label })) : q.options.map(([value, label]) => ({ value, label })),
     }));
-    for (const q of questionsOf(await loadRules())) fields.push({ field: `extra.${q.id}`, text: q.text, options: q.options });
+    for (const q of questionsOf(await loadRules())) { const l = localizeQuestion(q, langIn(query)); fields.push({ field: `extra.${q.id}`, text: l.text, options: l.options }); }
     return { ok: true, fields };
   });
 
