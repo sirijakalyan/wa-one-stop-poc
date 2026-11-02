@@ -109,7 +109,8 @@ export function speak(text, { onStart, onEnd, onSilent, lang = 'en-US', fadeIn =
   const generation = speechGeneration;
   let i = 0;
   const next = () => {
-    if (i >= pieces.length || generation !== speechGeneration) { onEnd?.(); return; }
+    if (generation !== speechGeneration) return; // stopped or replaced: stay silent, the one who stopped it has already reset its state
+    if (i >= pieces.length) { onEnd?.(); return; }
     const at = i;
     i += 1;
     speakOne(pieces[at], { lang, volume: fadeVolume(at, pieces.length), onStart: at === 0 ? onStart : undefined, onSilent, onEnd: next });

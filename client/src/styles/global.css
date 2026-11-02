@@ -1060,9 +1060,9 @@ body { background: radial-gradient(900px 380px at 85% -140px, rgba(25,167,160,.1
 .is-embedded .chat-log { background: none; padding: .15rem 0; min-height: 0; max-height: 26rem; gap: .7rem; }
 .is-embedded:not(.is-fresh) .chat-log { min-height: 16rem; }
 .is-embedded .bubble { max-width: min(46rem, 92%); border-radius: 4px 16px 16px 16px; padding: .7rem .95rem; background: #eff5fb; border: 0; }
-.is-embedded .bubble.you { align-self: flex-end; border-radius: 16px 16px 4px 16px; background: linear-gradient(135deg, #17395c, #102a43); color: #fff; }
+.is-embedded .bubble.you, .is-embedded .bubble.owner { align-self: flex-end; border-radius: 16px 16px 4px 16px; background: linear-gradient(135deg, #17395c, #102a43); color: #fff; }
 .is-embedded .bubble-who { font-size: .72rem; font-weight: 700; color: var(--muted); display: block; margin-bottom: .1rem; }
-.is-embedded .bubble.you .bubble-who { color: #aac3de; }
+.is-embedded .bubble.you .bubble-who, .is-embedded .bubble.owner .bubble-who { color: #aac3de; }
 .is-embedded .bubble p { margin: 0; font-size: .98rem; line-height: 1.5; }
 .is-embedded .captions { display: none; }
 .is-embedded .tap-chip { border-radius: 10px; border: 1px solid var(--line-strong); background: #fff; color: var(--teal-700); font-weight: 650; padding: .45rem .9rem; min-height: 42px; transition: background .15s, border-color .15s; }
@@ -1393,7 +1393,7 @@ body { background: var(--bg); }
 .home-split .guide-chat, .is-embedded .guide-side .biz-card, .stat-row li, .empty, .next-card { background: #ffffff; }
 .item details { background: #eef6f8; }
 main table th { background: #eef3fa; }
-.is-embedded .bubble.you { background: #17395c; }
+.is-embedded .bubble.you, .is-embedded .bubble.owner { background: #17395c; color: #fff; }
 main > .wrap > h1:first-child:not(.mb-banner h1)::after { background: var(--teal-600); }
 .home .guide-page.is-embedded .guide-chat { background: #ffffff; }
 .chat-id { background: #ffffff; position: relative; z-index: 1; }
