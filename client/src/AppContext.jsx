@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { LangContext } from './i18n.js';
 import { blankAnswers } from './questions.js';
 import { blankCard } from './guideCard.js';
@@ -62,8 +62,13 @@ export function AppProvider({ children }) {
     setAnswers(blankAnswers()); setLabel(''); setStep(0); setCatsAuto(false);
     setGuide({ messages: [], card: blankCard(), ask: null, awaiting: null, complete: false });
   };
+  // After a plan is saved, the form and the guide conversation start fresh. "Edit answers" loads the saved answers again.
+  const clearDraft = useCallback(() => {
+    setAnswers(blankAnswers()); setLabel(''); setStep(0); setCatsAuto(false);
+    setGuide({ messages: [], card: blankCard(), ask: null, awaiting: null, complete: false });
+  }, []);
   const value = useMemo(
-    () => ({ user, authReady, requireLogin, signIn, signOut, answers, setAnswers, label, setLabel, step, setStep, catsAuto, setCatsAuto, guide, setGuide, live, setLive }),
+    () => ({ user, authReady, requireLogin, signIn, signOut, answers, setAnswers, label, setLabel, step, setStep, catsAuto, setCatsAuto, guide, setGuide, live, setLive, clearDraft }),
     [user, authReady, requireLogin, answers, label, step, catsAuto, guide, live]
   );
   return <LangContext.Provider value={langValue}><Ctx.Provider value={value}>{children}</Ctx.Provider></LangContext.Provider>;

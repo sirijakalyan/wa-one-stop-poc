@@ -40,7 +40,7 @@ const SAVE_ES = /^\s*(?:(?:ok|okay|s[ií]|por favor|ahora|entonces|bueno)[\s,]+)
 // Main screen: the conversation on the left; the business card, the plan and the road to opening day fill in on the right.
 // embedded: shown inside the home page. mode and start come from the home page's Talk / Type switch and its sentence box.
 export default function Guide({ embedded = false, mode: modeProp, start: startProp } = {}) {
-  const { user, requireLogin, guide, setGuide, setLive, setAnswers, setLabel, setStep, setCatsAuto } = useApp();
+  const { user, requireLogin, guide, setGuide, setLive, clearDraft, setAnswers, setLabel, setStep, setCatsAuto } = useApp();
   const t = useT();
   const langRef = useRef(t.lang);
   langRef.current = t.lang;
@@ -390,6 +390,7 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
       const a = view.plan?.answers || answersFromCard(guide.card);
       await api.saveBusiness(a, (guide.card.values.desc || 'My business').slice(0, 80));
       navigate('/my-business');
+      clearDraft();
     } catch (e) {
       setError(e.message);
       setBusy(false);

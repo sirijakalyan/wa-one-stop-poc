@@ -10,7 +10,7 @@ import { CATS, STRUCTURES, YN, YN_FIELDS, WA_COUNTIES, stepList } from '../quest
 export default function Questionnaire({ embedded = false } = {}) {
   const navigate = useNavigate();
   const t = useT();
-  const { user, requireLogin, answers, setAnswers, label, setLabel, step, setStep, catsAuto, setCatsAuto } = useApp();
+  const { user, requireLogin, answers, setAnswers, label, setLabel, step, setStep, catsAuto, setCatsAuto, clearDraft } = useApp();
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const [countyFrom, setCountyFrom] = useState('');
@@ -54,6 +54,7 @@ export default function Questionnaire({ embedded = false } = {}) {
       try {
         await api.saveBusiness(answers, label);
         navigate('/my-business');
+        clearDraft();
       } catch (e) {
         setErr(e.message);
       } finally {
