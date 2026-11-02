@@ -19,7 +19,7 @@ import { speechLang, useT } from '../i18n.js';
 // One or two words are always the owner. A longer phrase is an echo when most of its word pairs appear in the guide's line.
 const words = (x) => String(x).toLowerCase().replace(/[^\p{L}\p{N}\s']/gu, ' ').split(/\s+/).filter(Boolean);
 // How long the microphone stays off after the guide stops, so the end of its voice (and room echo) is not picked up.
-export const QUIET_AFTER_SPEECH_MS = 900;
+export const QUIET_AFTER_SPEECH_MS = 500;
 export function isEcho(heard, spoken) {
   const h = words(heard);
   if (!h.length) return true;

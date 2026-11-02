@@ -320,6 +320,27 @@ describe('voice', () => {
     expect(await screen.findByRole('heading', { name: /checklist/i })).toBeInTheDocument();
   });
 
+  it('a lone spoken "yes" or "no" is taken at every step, including the fifth', async () => {
+    renderAt({ pathname: '/guide', state: { mode: 'talk', start: STORY } });
+    const say = async (text) => {
+      await waitFor(() => expect(FakeRec.last?.started).toBe(true), { timeout: 5000 });
+      FakeRec.last.say(text);
+    };
+    await inLog(/^I heard:/);
+    await say('yes');
+    await inLog(/How will your business be set up/);
+    await say('not sure');
+    await inLog(/subcontractors/);
+    await say('no');
+    await inLog(/sales tax/);
+    await say('yes');
+    await inLog(/\$12,000/);
+    await say('yes');
+    await inLog(/name other than/);
+    await say('yes');
+    expect(await inLog(/Say or tap Save my plan/)).toBeInTheDocument();
+  });
+
   it('says so, and keeps typing working, when the browser cannot listen', async () => {
     delete window.webkitSpeechRecognition;
     const user = userEvent.setup();
