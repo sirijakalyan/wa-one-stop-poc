@@ -42,7 +42,7 @@ let lastCancelAt = 0;
 let lastStartAt = 0;
 
 // Speak one line. Lines queue up, so a reply and its follow-up question are read in order.
-export function speak(text, { onStart, onEnd, onSilent, lang = 'en-US' } = {}) {
+function speakOne(text, { onStart, onEnd, onSilent, lang = 'en-US', volume = 1 } = {}) {
   if (!canSpeak() || !text) return;
   let done = false;
   let started = false;
@@ -63,6 +63,7 @@ export function speak(text, { onStart, onEnd, onSilent, lang = 'en-US' } = {}) {
     const u = new window.SpeechSynthesisUtterance(String(text));
     u.lang = lang;
     u.rate = 1.08;
+    u.volume = volume;
     current = u;
     const v = attempt < 2 ? pickVoice(lang) : null;
     if (v) u.voice = v;
@@ -85,6 +86,37 @@ export function speak(text, { onStart, onEnd, onSilent, lang = 'en-US' } = {}) {
   if (wait) setTimeout(() => say(0), wait); else say(0);
 }
 
+// A browser cannot change the volume in the middle of a line, so a line that should fade in is read in short pieces, each a
+// little louder than the one before. Pieces end at a comma or a full stop, so it still sounds like one sentence.
+let speechGeneration = 0;
+export const FADE_START = 0.2;
+export function fadePieces(text) {
+  const raw = String(text).match(/[^,.;:!?]+[,.;:!?]*\s*/g) || [String(text)];
+  const pieces = [];
+  for (const part of raw) {
+    const last = pieces.length - 1;
+    // A very short opening such as "Hi," is joined to the next piece, so no piece is a lone syllable.
+    if (last >= 0 && pieces[last].trim().length < 14) pieces[last] += part; else pieces.push(part);
+  }
+  return pieces.map((x) => x.trim()).filter(Boolean);
+}
+export const fadeVolume = (index, count) => (count <= 1 ? 0.6 : Math.min(1, FADE_START + (1 - FADE_START) * (index / (count - 1))));
+
+export function speak(text, { onStart, onEnd, onSilent, lang = 'en-US', fadeIn = false } = {}) {
+  if (!canSpeak() || !text) return;
+  if (!fadeIn) { speakOne(text, { onStart, onEnd, onSilent, lang }); return; }
+  const pieces = fadePieces(text);
+  const generation = speechGeneration;
+  let i = 0;
+  const next = () => {
+    if (i >= pieces.length || generation !== speechGeneration) { onEnd?.(); return; }
+    const at = i;
+    i += 1;
+    speakOne(pieces[at], { lang, volume: fadeVolume(at, pieces.length), onStart: at === 0 ? onStart : undefined, onSilent, onEnd: next });
+  };
+  next();
+}
+
 // False only when the browser has loaded its voice list and none of them speaks this language. An empty list means not loaded yet.
 export function hasVoice(lang = 'en-US') {
   if (!canSpeak()) return false;
@@ -95,6 +127,7 @@ export function hasVoice(lang = 'en-US') {
 }
 
 export function stopSpeaking() {
+  speechGeneration += 1; // a fading-in line that is still queued must not carry on after a stop
   if (canSpeak()) { window.speechSynthesis.cancel(); lastCancelAt = Date.now(); }
 }
 

@@ -18,6 +18,8 @@ import { speechLang, useT } from '../i18n.js';
 // matched against a pile of words: "LLC" said by the owner must not count just because the guide's text contains "LLC".
 // One or two words are always the owner. A longer phrase is an echo when most of its word pairs appear in the guide's line.
 const words = (x) => String(x).toLowerCase().replace(/[^\p{L}\p{N}\s']/gu, ' ').split(/\s+/).filter(Boolean);
+// How long the microphone stays off after the guide stops, so the end of its voice (and room echo) is not picked up.
+export const QUIET_AFTER_SPEECH_MS = 900;
 export function isEcho(heard, spoken) {
   const h = words(heard);
   if (!h.length) return true;
@@ -73,6 +75,8 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
   const [listening, setListening] = useState(false);
   const [voiceMsg, setVoiceMsg] = useState('');
   const [tick, setTick] = useState(0);
+  const [hold, setHold] = useState(false); // the short quiet time after the guide stops, while its voice fades from the room
+  const holdTimer = useRef(null);
   const prevMode = useRef(mode);
   const spokenIdx = useRef(guide.messages.length > 1 ? guide.messages.length : 0); // a returning visitor is not read the old conversation again
   const greetHeard = useRef(false);
@@ -179,8 +183,18 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
       saveRef.current();
     }
   });
-  cond.current = { micOn, speaking, busy };
+  cond.current = { micOn, speaking, busy, hold };
 
+  // The guide's voice has finished. The microphone stays off a moment longer so the tail of the voice is not heard as the owner.
+  function speechDone() {
+    speakingCount.current = Math.max(0, speakingCount.current - 1);
+    if (speakingCount.current) return;
+    lastSpeechEnd.current = Date.now();
+    setSpeaking(false);
+    setHold(true);
+    clearTimeout(holdTimer.current);
+    holdTimer.current = setTimeout(() => { setHold(false); setTick((n) => n + 1); }, QUIET_AFTER_SPEECH_MS);
+  }
   // Read each new guide line aloud, in order. Lines the owner typed or older lines are never read.
   useEffect(() => {
     if (!voiceOn) { spokenIdx.current = messages.length; return; }
@@ -191,22 +205,21 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
       spokenNow.current = `${speakingCount.current > 1 ? spokenNow.current : ''} ${messages[i].text}`;
       speak(speakable(messages[i].text, 340, langRef.current), {
         lang: speechLang(langRef.current),
+        fadeIn: i === 0, // the greeting starts quietly and rises, so opening the page is never a sudden noise
         onStart: () => { greetHeard.current = true; },
         onSilent: () => setVoiceMsg(t('voice.silent')),
-        onEnd: () => {
-          speakingCount.current = Math.max(0, speakingCount.current - 1);
-          if (!speakingCount.current) { lastSpeechEnd.current = Date.now(); setSpeaking(false); }
-        },
+        onEnd: speechDone,
       });
     }
     spokenIdx.current = messages.length;
   }, [messages, voiceOn, speakTick]);
 
-  // Listen whenever the microphone is on and the guide is not thinking. The owner can talk over the guide: speech that is not an echo of the guide's own line stops it.
+  // Take turns. The microphone listens only when the guide is neither thinking nor speaking (and for a moment after).
+  // Listening while the guide talks made it hear its own voice from the speakers and answer itself.
   useEffect(() => {
     const l = listenerRef.current;
-    if (micOn && !busy) { l?.start(); setListening(true); } else { l?.stop(); setListening(false); }
-  }, [micOn, speaking, busy, tick]);
+    if (micOn && !busy && !speaking && !hold) { l?.start(); setListening(true); } else { l?.stop(); setListening(false); }
+  }, [micOn, speaking, busy, hold, tick]);
   // Tell the home page's top banner what is happening, so the owner sees who is talking without scrolling down.
   const lastMsg = messages[messages.length - 1];
   const lastText = lastMsg?.text || '';
@@ -217,7 +230,7 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
   }, [embedded, speaking, listening, lastText, lastRole, setLive]);
   useEffect(() => () => { if (embedded) setLive({ speaking: false, listening: false, text: '', role: 'guide' }); }, [embedded, setLive]);
   // On leaving the page, stop talking and listening. Resetting the counters also makes React's dev double-mount start the greeting again after its cancel.
-  useEffect(() => () => { stopSpeaking(); listenerRef.current?.stop(); spokenIdx.current = 0; speakingCount.current = 0; }, []);
+  useEffect(() => () => { stopSpeaking(); clearTimeout(holdTimer.current); listenerRef.current?.stop(); spokenIdx.current = 0; speakingCount.current = 0; }, []);
 
   function interrupt() {
     if (!speakingCount.current) return;
@@ -244,7 +257,7 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
         onEnd: () => {
           setListening(false);
           const c = cond.current;
-          if (c.micOn && !c.busy) setTimeout(() => setTick((n) => n + 1), 120);
+          if (c.micOn && !c.busy && !c.speaking && !c.hold) setTimeout(() => setTick((n) => n + 1), 120);
         },
         onError: (code) => {
           const msg = listenErrorText(code, langRef.current);
@@ -279,8 +292,9 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
       setSpeaking(true);
       speak(speakable(first.text, 340, langRef.current), {
         lang: speechLang(langRef.current),
+        fadeIn: true,
         onStart: () => { greetHeard.current = true; },
-        onEnd: () => { speakingCount.current = Math.max(0, speakingCount.current - 1); if (!speakingCount.current) { lastSpeechEnd.current = Date.now(); setSpeaking(false); } },
+        onEnd: speechDone,
       });
     };
     document.addEventListener('pointerdown', unlock, { once: true });
@@ -290,6 +304,15 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
   function muteToggle() {
     if (voiceOn) { stopSpeaking(); speakingCount.current = 0; setSpeaking(false); }
     setVoiceOn(!voiceOn);
+  }
+  // Skip: end the guide's line now and go straight to listening. Nothing is left in the air, so no quiet time is needed.
+  function skipTalking() {
+    stopSpeaking();
+    speakingCount.current = 0;
+    clearTimeout(holdTimer.current);
+    setHold(false);
+    setSpeaking(false);
+    setTick((n) => n + 1);
   }
   function stopTalking() {
     stopSpeaking();
@@ -483,6 +506,7 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
           </form>
           <div className="voice-controls">
             <button type="button" className="btn btn-quiet btn-sm" onClick={muteToggle} aria-pressed={!voiceOn} disabled={!canSpeak()}>{voiceOn ? t('guide.mute') : t('guide.unmute')}</button>
+            {speaking && <button type="button" className="btn btn-quiet btn-sm" onClick={skipTalking}>{t('guide.skip')}</button>}
             <button type="button" className="btn btn-quiet btn-sm" onClick={stopTalking}>{t('guide.stop')}</button>
             <p className={`voice-status${voiceMsg ? ' is-note' : ''}`} role="status">
               {voiceMsg || (t.lang === 'es' && voiceOn && canSpeak() && !hasVoice(speechLang(t.lang)) ? t('voice.noEs') : speaking ? t('voice.speaking') : listening ? t('voice.listening') : !canSpeak() ? t('voice.cannotSpeak') : voiceOn ? t('voice.on') : t('voice.off'))}

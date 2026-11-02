@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { speakable } from './voice.js';
+import { speakable, fadePieces, fadeVolume } from './voice.js';
 
 describe('speakable', () => {
   it('drops brackets, footers and list lines, and says L and I and D O R as letters', () => {
@@ -48,4 +48,17 @@ describe('speak recovers from a stuck speech queue', () => {
     expect(onEnd).toHaveBeenCalledTimes(1);
     vi.useRealTimers();
   });
+});
+
+describe('greeting fade-in', () => {
+  it('splits a line at commas and full stops, and each piece is louder than the last, ending at full volume', () => {
+    const pieces = fadePieces("Hi, I'm here to help you start your Washington business. Tell me what you want to do, in your own words.");
+    expect(pieces.length).toBeGreaterThan(2);
+    const vols = pieces.map((_, i) => fadeVolume(i, pieces.length));
+    expect(vols[0]).toBeLessThanOrEqual(0.25);
+    expect(vols[vols.length - 1]).toBe(1);
+    expect([...vols].sort((a, b) => a - b)).toEqual(vols);
+    expect(pieces.join(' ').replace(/\s+/g, ' ')).toBe("Hi, I'm here to help you start your Washington business. Tell me what you want to do, in your own words.");
+  });
+  it('a one-piece line is read at a moderate volume', () => { expect(fadeVolume(0, 1)).toBe(0.6); });
 });

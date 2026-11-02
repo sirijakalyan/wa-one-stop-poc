@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import App from '../App.jsx';
 import { AppProvider } from '../AppContext.jsx';
-import { isEcho } from './Guide.jsx';
+import { isEcho, QUIET_AFTER_SPEECH_MS } from './Guide.jsx';
 import { installMockServer } from '../artifact/mockServer.js';
 
 // Through the real screens, the in-page API and the real rules engine.
@@ -235,20 +235,35 @@ describe('voice', () => {
     expect(screen.getByRole('button', { name: /Microphone on/ })).toBeInTheDocument();
   });
 
-  it('talking over the guide stops it and takes what was said, but its own voice does not', async () => {
+  it('the microphone is off while the guide speaks, so it cannot hear itself, and Skip goes straight to listening', async () => {
+    const user = userEvent.setup();
     // A guide line that keeps playing until it is cancelled.
     window.speechSynthesis.speak = vi.fn((u) => { spoken.push(u.text); setTimeout(() => u.onstart?.(), 0); });
     renderAt('/');
+    await waitFor(() => expect(screen.getAllByText(/Your microphone is paused/).length).toBeGreaterThan(0));
+    expect(FakeRec.last?.started).toBeFalsy();
+    await tap(user, 'Skip');
     await waitFor(() => expect(FakeRec.last?.started).toBe(true), { timeout: 4000 });
-    await waitFor(() => expect(screen.getAllByText(/The guide is speaking/).length).toBeGreaterThan(1));
-    const cancels = window.speechSynthesis.cancel.mock.calls.length;
-    // Its own words coming back through the speakers are ignored.
-    FakeRec.last.onresult({ resultIndex: 0, results: [Object.assign([{ transcript: "I'm here to help you start your Washington business" }], { isFinal: false })] });
-    expect(window.speechSynthesis.cancel.mock.calls.length).toBe(cancels);
-    // The owner speaks over it.
-    FakeRec.last.onresult({ resultIndex: 0, results: [Object.assign([{ transcript: 'I want to open a bakery in Tacoma' }], { isFinal: true })] });
-    await waitFor(() => expect(window.speechSynthesis.cancel.mock.calls.length).toBeGreaterThan(cancels));
-    expect(await screen.findByText('I want to open a bakery in Tacoma')).toBeInTheDocument();
+    expect(window.speechSynthesis.cancel).toHaveBeenCalled();
+    expect(screen.queryByRole('button', { name: 'Skip' })).not.toBeInTheDocument();
+  });
+
+  it('the microphone waits a moment after the guide finishes before it listens', async () => {
+    renderAt('/');
+    await waitFor(() => expect(spoken.length).toBeGreaterThan(0));
+    const endedAt = Date.now();
+    await waitFor(() => expect(FakeRec.last?.started).toBe(true), { timeout: 4000 });
+    expect(Date.now() - endedAt).toBeGreaterThanOrEqual(QUIET_AFTER_SPEECH_MS - 100);
+  });
+
+  it('the greeting is read in pieces that get louder', async () => {
+    const volumes = [];
+    window.speechSynthesis.speak = vi.fn((u) => { spoken.push(u.text); volumes.push(u.volume); setTimeout(() => { u.onstart?.(); u.onend?.(); }, 0); });
+    renderAt('/');
+    await waitFor(() => expect(volumes.length).toBeGreaterThan(2));
+    expect(volumes[0]).toBeLessThan(0.3);
+    expect(volumes[volumes.length - 1]).toBe(1);
+    expect([...volumes].sort((x, y) => x - y)).toEqual(volumes);
   });
 
   it('reads each new guide reply aloud, but never the owner\'s own words', async () => {
