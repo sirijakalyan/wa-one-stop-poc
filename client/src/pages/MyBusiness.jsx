@@ -30,6 +30,14 @@ export default function MyBusiness() {
     stopEditing();
     setBiz(id);
   }
+  // After "Remove this business": reload the list and move to the first one left (or the empty state).
+  async function removed() {
+    const res = await api.businesses().catch(() => ({ businesses: [] }));
+    const left = res.businesses || [];
+    pick(left.length ? left[0].id : 'main');
+    reloadList();
+    reload();
+  }
   function addBusiness() {
     stopEditing();
     setGuide({ messages: [], card: blankCard(), ask: null, awaiting: null, complete: false });
@@ -106,7 +114,7 @@ export default function MyBusiness() {
 
       <div className="mb-split">
         <div className="mb-main">
-          <Checklist key={biz} embedded onChanged={() => { reload(); reloadList(); }} onData={setCl} />
+          <Checklist key={biz} embedded onRemoved={removed} onChanged={() => { reload(); reloadList(); }} onData={setCl} />
           <DashRenewals data={data} onSave={saveRenewal} savedId={savedId} actionError={actionError} />
         </div>
         <aside className="mb-side" aria-label={t('mb.stats')}>

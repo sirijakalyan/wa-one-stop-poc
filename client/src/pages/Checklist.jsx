@@ -10,7 +10,7 @@ import { cardFromAnswers } from '../guideCard.js';
 import { blankAnswers, stepList } from '../questions.js';
 
 // embedded: used inside the My business page, which already shows the title and the progress summary.
-export default function Checklist({ embedded = false, onChanged, onData } = {}) {
+export default function Checklist({ embedded = false, onChanged, onData, onRemoved } = {}) {
   const navigate = useNavigate();
   const t = useT();
   const { setAnswers, setLabel, setStep, setCatsAuto, setGuide } = useApp();
@@ -44,10 +44,11 @@ export default function Checklist({ embedded = false, onChanged, onData } = {}) 
     try {
       await api.deleteChecklist();
       stopEditing();
-      setBusiness('main');
       setAnswers(blankAnswers());
       setLabel('');
       setStep(0);
+      if (onRemoved) { await onRemoved(); return; }
+      setBusiness('main');
       navigate('/my-business');
     } catch (e) {
       setActionError(e.message);
