@@ -53,7 +53,7 @@ export function rowText(card, field, lang = 'en') {
     }
   }
   switch (field) {
-    case 'structure': return v.structure ? STRUCT_LABEL[v.structure] : '';
+    case 'structure': return v.structure ? STRUCT_LABEL[v.structure] || v.structure : '';
     case 'activity': {
       const types = v.cats.map((c) => CAT_LABEL[c]).join(', ');
       const desc = v.desc && v.desc.toLowerCase() !== types.toLowerCase() ? v.desc.charAt(0).toUpperCase() + v.desc.slice(1) : '';
