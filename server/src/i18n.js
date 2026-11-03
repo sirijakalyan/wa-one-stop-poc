@@ -52,6 +52,8 @@ export const ES = {
   change: 'Está bien. Toque cualquier fila de su tarjeta para cambiarla, o dígame qué corregir.',
   complete: 'Eso es todo lo que necesito. Su plan y su camino hacia el día de apertura están listos a la derecha. Cada paso muestra la respuesta que lo originó. Diga o toque Guardar mi plan para conservarlo, o hágame una pregunta.',
   completeCard: 'Su tarjeta está completa.',
+  allFilled: 'Ya respondió todas las preguntas. Diga o toque Guardar mi plan. Si quiere cambiar una respuesta, dígame cuál pregunta, por ejemplo la ciudad, la contratación o el impuesto sobre las ventas.',
+  editWhich: 'Claro. ¿Qué pregunta quiere cambiar? Por ejemplo la ciudad, la contratación, los subcontratistas o el impuesto sobre las ventas.',
   noFacts: {
     place: 'No reconocí una ciudad de Washington. Dígala o escríbala otra vez, o toque Omitir por ahora.',
     asking: 'No entendí. Toque una de las respuestas o escríbala otra vez.',

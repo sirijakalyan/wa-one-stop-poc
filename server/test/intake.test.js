@@ -524,3 +524,29 @@ test('Spanish: the side chat answers a Spanish question in Spanish, and an unkno
     await app.stop();
   }
 });
+
+test('after every question is answered, a sentence does not restart the questions', () => {
+  const done = finishCard(turn({ card: blankCard(), message: '' }));
+  assert.ok(done.complete);
+  // A detail or a question does not reopen anything.
+  for (const msg of ['I want to hire employees in Washington', 'how do I register an LLC with the state?', 'yes']) {
+    const r = turn({ card: done.card, message: msg });
+    assert.equal(r.complete, true, msg);
+    assert.equal(r.ask, null, msg);
+    assert.match(r.reply, /All your questions are answered\. Say or tap Save my plan\./, msg);
+    assert.deepEqual(r.card.status, done.card.status, msg);
+    assert.deepEqual(r.chips.map((c) => c.value), ['save']);
+  }
+  // Naming the question to change asks only that one.
+  const edit = turn({ card: done.card, message: 'I want to change the city' });
+  assert.equal(edit.ask.field, 'place');
+  assert.equal(edit.complete, false);
+  assert.equal(Object.keys(edit.card.status).length, Object.keys(done.card.status).length - 1);
+  // "change something" alone asks which one.
+  const which = turn({ card: done.card, message: 'I want to change something' });
+  assert.match(which.reply, /Which question do you want to change/);
+  assert.equal(which.complete, true);
+  // Answering the reopened question completes the card again.
+  const again = turn({ card: edit.card, action: 'set', field: 'place', value: 'skip' });
+  assert.equal(again.complete, true);
+});

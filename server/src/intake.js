@@ -391,6 +391,25 @@ function readback(card, fields, lang = 'en') {
 
 const CONFIRM_CHIPS = [{ value: 'confirm', label: "Yes, that's right" }, { value: 'change', label: 'Change something' }];
 
+// Once every question is answered, a sentence does not reopen the questions. The guide says everything is filled and offers
+// two things: save the plan, or name the question to change. Only a named question is asked again.
+const EDIT_CUE = /\b(change|edit|update|fix|correct|wrong|redo|different|instead|modify)\b|(?<![\p{L}])(cambiar|cambio|editar|corregir|actualizar|equivocad[oa]|diferente)(?![\p{L}])/iu;
+const FIELD_WORDS = {
+  structure: /\b(structure|llc|sole proprietor|corporation|partnership|set up)\b|estructura|sociedad/i,
+  activity: /\b(what i do|activity|kind of business|type of business|business type|my business)\b|actividad|tipo de negocio/i,
+  place: /\b(city|county|where|location|place)\b|ciudad|condado|ubicaci[oó]n/i,
+  hiring: /\b(hiring|hire|employees?|staff|workers?)\b|contrat|empleados/i,
+  subs: /\b(subcontractors?|contractors?|subs)\b|subcontrat/i,
+  salestax: /\b(sales tax|tax)\b|impuesto/i,
+  income: /\b(income|revenue|12,?000)\b|ingresos/i,
+  tradename: /\b(business name|trade name|name)\b|nombre/i,
+};
+function namedField(said, fields) {
+  const short = said.split(/\s+/).length <= 4;
+  if (!EDIT_CUE.test(said) && !short) return null;
+  return fields.find((f) => FIELD_WORDS[f]?.test(said)) || null;
+}
+
 // One turn of the conversation. Pure: the card goes in, a new card and the guide's reply come out.
 //   input: { message, action, field, value, asking }
 //   action: 'confirm' (read-back accepted), 'change' (read-back rejected), 'set' (tap a chip or edit a row), 'skip'
@@ -401,6 +420,21 @@ export function intakeTurn({ card: rawCard, message, action, field, value, askin
   const fields = fieldsOf(ctx);
   const said = String(message || '').trim().slice(0, 500);
   let ack = '';
+
+  if (!action && said && isComplete(card, ctx)) {
+    const target = namedField(said, fields);
+    if (target) {
+      const reopened = { ...card, status: { ...card.status } };
+      delete reopened.status[target]; // only this one question is asked again; the others stay answered
+      return finish(reopened, '', { ack: es ? ES.ackGot : 'No problem.', ask: nextAsk(reopened, lang, ctx), lang, ctx });
+    }
+    const wantsEdit = EDIT_CUE.test(said);
+    return {
+      card,
+      reply: wantsEdit ? (es ? ES.editWhich : 'Sure. Which question do you want to change? For example the city, hiring, subcontractors or sales tax. Or tap that row on your card.') : (es ? ES.allFilled : 'All your questions are answered. Say or tap Save my plan. To change an answer, tell me which question, for example the city, hiring or sales tax.'),
+      ask: null, chips: [{ value: 'save', label: es ? ES.saveChip : 'Save my plan' }], awaiting: null, complete: true,
+    };
+  }
 
   if (action === 'confirm') {
     for (const f of CARD_FIELDS) if (card.status[f] === 'heard') card.status[f] = 'confirmed';
