@@ -35,7 +35,7 @@ export default function Landing() {
       setAnswers(answersFromCard(guide.card));
       setLabel('');
       setCatsAuto(false);
-      setStep(0);
+      setStep(-1); // the form opens on the first question the guide has not had answered yet
     }
     setMode(next);
   }

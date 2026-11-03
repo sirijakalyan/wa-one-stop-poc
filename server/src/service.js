@@ -17,7 +17,7 @@ import { SAMPLES } from './samples.js';
 import { answerQuestion } from './chat.js';
 import { cleanLang, ES, ES_RX, esToEn } from './i18n.js';
 import { localizeRules, localizeFound, localizeCountyNote, localizeCountyAgency, localizeTimes } from './localize.js';
-import { intakeTurn, parseDirect, spokenConfirmation, planFromCard, buildTimeline, blankCard, CARD_FIELDS, FIELD_LABELS, ASKS, extractFacts } from './intake.js';
+import { intakeTurn, isCardComplete, parseDirect, spokenConfirmation, planFromCard, buildTimeline, blankCard, CARD_FIELDS, FIELD_LABELS, ASKS, extractFacts } from './intake.js';
 
 const DEFAULT_VISITOR = 'public-demo';
 const EMAIL_RX = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/;
@@ -1327,7 +1327,14 @@ export function createService(store, options = {}) {
       return '';
     };
     // A question goes to the grounded helper, which answers only from the app's own rules and guides, and never changes the card.
-    if (question) {
+    // Once every question is answered, a question does not start a lookup either: the guide says the card is full and offers Save or
+    // "tell me which question to change" (intakeTurn does that). Only the short fixed answers (are you an AI, is this official) still apply.
+    const cardFull = Boolean(said && isCardComplete(card, gctx));
+    if (question && cardFull) {
+      const f = fixed(message);
+      if (f) return reply(f);
+    }
+    if (question && !cardFull) {
       const f = fixed(message);
       if (f) return reply(f);
       const nothingYet = !Object.values(card.status || {}).includes('confirmed');

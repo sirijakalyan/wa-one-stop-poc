@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, useLoad } from '../api.js';
 import { useT } from '../i18n.js';
@@ -10,7 +10,7 @@ import { CATS, STRUCTURES, YN, YN_FIELDS, WA_COUNTIES, stepList } from '../quest
 export default function Questionnaire({ embedded = false } = {}) {
   const navigate = useNavigate();
   const t = useT();
-  const { user, requireLogin, answers, setAnswers, label, setLabel, step, setStep, catsAuto, setCatsAuto, clearDraft } = useApp();
+  const { user, requireLogin, answers, setAnswers, label, setLabel, step, setStep, catsAuto, setCatsAuto, clearDraft, guide } = useApp();
   const [err, setErr] = useState('');
   const [busy, setBusy] = useState(false);
   const [countyFrom, setCountyFrom] = useState('');
@@ -20,7 +20,15 @@ export default function Questionnaire({ embedded = false } = {}) {
   const standard = extraData?.standard ?? [];
   const hiddenStd = standard.filter((x) => x.hidden).map((x) => x.field);
   const list = stepList(answers, extraQs.map((x) => x.id), hiddenStd);
-  const index = Math.min(step, list.length - 1);
+  // Coming over from the guide (step -1): open on the first question it has not had confirmed, so the form carries on where the chat stopped.
+  useEffect(() => {
+    if (step >= 0 || !extraData) return;
+    const status = guide.card?.status || {};
+    const fieldOf = (sid) => (sid.startsWith('x:') ? sid : ({ desc: 'activity', cats: 'activity', city: 'place' }[sid] || sid));
+    const open = list.findIndex((sid) => sid !== 'review' && status[fieldOf(sid)] !== 'confirmed');
+    setStep(open === -1 ? list.length - 1 : open);
+  }, [step, extraData]); // eslint-disable-line react-hooks/exhaustive-deps
+  const index = Math.max(0, Math.min(step, list.length - 1));
   const id = list[index];
   const custom = id.startsWith('x:') ? extraQs.find((x) => x.id === id.slice(2)) : null;
   const std = standard.find((x) => x.field === ({ desc: 'activity', city: 'place' }[id] || id));

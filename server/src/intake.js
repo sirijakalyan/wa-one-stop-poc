@@ -426,6 +426,9 @@ function namedField(said, fields) {
   return fields.find((f) => FIELD_WORDS[f]?.test(said)) || null;
 }
 
+// True when every question on this card is answered (the card is cleaned the same way a turn cleans it).
+export const isCardComplete = (rawCard, ctx) => isComplete(cleanCard(rawCard, ctx), ctx);
+
 // One turn of the conversation. Pure: the card goes in, a new card and the guide's reply come out.
 //   input: { message, action, field, value, asking }
 //   action: 'confirm' (read-back accepted), 'change' (read-back rejected), 'set' (tap a chip or edit a row), 'skip'

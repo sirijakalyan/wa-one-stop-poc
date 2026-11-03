@@ -157,7 +157,12 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
   useEffect(() => {
     if (prevMode.current === mode) return;
     prevMode.current = mode;
-    if (mode === 'talk') { if (canSpeak()) setVoiceOn(true); } else {
+    if (mode === 'talk') {
+      // Coming back to Talk part way through: say the question that is waiting (the next unanswered one), not nothing.
+      const msgs = guideRef.current.messages;
+      if (msgs.length > 1 && msgs[msgs.length - 1].role === 'guide') spokenIdx.current = msgs.length - 1;
+      if (canSpeak()) setVoiceOn(true);
+    } else {
       stopSpeaking();
       speakingCount.current = 0;
       setSpeaking(false);
