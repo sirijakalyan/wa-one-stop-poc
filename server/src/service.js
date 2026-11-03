@@ -17,7 +17,7 @@ import { SAMPLES } from './samples.js';
 import { answerQuestion } from './chat.js';
 import { cleanLang, ES, ES_RX, esToEn } from './i18n.js';
 import { localizeRules, localizeFound, localizeCountyNote, localizeCountyAgency, localizeTimes } from './localize.js';
-import { intakeTurn, spokenConfirmation, planFromCard, buildTimeline, blankCard, CARD_FIELDS, FIELD_LABELS, ASKS, extractFacts } from './intake.js';
+import { intakeTurn, parseDirect, spokenConfirmation, planFromCard, buildTimeline, blankCard, CARD_FIELDS, FIELD_LABELS, ASKS, extractFacts } from './intake.js';
 
 const DEFAULT_VISITOR = 'public-demo';
 const EMAIL_RX = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/;
@@ -1289,7 +1289,11 @@ export function createService(store, options = {}) {
     const strictQ = es ? ES_RX.strictQuestion : STRICT_Q_RX;
     const midQ = es ? ES_RX.midQuestion : MID_Q_RX;
     const looseQ = es ? new RegExp(`${ES_RX.strictQuestion.source}|\\b(dime|expl[ií]came|cu[eé]ntame|mu[eé]strame|quiero saber|los pasos)\\b`, 'iu') : QUESTION_RX;
-    const question = said && ((looseQ.test(message) && !hasFacts) || strictQ.test(message) || midQ.test(message));
+    // A spoken answer often holds a phrase that looks like a question ("maybe will I go into construction"). When the guide just asked
+    // about a field and the words answer it, that is the answer, unless the sentence is clearly a question (it ends in a question mark
+    // or starts with a question word).
+    const answersAsked = Boolean(said && CARD_FIELDS.includes(body?.asking) && parseDirect(body.asking, message, places));
+    const question = said && !(answersAsked && !strictQ.test(message)) && ((looseQ.test(message) && !hasFacts) || strictQ.test(message) || midQ.test(message));
     // Spanish questions are matched to the English rules and guides through a word list (a retrieval aid only). The agency text
     // stays in English, and the answer says so, so nobody mistakes it for a reviewed translation.
     const askGrounded = async (text, { keepOnFallback = false } = {}) => {
