@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import App from '../App.jsx';
 import { AppProvider } from '../AppContext.jsx';
-import { isEcho, QUIET_AFTER_SPEECH_MS } from './Guide.jsx';
+import { isEcho, isTailEcho, QUIET_AFTER_SPEECH_MS } from './Guide.jsx';
 import { installMockServer } from '../artifact/mockServer.js';
 
 // Through the real screens, the in-page API and the real rules engine.
@@ -182,6 +182,18 @@ describe('echo check', () => {
     expect(isEcho('LLC', line)).toBe(false);
     expect(isEcho('sole proprietor', line)).toBe(false);
     expect(isEcho('I want an LLC please', line)).toBe(false);
+  });
+});
+
+describe('tail echo', () => {
+  const line = 'Do you plan to hire employees in Washington?';
+  it('catches the last words of the guide coming back, never yes or no', () => {
+    expect(isTailEcho('Washington', line)).toBe(true);
+    expect(isTailEcho('in Washington', line)).toBe(true);
+    expect(isTailEcho('yes', line)).toBe(false);
+    expect(isTailEcho('no', line)).toBe(false);
+    expect(isTailEcho('plan', line)).toBe(false); // not at the end of the line
+    expect(isTailEcho('I have two employees', line)).toBe(false);
   });
 });
 
