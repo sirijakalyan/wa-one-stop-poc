@@ -127,6 +127,9 @@ export function hasVoice(lang = 'en-US') {
   return voices.some((v) => String(v.lang).toLowerCase().startsWith(base));
 }
 
+// True while the browser is still playing or holding any speech. Its "end" event can arrive before the sound has finished.
+export const synthBusy = () => canSpeak() && Boolean(window.speechSynthesis.speaking || window.speechSynthesis.pending);
+
 export function stopSpeaking() {
   speechGeneration += 1; // a fading-in line that is still queued must not carry on after a stop
   if (canSpeak()) { window.speechSynthesis.cancel(); lastCancelAt = Date.now(); }

@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import App from '../App.jsx';
 import { AppProvider } from '../AppContext.jsx';
-import { isEcho, isTailEcho, QUIET_AFTER_SPEECH_MS } from './Guide.jsx';
+import { isEcho, isLineEcho, QUIET_AFTER_SPEECH_MS } from './Guide.jsx';
 import { installMockServer } from '../artifact/mockServer.js';
 
 // Through the real screens, the in-page API and the real rules engine.
@@ -185,15 +185,16 @@ describe('echo check', () => {
   });
 });
 
-describe('tail echo', () => {
+describe('line echo', () => {
   const line = 'Do you plan to hire employees in Washington?';
-  it('catches the last words of the guide coming back, never yes or no', () => {
-    expect(isTailEcho('Washington', line)).toBe(true);
-    expect(isTailEcho('in Washington', line)).toBe(true);
-    expect(isTailEcho('yes', line)).toBe(false);
-    expect(isTailEcho('no', line)).toBe(false);
-    expect(isTailEcho('plan', line)).toBe(false); // not at the end of the line
-    expect(isTailEcho('I have two employees', line)).toBe(false);
+  it('catches one or two words of the guide\'s line coming back, never yes or no', () => {
+    expect(isLineEcho('business', 'How will your business be set up? Tap one below, or tell me.')).toBe(true);
+    expect(isLineEcho('Washington', line)).toBe(true);
+    expect(isLineEcho('hire employees', line)).toBe(true);
+    expect(isLineEcho('yes', line)).toBe(false);
+    expect(isLineEcho('no', line)).toBe(false);
+    expect(isLineEcho('LLC', line)).toBe(false);
+    expect(isLineEcho('I have two employees', line)).toBe(false);
   });
 });
 

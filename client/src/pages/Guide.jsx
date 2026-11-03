@@ -10,7 +10,7 @@ import GuideArt from '../components/GuideArt.jsx';
 import ExternalLink from '../components/ExternalLink.jsx';
 import Icon from '../components/Icon.jsx';
 import { ErrorNote } from '../components/Parts.jsx';
-import { canListen, canSpeak, createListener, hasVoice, listenErrorText, speak, speakable, stopSpeaking } from '../voice.js';
+import { canListen, canSpeak, createListener, hasVoice, listenErrorText, speak, speakable, stopSpeaking, synthBusy } from '../voice.js';
 import { answersFromCard, confirmedCount, fieldsOf, isComplete } from '../guideCard.js';
 import { speechLang, useT } from '../i18n.js';
 
@@ -30,15 +30,14 @@ export function isEcho(heard, spoken) {
   for (let i = 0; i < h.length - 1; i += 1) if (pairs.has(`${h[i]} ${h[i + 1]}`)) hit += 1;
   return hit / (h.length - 1) >= 0.6;
 }
-// The last word or two of the guide's line coming back through the speakers right after it stopped. Yes and no are never echoes,
-// and only the very end of the line counts, so an owner who answers with an option the guide listed earlier is not cut off.
+// One or two words that are in the line the guide has just spoken, heard right after it stopped: its own voice coming back,
+// not the owner. Yes and no are never echoes. The guide no longer reads out lists of choices, so a short answer rarely matches.
 const YES_NO = new Set(['yes', 'no', 'yeah', 'yep', 'nope', 'sure', 'ok', 'okay', 'si', 'sí', 'claro']);
-export function isTailEcho(heard, spoken) {
+export function isLineEcho(heard, spoken) {
   const h = words(heard);
   if (!h.length || h.length > 2 || h.some((w) => YES_NO.has(w))) return false;
-  const tail = words(spoken).slice(-4);
-  for (let i = 0; i + h.length <= tail.length; i += 1) if (h.every((w, k) => tail[i + k] === w)) return true;
-  return false;
+  const line = new Set(words(spoken));
+  return h.every((w) => line.has(w));
 }
 const GREETING = { id: 'hello', role: 'guide', text: '' };
 let counter = 0;
@@ -229,7 +228,16 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
   // Listening while the guide talks made it hear its own voice from the speakers and answer itself.
   useEffect(() => {
     const l = listenerRef.current;
-    if (micOn && !busy && !speaking && !hold && speakingCount.current === 0) { l?.start(); setListening(true); } else { l?.stop(); setListening(false); }
+    if (micOn && !busy && !speaking && !hold && speakingCount.current === 0) {
+      // The browser can announce the end of a line before the sound has finished. While it still says it is speaking, wait.
+      if (synthBusy() && Date.now() - lastSpeechEnd.current < 6000) {
+        l?.stop(); setListening(false);
+        const again = setTimeout(() => setTick((n) => n + 1), 250);
+        return () => clearTimeout(again);
+      }
+      l?.start(); setListening(true);
+    } else { l?.stop(); setListening(false); }
+    return undefined;
   }, [micOn, speaking, busy, hold, tick]);
   // Tell the home page's top banner what is happening, so the owner sees who is talking without scrolling down.
   const lastMsg = messages[messages.length - 1];
@@ -256,13 +264,13 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
         getLang: () => speechLang(langRef.current),
         onInterim: (t) => {
           if (speakingCount.current > 0) return; // the microphone is meant to be off while the guide talks: anything heard now is its own voice
-          if (guideHeard() && (isEcho(t, spokenNow.current) || (Date.now() - lastSpeechEnd.current < 1200 && isTailEcho(t, spokenNow.current)))) return;
+          if (guideHeard() && (isEcho(t, spokenNow.current) || (Date.now() - lastSpeechEnd.current < 3000 && isLineEcho(t, spokenNow.current)))) return;
           interrupt(); // the owner is talking over the guide
           setText(t);
         },
         onFinal: (t) => {
           if (speakingCount.current > 0) return;
-          if (guideHeard() && (isEcho(t, spokenNow.current) || (Date.now() - lastSpeechEnd.current < 1200 && isTailEcho(t, spokenNow.current)))) return;
+          if (guideHeard() && (isEcho(t, spokenNow.current) || (Date.now() - lastSpeechEnd.current < 3000 && isLineEcho(t, spokenNow.current)))) return;
           interrupt();
           setText('');
           turnRef.current({ message: t }, t);
@@ -270,7 +278,7 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
         onEnd: () => {
           setListening(false);
           const c = cond.current;
-          if (c.micOn && !c.busy && !c.speaking && !c.hold && speakingCount.current === 0) setTimeout(() => setTick((n) => n + 1), 120);
+          if (c.micOn && !c.busy && !c.speaking && !c.hold && speakingCount.current === 0 && !synthBusy()) setTimeout(() => setTick((n) => n + 1), 120);
         },
         onError: (code) => {
           const msg = listenErrorText(code, langRef.current);
