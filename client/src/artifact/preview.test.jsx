@@ -309,7 +309,7 @@ const alertText = (re) => waitFor(() => expect(screen.getByRole('alert')).toHave
 
 describe('accounts and the admin users area', () => {
   async function signUp(user, name, email, password = 'Passw0rdOK', again) {
-    await user.click(screen.getAllByRole('link', { name: 'Create account' })[0]);
+    await user.click((await screen.findAllByRole('link', { name: 'Create account' }, { timeout: 5000 }))[0]);
     await user.type(await screen.findByLabelText('Your name'), name);
     await user.type(screen.getByLabelText('Email address'), email);
     await user.type(screen.getByLabelText('Password'), password);
@@ -473,7 +473,7 @@ describe('the site needs an account (REQUIRE_LOGIN)', () => {
     expect(await screen.findByRole('heading', { name: /Start your Washington business/ }, { timeout: 8000 })).toBeInTheDocument();
     await user.click(screen.getAllByRole('link', { name: 'My business' })[0]);
     expect(await screen.findByRole('heading', { name: 'Welcome back' }, { timeout: 8000 })).toBeInTheDocument();
-    await user.click(screen.getAllByRole('link', { name: 'Create account' })[0]);
+    await user.click((await screen.findAllByRole('link', { name: 'Create account' }, { timeout: 5000 }))[0]);
     await user.type(await screen.findByLabelText('Your name'), 'Ana');
     await user.type(screen.getByLabelText('Email address'), 'ana@example.com');
     await user.type(screen.getByLabelText('Password'), 'Passw0rdOK');
@@ -511,7 +511,7 @@ describe('an admin account sees only the Admin area', () => {
   it('lands on Admin after sign in, with no Home, My business, bell or chat, and cannot open the business pages', async () => {
     const user = userEvent.setup();
     render(<MemoryRouter initialEntries={['/']}><AppProvider><App /></AppProvider></MemoryRouter>);
-    await user.click(screen.getAllByRole('link', { name: 'Create account' })[0]);
+    await user.click((await screen.findAllByRole('link', { name: 'Create account' }, { timeout: 5000 }))[0]);
     await user.type(await screen.findByLabelText('Your name'), 'Boss');
     await user.type(screen.getByLabelText('Email address'), 'admin@example.com');
     await user.type(screen.getByLabelText('Password'), 'Passw0rdOK');

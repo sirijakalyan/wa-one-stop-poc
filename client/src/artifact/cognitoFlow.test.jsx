@@ -31,7 +31,7 @@ describe('sign in through AWS Cognito', () => {
   it('sign up asks for the emailed code, then signs the person in', async () => {
     const user = userEvent.setup();
     renderApp();
-    await user.click(screen.getAllByRole('link', { name: 'Create account' })[0]);
+    await user.click((await screen.findAllByRole('link', { name: 'Create account' }, { timeout: 5000 }))[0]);
     await user.type(await screen.findByLabelText('Your name'), 'Ana Rivera');
     await user.type(screen.getByLabelText('Email address'), 'ana@example.com');
     await user.type(screen.getByLabelText('Password'), 'Passw0rdOK');
@@ -55,7 +55,7 @@ describe('sign in through AWS Cognito', () => {
   it('forgot password: enter the emailed code and a new permanent password, then sign in', async () => {
     const user = userEvent.setup();
     renderApp();
-    await user.click(screen.getAllByRole('link', { name: 'Create account' })[0]);
+    await user.click((await screen.findAllByRole('link', { name: 'Create account' }, { timeout: 5000 }))[0]);
     await user.type(await screen.findByLabelText('Your name'), 'Ana');
     await user.type(screen.getByLabelText('Email address'), 'ana@example.com');
     await user.type(screen.getByLabelText('Password'), 'Passw0rdOK');
