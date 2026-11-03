@@ -30,10 +30,10 @@ export default function Landing() {
   const [sentence, setSentence] = useState('');
   const samples = data?.samples ?? [];
 
-  // Switching to the form carries over what the guide has confirmed, but only if the form is still empty.
+  // Switching to the form carries over what the guide has heard, on top of the form's own answers.
   function choose(next) {
-    if (next === 'form' && mode !== 'form' && confirmedCount(guide.card) > 0 && JSON.stringify(answers) === JSON.stringify(blankAnswers())) {
-      setAnswers(answersFromCard(guide.card));
+    if (next === 'form' && mode !== 'form' && (Object.keys(guide.card.status || {}).length > 0)) {
+      setAnswers(answersFromCard(guide.card, answers));
       setLabel('');
       setCatsAuto(false);
       setStep(-1); // the form opens on the first question the guide has not had answered yet

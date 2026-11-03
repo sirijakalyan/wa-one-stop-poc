@@ -25,7 +25,7 @@ export default function Questionnaire({ embedded = false } = {}) {
     if (step >= 0 || !extraData) return;
     const status = guide.card?.status || {};
     const fieldOf = (sid) => (sid.startsWith('x:') ? sid : ({ desc: 'activity', cats: 'activity', city: 'place' }[sid] || sid));
-    const open = list.findIndex((sid) => sid !== 'review' && status[fieldOf(sid)] !== 'confirmed');
+    const open = list.findIndex((sid) => sid !== 'review' && !status[fieldOf(sid)]);
     setStep(open === -1 ? list.length - 1 : open);
   }, [step, extraData]); // eslint-disable-line react-hooks/exhaustive-deps
   const index = Math.max(0, Math.min(step, list.length - 1));

@@ -47,12 +47,12 @@ export function cardFromForm(answers, card) {
   return { ...base, values, status };
 }
 
-// What the form should hold after a chat. Only confirmed rows are copied, so nothing unconfirmed leaks across.
-export function answersFromCard(card) {
-  const a = blankAnswers();
+// What the form should hold after a chat. Rows the owner has answered (heard or confirmed) are copied over the form's own answers.
+export function answersFromCard(card, base) {
+  const a = base ? { ...base, cats: [...(base.cats || [])] } : blankAnswers();
   const map = { structure: ['structure'], activity: ['desc', 'cats'], place: ['city', 'county'], hiring: ['hiring'], subs: ['subs'], salestax: ['salestax'], income: ['income'], tradename: ['tradename'] };
   for (const f of CARD_FIELDS) {
-    if (card.status[f] !== 'confirmed') continue;
+    if (card.status[f] !== 'confirmed' && card.status[f] !== 'heard') continue;
     for (const k of map[f]) a[k] = k === 'cats' ? [...card.values.cats] : card.values[k];
   }
   if (card.values.extra) a.extra = { ...card.values.extra }; // answers to questions an admin added
