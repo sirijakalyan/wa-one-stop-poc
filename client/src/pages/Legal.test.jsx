@@ -11,10 +11,10 @@ const renderAt = (path) => render(
 );
 
 describe('Terms and Privacy pages', () => {
-  it('the terms page opens without signing in and is marked as a draft', async () => {
+  it('the terms page opens without signing in', async () => {
     renderAt('/terms');
     expect(await screen.findByRole('heading', { level: 1, name: 'Terms of use' })).toBeInTheDocument();
-    expect(screen.getByRole('note')).toHaveTextContent(/Draft for the demo/);
+    expect(screen.queryByText(/demo/i)).not.toBeInTheDocument();
   });
   it('the privacy page says what is kept and that typed questions may go to an AI service', async () => {
     renderAt('/privacy');

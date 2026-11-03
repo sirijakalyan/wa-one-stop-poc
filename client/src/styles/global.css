@@ -1440,3 +1440,5 @@ html { scroll-behavior: auto; }
 .legal section { margin: 1.1rem 0; }
 .legal h2 { font-size: 1.1rem; margin: 0 0 .25rem; }
 .foot-links a { margin-right: 1rem; }
+.legal-full { max-width: none; width: 100%; }
+.legal-full section p, .legal-full > p { max-width: 80ch; }
