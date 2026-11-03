@@ -87,7 +87,9 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
   const [hold, setHold] = useState(false); // the short quiet time after the guide stops, while its voice fades from the room
   const holdTimer = useRef(null);
   const prevMode = useRef(mode);
-  const spokenIdx = useRef(guide.messages.length > 1 ? guide.messages.length : 0); // a returning visitor is not read the old conversation again
+  // A returning visitor is not read the old conversation again, only the question that is waiting (the last guide line).
+  const resumeIdx = (msgs) => (msgs.length > 1 ? (msgs[msgs.length - 1].role === 'guide' ? msgs.length - 1 : msgs.length) : 0);
+  const spokenIdx = useRef(resumeIdx(guide.messages));
   const greetHeard = useRef(false);
   const lastSpeechEnd = useRef(0);
   const guideHeard = () => speakingCount.current > 0 || Date.now() - lastSpeechEnd.current < 2500; // the tail of the guide's voice may still be in the air
@@ -254,7 +256,7 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
   }, [embedded, speaking, listening, lastText, lastRole, setLive]);
   useEffect(() => () => { if (embedded) setLive({ speaking: false, listening: false, text: '', role: 'guide' }); }, [embedded, setLive]);
   // On leaving the page, stop talking and listening. Resetting the counters also makes React's dev double-mount start the greeting again after its cancel.
-  useEffect(() => () => { stopSpeaking(); clearTimeout(holdTimer.current); listenerRef.current?.stop(); spokenIdx.current = 0; speakingCount.current = 0; }, []);
+  useEffect(() => () => { stopSpeaking(); clearTimeout(holdTimer.current); listenerRef.current?.stop(); spokenIdx.current = resumeIdx(guideRef.current.messages); speakingCount.current = 0; }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function interrupt() {
     if (!speakingCount.current) return;
