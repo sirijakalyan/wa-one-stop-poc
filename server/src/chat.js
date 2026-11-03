@@ -534,6 +534,19 @@ function whichAnswer(last, rules) {
   return { answer: lines.join('\n'), links: [], matched: opts.map((r) => ({ id: r.id, title: r.title })), mode: 'grounded', suggestions: opts.map((r) => `Guide me through ${r.title}`) };
 }
 
+// Checked short answers (seed/faq.json) for common questions the step guides do not spell out. Each carries its source link.
+import { readFileSync } from 'node:fs';
+let FAQ = { entries: [], checked: '' };
+try { FAQ = JSON.parse(readFileSync(new URL('../seed/faq.json', import.meta.url), 'utf8')); } catch { /* no FAQ file: the guides alone answer */ }
+function faqAnswer(message) {
+  for (const e of FAQ.entries) {
+    if (e.not && new RegExp(e.not, 'i').test(message)) continue;
+    if ((e.match || []).some((m) => new RegExp(m, 'i').test(message))) {
+      return { answer: `${e.answer}\nChecked ${FAQ.checked}. This is not an approval from the agency.`, links: e.links || [], matched: [], mode: 'grounded', suggestions: ['What is my next step?', 'Do I need a business license?'] };
+    }
+  }
+  return null;
+}
 const GREETING = /^(hi|hello|hey|help|what can you do|who are you|start)\b/i;
 const MINE = /\b(my (checklist|list|steps|progress)|next steps?|what('s| is) next|what should i do (first|next)|what do i (do|need) (first|next))\b/i;
 
@@ -621,6 +634,7 @@ async function answerGrounded({ message, conversation = [], rules, checklist = n
   if (THANKS.test(message.trim())) return { answer: 'You are welcome. Ask me about any step, its fees or timing, or say "what is my next step?" anytime.', links: [], matched: [], mode: 'grounded', suggestions: ['What is my next step?', 'How do I get started?'] };
   if (BYE.test(message.trim())) return { answer: 'Good luck with your business. Confirm each requirement with the agency before you apply. I am here if you have more questions.', links: [], matched: [], mode: 'grounded' };
   if (OUT_OF_SCOPE.test(message)) return outOfScope();
+  { const f = faqAnswer(message); if (f) return f; }
   // When or how to pay taxes is not written in the guides (they cover registering, not filing or paying), so it must not be matched to the license page.
   if (TAX_PAYING.test(message) && !EMPLOYER_TAX.test(message)) return fallback(rules);
   if (OTHER_STATE.test(message)) return otherStateAnswer();

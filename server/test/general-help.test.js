@@ -27,9 +27,9 @@ test('a covered question is still answered from the guides, not by the general m
 });
 
 test('paying taxes is not matched to the license page', async () => {
-  for (const q of ['when should i pay tax', 'When are my sales taxes due?']) {
+  for (const q of ['how do i file my b&o return online']) {
     const r = await answerQuestion({ message: q, rules });
-    assert.equal(r.mode, 'fallback', q);
+    assert.notEqual(r.matched?.[0]?.title, 'Apply for your Washington business license', q);
   }
   const e = await answerQuestion({ message: 'How do I register for employer taxes?', rules });
   assert.equal(e.mode, 'grounded');
@@ -40,4 +40,15 @@ test('hello gets a warm model reply when a model is set, and the plain line othe
   assert.match(warm.answer, /^Hi! Happy/);
   const plain = await answerQuestion({ message: 'hi', rules });
   assert.match(plain.answer, /^Hi there!/);
+});
+
+test('checked FAQ answers: documents, tax due dates, UBI', async () => {
+  const d = await answerQuestion({ message: 'do i need any documents to upload', rules });
+  assert.match(d.answer, /does not list documents to upload/);
+  assert.equal(d.links[0].url, 'https://dor.wa.gov/open-business/apply-business-license');
+  const t = await answerQuestion({ message: 'when should i pay tax', rules });
+  assert.match(t.answer, /25th/);
+  assert.match(t.answer, /April 15/);
+  const u = await answerQuestion({ message: 'what is a UBI number', rules });
+  assert.match(u.answer, /Unified Business Identifier/);
 });
