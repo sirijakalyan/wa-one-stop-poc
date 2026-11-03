@@ -1437,3 +1437,6 @@ html { scroll-behavior: auto; }
 .chat-id strong { line-height: 1.45; }
 /* Selected admin tile: no movement, so it never overlaps its neighbours */
 .tile.is-on { transform: none; box-shadow: 0 0 0 3px #ffd978; }
+.legal section { margin: 1.1rem 0; }
+.legal h2 { font-size: 1.1rem; margin: 0 0 .25rem; }
+.foot-links a { margin-right: 1rem; }

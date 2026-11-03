@@ -12,6 +12,7 @@ export default function Footer() {
       <div className="wrap">
         <p className="foot-disclaimer" data-testid="footer-disclaimer"><strong>{t('foot.short')}.</strong> {t('foot.text')}</p>
         <p>{t('foot.line')}</p>
+        <p className="foot-links"><Link to="/terms">{t('legal.terms')}</Link> <Link to="/privacy">{t('legal.privacy')}</Link></p>
         {showAdmin && <p className="foot-links"><Link to="/admin">{t('foot.admin')}</Link></p>}
       </div>
     </footer>
