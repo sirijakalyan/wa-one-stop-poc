@@ -95,7 +95,7 @@ describe('in-page preview', () => {
       await user.click(screen.getByLabelText(answer));
       await user.click(screen.getByRole('button', { name: 'Next' }));
     }
-    await user.click(screen.getByRole('button', { name: 'Build my checklist' }));
+    await user.click(screen.getByRole('button', { name: 'Save my plan and open my checklist' }));
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Your personalized checklist' })).toBeInTheDocument());
     expect(checklistRow('Apply for your Washington business license')).toBeTruthy();
     expect(screen.queryByText('File your business entity with the Secretary of State')).not.toBeInTheDocument();
@@ -118,10 +118,10 @@ describe('county in the questionnaire and edit-answers flow', () => {
     await user.clear(field);
     if (county) await user.type(field, county);
     // walk forward to the review screen, then rebuild
-    for (let i = 0; i < 12 && !screen.queryByRole('button', { name: 'Build my checklist' }); i += 1) {
+    for (let i = 0; i < 12 && !screen.queryByRole('button', { name: 'Save my plan and open my checklist' }); i += 1) {
       await user.click(screen.getByRole('button', { name: 'Next' }));
     }
-    await user.click(screen.getByRole('button', { name: 'Build my checklist' }));
+    await user.click(screen.getByRole('button', { name: 'Save my plan and open my checklist' }));
     await screen.findByRole('heading', { name: /checklist/i, level: 2 });
     await waitFor(() => expect(checklistRow('Check for a county health department permit')).toBeTruthy());
   }

@@ -467,7 +467,7 @@ test('Spanish: yes/no answers, structure and every question come out in Spanish'
     }
     assert.equal(r.complete, true);
     assert.match(r.reply, /Eso es todo lo que necesito/);
-    assert.equal(r.chips[0].label, 'Guardar mi plan');
+    assert.equal(r.chips[0].label, 'Guardar mi plan y abrir mi lista');
   } finally {
     await app.stop();
   }
@@ -533,7 +533,7 @@ test('after every question is answered, a sentence does not restart the question
     const r = turn({ card: done.card, message: msg });
     assert.equal(r.complete, true, msg);
     assert.equal(r.ask, null, msg);
-    assert.match(r.reply, /All your questions are answered\. Say or tap Save my plan\./, msg);
+    assert.match(r.reply, /All your questions are answered\. Say or tap Save my plan and open my checklist\./, msg);
     assert.deepEqual(r.card.status, done.card.status, msg);
     assert.deepEqual(r.chips.map((c) => c.value), ['save']);
   }

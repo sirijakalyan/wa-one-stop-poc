@@ -105,7 +105,7 @@ describe('guide screen', () => {
     expect(screen.getByText(/Online application: approximately 10 business days/)).toBeInTheDocument();
     expect(screen.getAllByText('Time not published').length).toBeGreaterThanOrEqual(4);
     expect(screen.getByText(/Left out of your plan/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Save my plan and open my checklist' })).toBeEnabled();
+    expect(screen.getAllByRole('button', { name: 'Save my plan and open my checklist' })[0]).toBeEnabled();
     // Pending items stay labeled pending.
     expect(screen.getAllByText('Pending verification').length).toBeGreaterThan(0);
   });
@@ -328,7 +328,7 @@ describe('voice', () => {
       await inLog(question);
       await tap(user, name);
     }
-    expect(await inLog(/Say or tap Save my plan/)).toBeInTheDocument();
+    expect(await inLog(/Say or tap Save my plan and open my checklist/)).toBeInTheDocument();
     await user.type(screen.getByLabelText(/Tell the guide about your business/), 'save my plan{Enter}');
     expect(await screen.findByRole('heading', { name: /checklist/i })).toBeInTheDocument();
   });
@@ -351,7 +351,7 @@ describe('voice', () => {
     await say('yes');
     await inLog(/name other than/);
     await say('yes');
-    expect(await inLog(/Say or tap Save my plan/)).toBeInTheDocument();
+    expect(await inLog(/Say or tap Save my plan and open my checklist/)).toBeInTheDocument();
   });
 
   it('says so, and keeps typing working, when the browser cannot listen', async () => {

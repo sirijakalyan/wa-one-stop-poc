@@ -35,7 +35,7 @@ test('once every question is answered, a question gets "all answered, save or te
   for (const message of ['like tell me how to start this business two licence everything', 'What are the steps?', 'how do I register an LLC?']) {
     const r = await turn({ card: t.card, message });
     assert.equal(r.complete, true, message);
-    assert.match(r.reply, /All your questions are answered\. Say or tap Save my plan\./, message);
+    assert.match(r.reply, /All your questions are answered\. Say or tap Save my plan and open my checklist\./, message);
     assert.deepEqual(r.chips.map((c) => c.value), ['save'], message);
     assert.doesNotMatch(r.reply, /Secretary of State|Labor & Industries/, message);
   }

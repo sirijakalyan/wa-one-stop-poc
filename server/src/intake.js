@@ -450,8 +450,8 @@ export function intakeTurn({ card: rawCard, message, action, field, value, askin
     const wantsEdit = EDIT_CUE.test(said);
     return {
       card,
-      reply: wantsEdit ? (es ? ES.editWhich : 'Sure. Which question do you want to change? For example the city, hiring, subcontractors or sales tax. Or tap that row on your card.') : (es ? ES.allFilled : 'All your questions are answered. Say or tap Save my plan. To change an answer, tell me which question, for example the city, hiring or sales tax.'),
-      ask: null, chips: [{ value: 'save', label: es ? ES.saveChip : 'Save my plan' }], awaiting: null, complete: true,
+      reply: wantsEdit ? (es ? ES.editWhich : 'Sure. Which question do you want to change? For example the city, hiring, subcontractors or sales tax. Or tap that row on your card.') : (es ? ES.allFilled : 'All your questions are answered. Say or tap Save my plan and open my checklist. To change an answer, tell me which question, for example the city, hiring or sales tax.'),
+      ask: null, chips: [{ value: 'save', label: es ? ES.saveChip : 'Save my plan and open my checklist' }], awaiting: null, complete: true,
     };
   }
 
@@ -530,8 +530,8 @@ function finish(card, reply, { ask = null, ack = '', chips = null, note = '', la
   if (complete) {
     return {
       card,
-      reply: [ack, es ? ES.complete : 'That is everything I need. Your plan and your road to opening day are ready on the right. Every step shows the answer behind it. Say or tap Save my plan to keep it, or ask me a question.'].filter(Boolean).join(' '),
-      ask: null, chips: [{ value: 'save', label: es ? ES.saveChip : 'Save my plan' }], awaiting: null, complete: true,
+      reply: [ack, es ? ES.complete : 'That is everything I need. Your plan and your road to opening day are ready on the right. Every step shows the answer behind it. Say or tap Save my plan and open my checklist to keep it, or ask me a question.'].filter(Boolean).join(' '),
+      ask: null, chips: [{ value: 'save', label: es ? ES.saveChip : 'Save my plan and open my checklist' }], awaiting: null, complete: true,
     };
   }
   const text = reply || [ack, ask?.question].filter(Boolean).join(' ');

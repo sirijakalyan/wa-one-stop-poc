@@ -88,7 +88,7 @@ describe('Spanish', () => {
       await user.type(screen.getByLabelText(/Cuéntele a la guía sobre su negocio/), `${say}{Enter}`);
     }
     expect(await (await logOf()).findByText(/Eso es todo lo que necesito/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Guardar mi plan' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Guardar mi plan y abrir mi lista' })[0]).toBeInTheDocument();
     await user.type(screen.getByLabelText(/Cuéntele a la guía sobre su negocio/), 'guardar mi plan{Enter}');
     expect(await screen.findByRole('heading', { name: /lista de ejemplo/i })).toBeInTheDocument();
   });

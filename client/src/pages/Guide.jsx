@@ -137,7 +137,7 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
       const r = await api.intakeTurn({ card: cur.card, asking: cur.ask?.field, lang: langRef.current, ...body });
       const added = [{ id: nextId(), role: 'guide', text: r.reply, links: r.answer?.links || [] }];
       if (r.followUp) added.push({ id: nextId(), role: 'guide', text: r.followUp });
-      setGuide((g) => ({ ...g, messages: [...g.messages, ...added], card: r.card, ask: r.ask, awaiting: r.awaiting, complete: r.complete, chips: r.chips || [] }));
+      setGuide((g) => ({ ...g, messages: (!owner && g.messages.length && g.messages[g.messages.length - 1].role === 'guide' && g.messages[g.messages.length - 1].text === added[0].text) ? g.messages : [...g.messages, ...added], card: r.card, ask: r.ask, awaiting: r.awaiting, complete: r.complete, chips: r.chips || [] }));
       await refreshPlan(r.card, false);
       setSim(null);
     } catch (e) {
