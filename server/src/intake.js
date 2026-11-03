@@ -331,7 +331,7 @@ export const isComplete = (card, ctx) => fieldsOf(ctx).every((f) => card.status[
 
 export const ASKS = {
   structure: {
-    question: 'How will your business be set up? If you are not sure, that is fine.',
+    question: 'How will your business be set up? Your choices are sole proprietor, LLC, corporation, or partnership or LLP. If you are not sure, that is fine.',
     chips: [['sole', 'Sole proprietor'], ['llc', 'LLC'], ['corp', 'Corporation'], ['partnership', 'Partnership or LLP'], ['unsure', 'Not sure']],
   },
   activity: {

@@ -22,7 +22,7 @@ export const ES = {
   county: (name) => `Condado de ${name}`,
   asks: {
     structure: {
-      question: '¿Cómo estará organizado su negocio? Si no está seguro, no hay problema.',
+      question: '¿Cómo estará organizado su negocio? Puede elegir propietario único, LLC, corporación, o sociedad o LLP. Si no está seguro, no hay problema.',
       chips: [['sole', 'Propietario único'], ['llc', 'LLC'], ['corp', 'Corporación'], ['partnership', 'Sociedad o LLP'], ['unsure', 'No estoy seguro']],
     },
     activity: {
