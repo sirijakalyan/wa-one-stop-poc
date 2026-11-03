@@ -52,3 +52,11 @@ test('checked FAQ answers: documents, tax due dates, UBI', async () => {
   const u = await answerQuestion({ message: 'what is a UBI number', rules });
   assert.match(u.answer, /Unified Business Identifier/);
 });
+
+test('"where to pay online or offline" gets the how-to-pay answer, not the fee page', async () => {
+  const r = await answerQuestion({ message: 'i dont have idea where to pay online or offline', rules });
+  assert.match(r.answer, /My DOR account/);
+  assert.match(r.answer, /by mail, you send/i);
+  const fee = await answerQuestion({ message: 'how much is the business license fee', rules });
+  assert.match(fee.answer, /Fee:/);
+});

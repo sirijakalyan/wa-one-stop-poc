@@ -3,23 +3,60 @@
   "checked": "2026-11-03",
   "entries": [
     {
+      "id": "where-to-pay",
+      "match": [
+        "\\b(where|how)\\b[^.?!]{0,30}\\b(pay|payment|paying)\\b",
+        "\\bpay(ing)?\\b[^.?!]{0,25}\\b(online|offline|by mail|mail|in person|check|cash|card)\\b",
+        "\\b(online|offline|mail)\\b[^.?!]{0,25}\\bpay(ment)?\\b"
+      ],
+      "not": "\\b(employer|employment security|payroll|unemployment|new hires?|insurance|premium)\\b",
+      "answer": "For the business license, the Department of Revenue offers two ways to apply. Online, you apply through a My DOR account, which you create first. By mail, you send the Business License Application, any additional forms, and payment together in one packet. The DOR page does not list the accepted payment methods or the fee amounts, and says the fee varies and each city or state endorsement adds its own fee. After you are licensed, you also use My DOR to file and pay your taxes. Check the exact payment options with DOR before you apply.",
+      "links": [
+        {
+          "label": "DOR: Apply for a business license",
+          "url": "https://dor.wa.gov/open-business/apply-business-license"
+        }
+      ]
+    },
+    {
       "id": "documents-upload",
-      "match": ["\\b(documents?|paperwork|upload|uploads|attachments?|what (do|should) i (need|have|bring)|need to (apply|have ready))\\b[^.?!]{0,40}\\b(license|apply|application|register|registration|upload|ready)\\b|\\b(upload|documents?)\\b[^.?!]{0,30}\\b(need|required|require)\\b|\\bneed any documents\\b"],
+      "match": [
+        "\\b(documents?|paperwork|upload|uploads|attachments?|what (do|should) i (need|have|bring)|need to (apply|have ready))\\b[^.?!]{0,40}\\b(license|apply|application|register|registration|upload|ready)\\b|\\b(upload|documents?)\\b[^.?!]{0,30}\\b(need|required|require)\\b|\\bneed any documents\\b"
+      ],
       "answer": "The Department of Revenue business license page does not list documents to upload. What it does say to have ready: your Secretary of State filing done first if your business is a Washington corporation, partnership, LLC or LLP; a business name if you will use one other than your full legal name; and a My DOR online account to apply online. You do not need a UBI number to apply. You get one after licensing. For a mail-in application you send the Business License Application, any additional forms, and payment. The page does not mention an EIN or other ID numbers, so check with the agency.",
-      "links": [{ "label": "DOR: Apply for a business license", "url": "https://dor.wa.gov/open-business/apply-business-license" }]
+      "links": [
+        {
+          "label": "DOR: Apply for a business license",
+          "url": "https://dor.wa.gov/open-business/apply-business-license"
+        }
+      ]
     },
     {
       "id": "tax-due-dates",
-      "match": ["\\b(when|what day|due|deadline)\\b[^.?!]{0,40}\\b(taxe?s?|returns?|excise|sales tax|b&o)\\b|\\b(pay|file|filing)\\b[^.?!]{0,30}\\b(taxe?s?|returns?|excise)\\b|\\b(taxe?s?|excise|returns?)\\b[^.?!]{0,30}\\b(due|deadline)\\b|\\bfiling frequency\\b"],
+      "match": [
+        "\\b(when|what day|due|deadline)\\b[^.?!]{0,40}\\b(taxe?s?|returns?|excise|sales tax|b&o)\\b|\\b(pay|file|filing)\\b[^.?!]{0,30}\\b(taxe?s?|returns?|excise)\\b|\\b(taxe?s?|excise|returns?)\\b[^.?!]{0,30}\\b(due|deadline)\\b|\\bfiling frequency\\b"
+      ],
       "not": "\\b(employer|employment security|payroll|unemployment|new hires?)\\b",
       "answer": "The Department of Revenue says excise tax returns (sales tax and B&O) are due on a schedule that depends on your filing frequency. Monthly returns are due the 25th of the following month. Quarterly returns are due the end of the month after the quarter, for example April 30 for January to March. Annual returns are due April 15. If a due date falls on a weekend or holiday it moves to the next business day. DOR assigns your frequency from your estimated yearly income, and it is in the welcome letter after you register. To change it, DOR lists 360-705-6705. Always confirm your own dates with DOR.",
-      "links": [{ "label": "DOR: Filing frequencies and due dates", "url": "https://dor.wa.gov/ru/node/512" }]
+      "links": [
+        {
+          "label": "DOR: Filing frequencies and due dates",
+          "url": "https://dor.wa.gov/ru/node/512"
+        }
+      ]
     },
     {
       "id": "ubi",
-      "match": ["\\bubi\\b|\\bunified business identifier\\b"],
+      "match": [
+        "\\bubi\\b|\\bunified business identifier\\b"
+      ],
       "answer": "The Department of Revenue says you do not need a UBI number to apply for a business license. You receive a Unified Business Identifier after you are licensed. It is unique to your business, and you will need it for tax filings and changes.",
-      "links": [{ "label": "DOR: Apply for a business license", "url": "https://dor.wa.gov/open-business/apply-business-license" }]
+      "links": [
+        {
+          "label": "DOR: Apply for a business license",
+          "url": "https://dor.wa.gov/open-business/apply-business-license"
+        }
+      ]
     }
   ]
 }
