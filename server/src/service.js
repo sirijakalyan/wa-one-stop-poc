@@ -188,7 +188,7 @@ export function createService(store, options = {}) {
           await sendReminderEmail(sub.email, sub.token, rule, date, days, bizName);
           await store.recordReminder(sub.id, key);
           await store.addNotification(sub.id, {
-            id: uuid(), type: 'renewal', simulated: mailer.mode !== 'live', read: false, createdAt: new Date().toISOString(),
+            id: uuid(), type: 'renewal', biz, simulated: mailer.mode !== 'live', read: false, createdAt: new Date().toISOString(),
             title: `Renewal reminder: ${rule.title}${bizName ? ` (${bizName})` : ''}`,
             body: `Renewal date ${date}. ${mailer.mode === 'live' ? 'We emailed you this reminder.' : 'Demo mode: the email was written to the server log, not delivered.'} Check the date with the agency.`,
           });
@@ -468,7 +468,12 @@ export function createService(store, options = {}) {
   });
 
   route('DELETE', '/api/checklist', async ({ ctx, query }) => {
-    await store.deleteChecklist(chKey(ctx, query));
+    const key = chKey(ctx, query);
+    const gone = await store.getChecklist(key);
+    await store.deleteChecklist(key);
+    // Its notifications and reminders go with it: nothing more is sent for a business that was removed.
+    const left = await businessesOf(visitorOf(ctx));
+    await store.removeBusinessNotifications?.(visitorOf(ctx), bizIdOf(key), { label: gone?.label || '', none: left.length === 0 });
     await track(ctx, 'plan-deleted', 'Started over');
     return { ok: true };
   });
@@ -554,7 +559,7 @@ export function createService(store, options = {}) {
         }
       }
       await store.addNotification(visitorOf(ctx), {
-        id: uuid(), type: 'renewal', simulated: !(sentNow && mailer.mode === 'live'), read: false, createdAt: new Date().toISOString(),
+        id: uuid(), type: 'renewal', biz: 'main', simulated: !(sentNow && mailer.mode === 'live'), read: false, createdAt: new Date().toISOString(),
         title: `Renewal reminder${sentNow && mailer.mode === 'live' ? '' : ' (simulated)'}: ${rule.title}`,
         body: sentNow && mailer.mode === 'live'
           ? `Renewal date ${date}. We emailed you this reminder. Check the renewal date with the agency.`

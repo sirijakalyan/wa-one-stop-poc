@@ -42,6 +42,16 @@ export function createDocStore({ read, write, seed }) {
       doc.notifications.push({ ...clone(n), visitorId: v });
       await write('notifications', doc);
     },
+    // Removing a business removes its renewal notifications. Newer ones carry the business id; older ones are matched by "(Business name)" in the
+    // title, and when no business is left all renewal notifications go.
+    async removeBusinessNotifications(v, biz, { label = '', none = false } = {}) {
+      const doc = await read('notifications');
+      const mine = (n) => n.visitorId === v || (!n.visitorId && v === 'public-demo');
+      const before = doc.notifications.length;
+      doc.notifications = doc.notifications.filter((n) => !(mine(n) && n.type === 'renewal' && (n.biz === biz || (!n.biz && (none || (label && String(n.title).endsWith(`(${label})`)))))));
+      if (doc.notifications.length !== before) await write('notifications', doc);
+      return before - doc.notifications.length;
+    },
     async markRead(v, id) {
       const doc = await read('notifications');
       const n = doc.notifications.find((x) => x.id === id && (x.visitorId === v || !x.visitorId));
