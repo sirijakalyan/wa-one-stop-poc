@@ -25,3 +25,12 @@ test('a covered question is still answered from the guides, not by the general m
   assert.notEqual(r.mode, 'general');
   assert.equal(called, false);
 });
+
+test('paying taxes is not matched to the license page', async () => {
+  for (const q of ['when should i pay tax', 'When are my sales taxes due?']) {
+    const r = await answerQuestion({ message: q, rules });
+    assert.equal(r.mode, 'fallback', q);
+  }
+  const e = await answerQuestion({ message: 'How do I register for employer taxes?', rules });
+  assert.equal(e.mode, 'grounded');
+});

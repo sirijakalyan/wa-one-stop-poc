@@ -43,6 +43,14 @@ export default function ChatPanel() {
   useEffect(() => {
     if (open) inputRef.current?.focus();
   }, [open]);
+  // While the chat is open, scrolling inside it must not move the page behind it.
+  useEffect(() => {
+    if (!open) return undefined;
+    const root = document.documentElement;
+    const before = root.style.overflow;
+    root.style.overflow = 'hidden';
+    return () => { root.style.overflow = before; };
+  }, [open]);
   useEffect(() => {
     endRef.current?.scrollIntoView?.({ block: 'end' });
   }, [messages, busy]);

@@ -136,6 +136,8 @@ export function topicList(rules) {
 }
 
 // Topics this demo has no rule or guide for. Saying so is better than matching a nearby rule by a shared word like "register".
+const TAX_PAYING = /\b(pay(ing)?|file|filing|owe|due|deadlines?)\b[^.?!]{0,30}\b(taxe?s?|b&o|excise)\b|\b(taxe?s?|b&o|excise)\b[^.?!]{0,30}\b(due|deadline|payment|returns?)\b/i;
+const EMPLOYER_TAX = /\b(employer|employment security|payroll|unemployment|new hires?)\b/i;
 const OUT_OF_SCOPE = /\b(trade ?marks?|patents?|copyrights?|visas?|immigration|green card|annual report|weather|stock|invest(ing|ment)?|bankrupt(cy)?|divorce|lawsuit|sue)\b/i;
 const OTHER_STATE = /\b(oregon|idaho|california|texas|new york|florida|alaska|nevada|montana|other states?|another state|outside (of )?washington)\b/i;
 const COST_TOTAL = /\bhow much\b[^.?!]{0,25}\b(all (of )?(this|it)|everything|in total|total|altogether|overall|starting|to start|the whole)\b|\b(total|overall) cost\b|\bhow much will (this|it|all)\b/i;
@@ -601,6 +603,8 @@ async function answerGrounded({ message, conversation = [], rules, checklist = n
   if (THANKS.test(message.trim())) return { answer: 'You are welcome. Ask me about any step, its fees or timing, or say "what is my next step?" anytime.', links: [], matched: [], mode: 'grounded', suggestions: ['What is my next step?', 'How do I get started?'] };
   if (BYE.test(message.trim())) return { answer: 'Good luck with your business. Confirm each requirement with the agency before you apply. I am here if you have more questions.', links: [], matched: [], mode: 'grounded' };
   if (OUT_OF_SCOPE.test(message)) return outOfScope();
+  // When or how to pay taxes is not written in the guides (they cover registering, not filing or paying), so it must not be matched to the license page.
+  if (TAX_PAYING.test(message) && !EMPLOYER_TAX.test(message)) return fallback(rules);
   if (OTHER_STATE.test(message)) return otherStateAnswer();
   if (COST_TOTAL.test(message)) return costTotalAnswer();
   if (TIME_TOTAL.test(message)) return timeTotalAnswer();
