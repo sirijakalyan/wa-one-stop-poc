@@ -34,3 +34,10 @@ test('paying taxes is not matched to the license page', async () => {
   const e = await answerQuestion({ message: 'How do I register for employer taxes?', rules });
   assert.equal(e.mode, 'grounded');
 });
+
+test('hello gets a warm model reply when a model is set, and the plain line otherwise', async () => {
+  const warm = await answerQuestion({ message: 'hi', rules, generalLlm: async () => 'Hi! Happy to help with your checklist or any question.' });
+  assert.match(warm.answer, /^Hi! Happy/);
+  const plain = await answerQuestion({ message: 'hi', rules });
+  assert.match(plain.answer, /^Hi there!/);
+});

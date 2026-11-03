@@ -587,15 +587,33 @@ async function generalHelp(base, { message, conversation, generalLlm, lang }) {
   }
 }
 
+// Hello, thanks and goodbye get a warm reply from the model when one is set; the app's plain canned lines stay as the fallback.
+async function smallTalk(base, { message, conversation, generalLlm, lang }) {
+  const history = (conversation || []).filter((t) => t && (t.role === 'user' || t.role === 'assistant') && typeof t.content === 'string').slice(-6).map((t) => ({ role: t.role, content: t.content.slice(0, 600) }));
+  try {
+    const reply = await generalLlm({
+      system: `You are a warm, friendly helper inside a Washington State small business checklist app. Reply to the greeting, thanks or goodbye like a kind person would, in 1 to 2 short sentences, ${lang === 'es' ? 'Spanish' : 'US English'}, no em dashes, no markdown. Mention once that you can help with the steps on their checklist or with general questions.`,
+      user: message,
+      history,
+    });
+    const text = String(reply || '').replace(/https?:\/\/\S+/g, '').replace(/\u2014/g, ',').trim();
+    return text ? { ...base, answer: text } : base;
+  } catch {
+    return base;
+  }
+}
+
 export async function answerQuestion({ generalLlm = null, lang = 'en', ...args }) {
   const r = await answerGrounded(args);
+  const m = String(args.message || '').trim();
+  if (generalLlm && r.mode === 'grounded' && !r.matched?.length && ((GREETING.test(m) && m.split(/\s+/).length <= 5) || THANKS.test(m) || BYE.test(m))) return smallTalk(r, { message: m, conversation: args.conversation, generalLlm, lang });
   return r.mode === 'fallback' ? generalHelp(r, { message: args.message, conversation: args.conversation, generalLlm, lang }) : r;
 }
 
 async function answerGrounded({ message, conversation = [], rules, checklist = null, llm = null }) {
   if (GREETING.test(message.trim()) && message.trim().split(/\s+/).length <= 5) {
     return {
-      answer: 'I answer questions about the steps in this checklist, using only the rules and guides in this app. Ask about a license, a filing, fees, timing, or what comes next on your checklist.',
+      answer: 'Hi there! I can answer questions about the steps on your checklist, like a license, a filing, fees, timing, or what comes next. Ask me anything and I will do my best.',
       links: [], matched: [], mode: 'grounded',
       suggestions: ['Do I need a business license?', 'How long does the DOR license take?', 'What is workers\' compensation?', 'What is my next step?'],
     };
