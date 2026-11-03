@@ -32,7 +32,7 @@ function Bar({ done, total }) {
 }
 
 const YN_ES = { yes: 'Sí', no: 'No', unsure: 'No estoy seguro' };
-const STRUCT_ES = { sole: 'Propietario único', llc: 'LLC', corp: 'Corporación', partnership: 'Sociedad o LLP', unsure: 'Estructura aún sin decidir' };
+const STRUCT_ES = { sole: 'Propietario único', gp: 'Sociedad colectiva', lp: 'Sociedad en comandita (LP)', lllp: 'LLLP', llp: 'LLP', llc: 'LLC', corp: 'Corporación', nonprofit: 'Corporación sin fines de lucro', partnership: 'Sociedad o LLP', unsure: 'Estructura aún sin decidir' };
 const CAT_ES = { food: 'Servicio de comida', construction: 'Contratación de construcción', other: 'Otro servicio o venta' };
 
 function UserDetail({ id, onBack }) {

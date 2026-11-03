@@ -1,12 +1,16 @@
 // Questionnaire content. The server's engine owns the rules; this file only holds wording.
 export const STRUCTURES = [
   { v: 'sole', t: 'Sole proprietor', d: 'You own the business yourself and have not formed a separate entity.' },
+  { v: 'gp', t: 'General partnership', d: 'Two or more people share the business. No Secretary of State filing is required.' },
+  { v: 'lp', t: 'Limited partnership (LP)', d: 'General partners run it; limited partners risk only their investment.' },
+  { v: 'lllp', t: 'Limited liability limited partnership (LLLP)', d: 'A limited partnership that also protects its general partners.' },
+  { v: 'llp', t: 'Limited liability partnership (LLP)', d: 'Common among professionals. Partners are not liable for other partners\' negligence.' },
   { v: 'llc', t: 'Limited liability company (LLC)', d: '' },
   { v: 'corp', t: 'Corporation', d: '' },
-  { v: 'partnership', t: 'Partnership or LLP', d: '' },
+  { v: 'nonprofit', t: 'Nonprofit corporation', d: 'Formed for a goal or purpose rather than profit.' },
   { v: 'unsure', t: 'Not sure yet', d: 'The Secretary of State step will show as "may apply".' },
 ];
-export const STRUCT_LABEL = { sole: 'Sole proprietor', llc: 'LLC', corp: 'Corporation', partnership: 'Partnership or LLP', unsure: 'Structure not sure yet' };
+export const STRUCT_LABEL = { sole: 'Sole proprietor', gp: 'General partnership', lp: 'Limited partnership (LP)', lllp: 'LLLP', llp: 'LLP', llc: 'LLC', corp: 'Corporation', nonprofit: 'Nonprofit corporation', partnership: 'Partnership or LLP', unsure: 'Structure not sure yet' };
 
 export const CATS = [
   { v: 'food', t: 'Food service', d: 'Restaurant, cafe, catering, food truck' },

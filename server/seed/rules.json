@@ -19,7 +19,11 @@
         "in": [
           "llc",
           "corp",
-          "partnership"
+          "partnership",
+          "lp",
+          "lllp",
+          "llp",
+          "nonprofit"
         ]
       },
       "reason": {

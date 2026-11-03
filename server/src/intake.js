@@ -148,9 +148,14 @@ export function extractFacts(text, places) {
   const found = {};
   const list = loadPlaces(places);
 
-  if (/\b(llc|l\.l\.c\.|limited liability)\b/i.test(t) || /(?<![\p{L}])(sociedad de responsabilidad limitada)(?![\p{L}])/iu.test(t)) found.structure = 'llc';
+  // Longer names first: "limited liability partnership" must not be read as an LLC, nor "nonprofit corporation" as a plain corporation.
+  if (/\b(non-?profit|not-for-profit|501\(?c\)?)\b/i.test(t) || wb('sin fines de lucro|sin [aá]nimo de lucro|organizaci[oó]n sin lucro').test(t)) found.structure = 'nonprofit';
+  else if (/\b(lllp|limited liability limited partnership)\b/i.test(t)) found.structure = 'lllp';
+  else if (/\b(llp|limited liability partnership)\b/i.test(t) || wb('sociedad de responsabilidad limitada registrada|sociedad limitada de responsabilidad').test(t)) found.structure = 'llp';
+  else if (/\b(limited partnership|lp)\b/i.test(t) || wb('sociedad en comandita|sociedad limitada').test(t)) found.structure = 'lp';
+  else if (/\b(llc|l\.l\.c\.|limited liability)\b/i.test(t) || /(?<![\p{L}])(sociedad de responsabilidad limitada)(?![\p{L}])/iu.test(t)) found.structure = 'llc';
   else if (/\b(corporation|incorporated|corp|inc)\b/i.test(t) || wb('corporaci[oó]n|sociedad an[oó]nima|incorporad[oa]').test(t)) found.structure = 'corp';
-  else if (/\b(partnership|llp|partners?)\b/i.test(t) || wb('sociedad|socios?|asociaci[oó]n').test(t)) found.structure = 'partnership';
+  else if (/\b(general partnership|partnership|partners?)\b/i.test(t) || wb('sociedad colectiva|sociedad|socios?|asociaci[oó]n').test(t)) found.structure = 'gp';
   else if (/\b(sole proprietor(?:ship)?|sole owner|self-employed|self employed)\b/i.test(t) || wb('propietari[oa] [uú]nic[oa]|due[ñn]o [uú]nico|trabajador independiente|aut[oó]nomo|por mi cuenta').test(t)) found.structure = 'sole';
 
   const cats = categoriesFrom(t);
@@ -331,8 +336,8 @@ export const isComplete = (card, ctx) => fieldsOf(ctx).every((f) => card.status[
 
 export const ASKS = {
   structure: {
-    question: 'How will your business be set up? Your choices are sole proprietor, LLC, corporation, or partnership or LLP. If you are not sure, that is fine.',
-    chips: [['sole', 'Sole proprietor'], ['llc', 'LLC'], ['corp', 'Corporation'], ['partnership', 'Partnership or LLP'], ['unsure', 'Not sure']],
+    question: 'How will your business be set up? Your choices are sole proprietor, general partnership, limited partnership, limited liability limited partnership, limited liability partnership, LLC, corporation, or nonprofit corporation. If you are not sure, that is fine.',
+    chips: [['sole', 'Sole proprietor'], ['gp', 'General partnership'], ['lp', 'Limited partnership (LP)'], ['lllp', 'LLLP'], ['llp', 'LLP'], ['llc', 'LLC'], ['corp', 'Corporation'], ['nonprofit', 'Nonprofit corporation'], ['unsure', 'Not sure']],
   },
   activity: {
     question: 'What kind of business is it?',
@@ -401,7 +406,7 @@ const CONFIRM_CHIPS = [{ value: 'confirm', label: "Yes, that's right" }, { value
 // two things: save the plan, or name the question to change. Only a named question is asked again.
 const EDIT_CUE = /\b(change|edit|update|fix|correct|wrong|redo|different|instead|modify)\b|(?<![\p{L}])(cambiar|cambio|editar|corregir|actualizar|equivocad[oa]|diferente)(?![\p{L}])/iu;
 const FIELD_WORDS = {
-  structure: /\b(structure|llc|sole proprietor|corporation|partnership|set up)\b|estructura|sociedad/i,
+  structure: /\b(structure|llc|llp|lllp|sole proprietor|corporation|nonprofit|partnership|set up)\b|estructura|sociedad/i,
   activity: /\b(what i do|activity|kind of business|type of business|business type|my business)\b|actividad|tipo de negocio/i,
   place: /\b(city|county|where|location|place)\b|ciudad|condado|ubicaci[oó]n/i,
   hiring: /\b(hiring|hire|employees?|staff|workers?)\b|contrat|empleados/i,

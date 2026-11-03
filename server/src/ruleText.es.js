@@ -11,7 +11,7 @@ export const PHASES_ES = {
   5: 'Requisitos locales',
 };
 
-export const STRUCTURE_ES = { sole: 'Propietario único', llc: 'LLC', corp: 'Corporación', partnership: 'Sociedad o LLP', unsure: 'Estructura aún no definida' };
+export const STRUCTURE_ES = { sole: 'Propietario único', gp: 'Sociedad colectiva', lp: 'Sociedad en comandita (LP)', lllp: 'Sociedad en comandita de responsabilidad limitada (LLLP)', llp: 'Sociedad de responsabilidad limitada (LLP)', llc: 'LLC', corp: 'Corporación', nonprofit: 'Corporación sin fines de lucro', partnership: 'Sociedad o LLP', unsure: 'Estructura aún no definida' };
 
 // Condition labels used inside "For you: ..." and "You were not sure about: ...".
 export const COND_ES = {

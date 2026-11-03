@@ -5,13 +5,23 @@
 //   maybe    : the condition could be true, but an answer was "not sure" or missing
 //   no       : the condition is false (the rule is left out and the reason is kept)
 
+// The eight structures on the Secretary of State's "Washington State business structures" page, plus "not sure".
+// "partnership" is kept only so answers saved earlier ("Partnership or LLP") still load; it is not offered any more.
 export const STRUCTURE_LABELS = {
   sole: 'Sole proprietor',
+  gp: 'General partnership',
+  lp: 'Limited partnership (LP)',
+  lllp: 'Limited liability limited partnership (LLLP)',
+  llp: 'Limited liability partnership (LLP)',
   llc: 'LLC',
   corp: 'Corporation',
+  nonprofit: 'Nonprofit corporation',
   partnership: 'Partnership or LLP',
   unsure: 'Structure not sure yet',
 };
+// A rule saved before these existed lists "partnership" and "corp". The newer kinds count as those, so the Secretary of State
+// step still appears for them. A general partnership and a sole proprietor do not file there.
+const STRUCTURE_GROUP = { lp: 'partnership', lllp: 'partnership', llp: 'partnership', nonprofit: 'corp' };
 export const CATEGORY_LABELS = {
   food: 'Food service',
   construction: 'Construction contracting',
@@ -78,7 +88,7 @@ function evalLeaf(cond, a) {
   const value = isExtra ? (a.extra?.[cond.field.slice(6)] ?? '') : a[cond.field];
   let matched = false;
   if ('is' in cond) matched = value === cond.is;
-  else if ('in' in cond) matched = cond.in.includes(value);
+  else if ('in' in cond) matched = cond.in.includes(value) || (cond.field === 'structure' && cond.in.includes(STRUCTURE_GROUP[value]));
   else if ('includes' in cond) matched = Array.isArray(value) && value.includes(cond.includes);
   if (matched) return { state: 'yes', hits: cond.label ? [cond.label] : [], unsure: [] };
   const maybeOn = isExtra ? ['unsure', ''] : MAYBE_ON[cond.field];
