@@ -37,7 +37,7 @@ export function blankCard() {
 
 const YN_WORD = { yes: 'Yes', no: 'No', unsure: 'Not sure' };
 const NUMBER_WORDS = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, a: 1, an: 1 };
-const UNSURE_RX = /\b(not sure|unsure|don'?t know|do not know|no idea|maybe|not certain)\b/i;
+const UNSURE_RX = /\b(not sure|unsure|don'?t know|do not know|no idea|no clue|(?:don'?t|do not) have (?:any|an) (?:idea|clue)|maybe|not certain)\b/i;
 // Spanish patterns use lookarounds instead of \b, because \b does not treat accented letters as letters.
 const wb = (src) => new RegExp(`(?<![\\p{L}])(?:${src})(?![\\p{L}])`, 'iu');
 const ES_UNSURE = wb('no estoy segur[oa]|no s[eé]|ni idea|quiz[aá]s?|tal vez|no estoy cierto');
@@ -196,6 +196,8 @@ export function extractFacts(text, places) {
 }
 
 // A short answer to the one question we just asked. A tap or a typed answer here counts as confirmed.
+// Words that mean "leave this for now" anywhere in a sentence. Used for the city only after no city or county was found in it.
+const SKIP_ANYWHERE = /\b(skip|pass|later|for now|not now|leave (?:it|that|this)|keep it|wait|prefer not|no need|never mind|nevermind|i'?ll tell you|don'?t want)\b|(?<![\p{L}])(omitir|omite|omito|omit[aá]lo|dej[ae]lo|despu[eé]s|luego|por ahora|ahora no|espera|prefiero no|d[eé]jalo)(?![\p{L}])/iu;
 export function parseDirect(field, text, places) {
   const raw = String(text || '').trim();
   const t = raw.toLowerCase();
@@ -222,6 +224,8 @@ export function parseDirect(field, text, places) {
     const p = findPlace(raw, list, { anywhere: true });
     if (p) return { city: p.name, county: county || p.county };
     if (county) return { city: '', county };
+    // A spoken answer is a sentence, not one word: "wait for now, keep it for now" or "skip it, I have no idea" is a skip too.
+    if (SKIP_ANYWHERE.test(raw)) return { city: '', county: '', skipped: true };
     return null;
   }
   if (['hiring', 'subs', 'salestax', 'income', 'tradename'].includes(field)) {

@@ -550,3 +550,21 @@ test('after every question is answered, a sentence does not restart the question
   const again = turn({ card: edit.card, action: 'set', field: 'place', value: 'skip' });
   assert.equal(again.complete, true);
 });
+
+test('a spoken sentence that means skip is accepted for the city, not only the Skip button', () => {
+  let t = turn({ card: blankCard(), action: 'set', field: 'structure', value: 'llc' });
+  t = turn({ card: t.card, action: 'set', field: 'activity', value: 'food' });
+  assert.equal(t.ask.field, 'place');
+  for (const msg of [
+    "wait for now because I don't have any idea please keep it for now",
+    "thing you see I am telling you so skip it for now skip I don't have any idea of the cities in the Washington so skip it",
+    'leave it, I will tell you later',
+  ]) {
+    const r = turn({ card: t.card, message: msg, asking: 'place' });
+    assert.equal(r.card.status.place, 'confirmed', msg);
+    assert.notEqual(r.ask?.field, 'place', msg);
+  }
+  // A real city in the same sentence still wins over the skip words.
+  const city = turn({ card: t.card, message: 'skip the county, I am in Spokane', asking: 'place' });
+  assert.equal(city.card.values.city, 'Spokane');
+});
