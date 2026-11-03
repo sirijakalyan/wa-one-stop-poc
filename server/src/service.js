@@ -1239,8 +1239,9 @@ export function createService(store, options = {}) {
     const es = cleanLang(body?.lang) === 'es';
     // Spanish: the question is matched to the English records, then the answer is turned into Spanish (rule text from the Spanish records,
     // the sentences around it from a table). The friendly rewrite is skipped so the answer stays exactly what the records say.
-    const result = await answerQuestion({ message: es ? esChatToEn(message, esToEn) : message, conversation: es ? [] : conversation, rules: rulesDoc.rules, checklist, llm: es ? null : options.llm });
+    const result = await answerQuestion({ message: es ? esChatToEn(message, esToEn) : message, conversation: es ? [] : conversation, rules: rulesDoc.rules, checklist, llm: es ? null : options.llm, generalLlm: options.generalLlm, lang: es ? 'es' : 'en' });
     if (es) {
+      if (result.mode === 'general') return { ok: true, ...result };
       if (result.mode === 'fallback') return { ok: true, ...result, answer: ES.noMatch, links: [], suggestions: [] };
       const map = ruleTextMap(rulesDoc.rules, localizeRules(rulesDoc, 'es').rules);
       const titles = new Map((result.matched || []).map((m) => [m.id, map.get(m.title) || m.title]));
@@ -1301,10 +1302,10 @@ export function createService(store, options = {}) {
       const cl = await store.getChecklist(chKey(ctx, query, body));
       const checklist = cl ? await buildChecklist(cl, rulesDoc) : null;
       const q = (es ? esToEn(text) : text).replace(/\bstill\b/gi, ' ').replace(/\s+/g, ' ').trim();
-      const answered = await answerQuestion({ message: q, conversation: [], rules: rulesDoc.rules, checklist, llm: options.llm });
+      const answered = await answerQuestion({ message: q, conversation: [], rules: rulesDoc.rules, checklist, llm: options.llm, generalLlm: keepOnFallback ? null : options.generalLlm, lang: es ? 'es' : 'en' });
       if (keepOnFallback && answered.mode === 'fallback') return null;
       const turn = intakeTurn({ ...input, message: '' }, { places, ...gctx });
-      const replyText = es ? (answered.mode === 'fallback' ? ES.noMatch : `${ES.englishNote}\n${answered.answer}`) : answered.answer;
+      const replyText = es ? (answered.mode === 'fallback' ? ES.noMatch : answered.mode === 'general' ? answered.answer : `${ES.englishNote}\n${answered.answer}`) : answered.answer;
       return { ok: true, ...turn, reply: replyText, answer: { links: answered.links || [], matched: answered.matched || [] }, followUp: turn.ask?.question || (turn.awaiting === 'confirm' ? turn.reply : '') };
     };
     const reply = async (text) => {

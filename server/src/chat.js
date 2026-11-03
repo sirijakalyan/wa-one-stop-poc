@@ -564,7 +564,33 @@ async function rewriteNext(r, message, llm) {
   return r;
 }
 
-export async function answerQuestion({ message, conversation = [], rules, checklist = null, llm = null }) {
+// Questions the written rules and guides do not cover: a short general answer from the optional model, always labeled as general
+// information. It may not give fees, dates or links, and it points the person to the agency to confirm. No model: the plain fallback stays.
+const GENERAL_LABEL = { en: 'General information, not an official rule and not part of your checklist.', es: 'Información general, no es una regla oficial ni parte de su lista.' };
+async function generalHelp(base, { message, conversation, generalLlm, lang }) {
+  if (!generalLlm) return base;
+  const es = lang === 'es';
+  const history = (conversation || []).filter((t) => t && (t.role === 'user' || t.role === 'assistant') && typeof t.content === 'string').slice(-6).map((t) => ({ role: t.role, content: t.content.slice(0, 600) }));
+  try {
+    const reply = await generalLlm({
+      system: `You are a friendly, plain-spoken helper inside a Washington State small business checklist app. The question is not covered by the app's written rules, so give short general help. Rules: 2 to 5 short sentences, ${es ? 'Spanish' : 'US English'}, no em dashes, no markdown. Do not state specific fees, dollar amounts, deadlines, dates, phone numbers or web addresses. Do not say a requirement applies to the person. Say what you are unsure about. End by telling them to confirm with the responsible agency (for Washington business questions, the Department of Revenue, Secretary of State, Labor and Industries, Employment Security, or the county or city). If the question is not about starting or running a business, answer briefly and kindly.`,
+      user: message,
+      history,
+    });
+    const text = String(reply || '').replace(/https?:\/\/\S+/g, '').replace(/\u2014/g, ',').trim();
+    if (!text) return base;
+    return { answer: `${GENERAL_LABEL[es ? 'es' : 'en']}\n${text}`, links: [], matched: [], mode: 'general', suggestions: base.suggestions || [] };
+  } catch {
+    return base;
+  }
+}
+
+export async function answerQuestion({ generalLlm = null, lang = 'en', ...args }) {
+  const r = await answerGrounded(args);
+  return r.mode === 'fallback' ? generalHelp(r, { message: args.message, conversation: args.conversation, generalLlm, lang }) : r;
+}
+
+async function answerGrounded({ message, conversation = [], rules, checklist = null, llm = null }) {
   if (GREETING.test(message.trim()) && message.trim().split(/\s+/).length <= 5) {
     return {
       answer: 'I answer questions about the steps in this checklist, using only the rules and guides in this app. Ask about a license, a filing, fees, timing, or what comes next on your checklist.',
