@@ -23,7 +23,12 @@
           "lp",
           "lllp",
           "llp",
-          "nonprofit"
+          "plc",
+          "psc",
+          "benefit",
+          "spc",
+          "nonprofit",
+          "coop"
         ]
       },
       "reason": {

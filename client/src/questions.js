@@ -6,11 +6,16 @@ export const STRUCTURES = [
   { v: 'lllp', t: 'Limited liability limited partnership (LLLP)', d: 'A limited partnership that also protects its general partners.' },
   { v: 'llp', t: 'Limited liability partnership (LLP)', d: 'Common among professionals. Partners are not liable for other partners\' negligence.' },
   { v: 'llc', t: 'Limited liability company (LLC)', d: '' },
+  { v: 'plc', t: 'Professional LLC (PLLC)', d: 'For licensed professions such as law, medicine or accounting.' },
   { v: 'corp', t: 'Corporation', d: '' },
+  { v: 'psc', t: 'Professional service corporation', d: 'A corporation for licensed professionals.' },
+  { v: 'benefit', t: 'Benefit corporation', d: 'A for-profit corporation that also pursues a public benefit.' },
+  { v: 'spc', t: 'Social purpose corporation', d: 'A for-profit corporation with a stated social purpose.' },
   { v: 'nonprofit', t: 'Nonprofit corporation', d: 'Formed for a goal or purpose rather than profit.' },
+  { v: 'coop', t: 'Cooperative', d: 'Owned and run by its members.' },
   { v: 'unsure', t: 'Not sure yet', d: 'The Secretary of State step will show as "may apply".' },
 ];
-export const STRUCT_LABEL = { sole: 'Sole proprietor', gp: 'General partnership', lp: 'Limited partnership (LP)', lllp: 'LLLP', llp: 'LLP', llc: 'LLC', corp: 'Corporation', nonprofit: 'Nonprofit corporation', partnership: 'Partnership or LLP', unsure: 'Structure not sure yet' };
+export const STRUCT_LABEL = { sole: 'Sole proprietor', gp: 'General partnership', lp: 'Limited partnership (LP)', lllp: 'LLLP', llp: 'LLP', llc: 'LLC', plc: 'Professional LLC (PLLC)', corp: 'Corporation', psc: 'Professional service corporation', benefit: 'Benefit corporation', spc: 'Social purpose corporation', nonprofit: 'Nonprofit corporation', coop: 'Cooperative', partnership: 'Partnership or LLP', unsure: 'Structure not sure yet' };
 
 export const CATS = [
   { v: 'food', t: 'Food service', d: 'Restaurant, cafe, catering, food truck' },

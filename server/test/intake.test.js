@@ -593,14 +593,15 @@ test('every Washington business structure can be said, offered as a choice, and 
   const said = {
     'We are a limited liability limited partnership': 'lllp', 'we are an LLP': 'llp', 'a limited liability partnership': 'llp',
     'limited partnership': 'lp', 'a general partnership with my brother': 'gp', 'we are a nonprofit corporation': 'nonprofit',
-    'an LLC': 'llc', 'a corporation': 'corp', 'sole proprietor': 'sole',
+    'an LLC': 'llc', 'a professional LLC': 'plc', 'we are a PLLC': 'plc', 'a professional service corporation': 'psc',
+    'a benefit corporation': 'benefit', 'a social purpose corporation': 'spc', 'a food co-op': 'coop', 'a cooperative': 'coop', 'a corporation': 'corp', 'sole proprietor': 'sole',
   };
   for (const [msg, want] of Object.entries(said)) assert.equal(extractFacts(msg).structure, want, msg);
   const ask = turn({ card: blankCard(), message: '' }).ask;
   assert.equal(ask.field, 'structure');
-  assert.deepEqual(ask.chips.map((c) => c.value), ['sole', 'gp', 'lp', 'lllp', 'llp', 'llc', 'corp', 'nonprofit', 'unsure']);
+  assert.deepEqual(ask.chips.map((c) => c.value), ['sole', 'gp', 'lp', 'lllp', 'llp', 'llc', 'plc', 'corp', 'psc', 'benefit', 'spc', 'nonprofit', 'coop', 'unsure']);
   for (const v of ['gp', 'lp', 'lllp', 'llp', 'nonprofit']) assert.match(ask.question, /./, v);
   const sos = (structure) => planFromCard(turn({ card: finishCard(turn({ card: blankCard(), action: 'set', field: 'structure', value: structure })).card, message: '' }).card, rulesDoc.rules).items.some((i) => i.id === 'sos');
-  for (const v of ['llc', 'corp', 'lp', 'lllp', 'llp', 'nonprofit', 'partnership']) assert.equal(sos(v), true, `${v} files with the Secretary of State`);
+  for (const v of ['llc', 'corp', 'lp', 'lllp', 'llp', 'nonprofit', 'partnership', 'plc', 'psc', 'benefit', 'spc', 'coop']) assert.equal(sos(v), true, `${v} files with the Secretary of State`);
   for (const v of ['sole', 'gp']) assert.equal(sos(v), false, `${v} does not file`);
 });

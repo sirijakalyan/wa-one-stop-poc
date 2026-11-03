@@ -14,14 +14,19 @@ export const STRUCTURE_LABELS = {
   lllp: 'Limited liability limited partnership (LLLP)',
   llp: 'Limited liability partnership (LLP)',
   llc: 'LLC',
+  plc: 'Professional LLC (PLLC)',
   corp: 'Corporation',
+  psc: 'Professional service corporation',
+  benefit: 'Benefit corporation',
+  spc: 'Social purpose corporation',
   nonprofit: 'Nonprofit corporation',
+  coop: 'Cooperative',
   partnership: 'Partnership or LLP',
   unsure: 'Structure not sure yet',
 };
 // A rule saved before these existed lists "partnership" and "corp". The newer kinds count as those, so the Secretary of State
 // step still appears for them. A general partnership and a sole proprietor do not file there.
-const STRUCTURE_GROUP = { lp: 'partnership', lllp: 'partnership', llp: 'partnership', nonprofit: 'corp' };
+const STRUCTURE_GROUP = { lp: 'partnership', lllp: 'partnership', llp: 'partnership', plc: 'llc', psc: 'corp', benefit: 'corp', spc: 'corp', nonprofit: 'corp', coop: 'corp' };
 export const CATEGORY_LABELS = {
   food: 'Food service',
   construction: 'Construction contracting',

@@ -656,7 +656,7 @@ export function createService(store, options = {}) {
      Questions live in the rules document (doc.questions). Their answers ride along in answers.extra and a rule can test
      them with a condition on the field "extra.<question id>". Built-in questions can be used the same way. */
   const BUILTIN_QUESTIONS = {
-    structure: { text: 'How the business is set up', type: 'choice', options: [['sole', 'Sole proprietor'], ['gp', 'General partnership'], ['lp', 'Limited partnership (LP)'], ['lllp', 'LLLP'], ['llp', 'LLP'], ['llc', 'LLC'], ['corp', 'Corporation'], ['nonprofit', 'Nonprofit corporation'], ['unsure', 'Not sure yet']] },
+    structure: { text: 'How the business is set up', type: 'choice', options: [['sole', 'Sole proprietor'], ['gp', 'General partnership'], ['lp', 'Limited partnership (LP)'], ['lllp', 'LLLP'], ['llp', 'LLP'], ['llc', 'LLC'], ['plc', 'Professional LLC'], ['corp', 'Corporation'], ['psc', 'Professional service corporation'], ['benefit', 'Benefit corporation'], ['spc', 'Social purpose corporation'], ['nonprofit', 'Nonprofit corporation'], ['coop', 'Cooperative'], ['unsure', 'Not sure yet']] },
     cats: { text: 'Kind of business', type: 'multi', options: [['food', 'Food service'], ['construction', 'Construction contracting'], ['other', 'Other service or retail']] },
     hiring: { text: 'Hiring within 90 days', type: 'yesno' },
     subs: { text: 'Uses subcontractors', type: 'yesno' },

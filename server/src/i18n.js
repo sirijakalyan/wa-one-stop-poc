@@ -16,14 +16,14 @@ export const ES = {
     income: 'Ingresos brutos de $12,000 o más',
     tradename: 'Usa un nombre comercial',
   },
-  structure: { sole: 'Propietario único', gp: 'Sociedad colectiva', lp: 'Sociedad en comandita (LP)', lllp: 'Sociedad en comandita de responsabilidad limitada (LLLP)', llp: 'Sociedad de responsabilidad limitada (LLP)', llc: 'LLC', corp: 'Corporación', nonprofit: 'Corporación sin fines de lucro', partnership: 'Sociedad o LLP', unsure: 'Estructura aún no definida' },
+  structure: { sole: 'Propietario único', gp: 'Sociedad colectiva', lp: 'Sociedad en comandita (LP)', lllp: 'Sociedad en comandita de responsabilidad limitada (LLLP)', llp: 'Sociedad de responsabilidad limitada (LLP)', llc: 'LLC', plc: 'LLC profesional (PLLC)', corp: 'Corporación', psc: 'Corporación de servicios profesionales', benefit: 'Corporación de beneficio social', spc: 'Corporación con propósito social', nonprofit: 'Corporación sin fines de lucro', coop: 'Cooperativa', partnership: 'Sociedad o LLP', unsure: 'Estructura aún no definida' },
   category: { food: 'Servicio de comida', construction: 'Construcción y contratistas', other: 'Otro servicio o comercio' },
   yn: { yes: 'Sí', no: 'No', unsure: 'No estoy seguro' },
   county: (name) => `Condado de ${name}`,
   asks: {
     structure: {
-      question: '¿Cómo estará organizado su negocio? Puede elegir propietario único, sociedad colectiva, sociedad en comandita, LLLP, LLP, LLC, corporación o corporación sin fines de lucro. Si no está seguro, no hay problema.',
-      chips: [['sole', 'Propietario único'], ['gp', 'Sociedad colectiva'], ['lp', 'Sociedad en comandita (LP)'], ['lllp', 'LLLP'], ['llp', 'LLP'], ['llc', 'LLC'], ['corp', 'Corporación'], ['nonprofit', 'Sin fines de lucro'], ['unsure', 'No estoy seguro']],
+      question: '¿Cómo estará organizado su negocio? Puede elegir propietario único, sociedad colectiva, sociedad en comandita, LLLP, LLP, LLC, LLC profesional, corporación, corporación de servicios profesionales, de beneficio social o con propósito social, corporación sin fines de lucro o cooperativa. Si no está seguro, no hay problema.',
+      chips: [['sole', 'Propietario único'], ['gp', 'Sociedad colectiva'], ['lp', 'Sociedad en comandita (LP)'], ['lllp', 'LLLP'], ['llp', 'LLP'], ['llc', 'LLC'], ['plc', 'LLC profesional'], ['corp', 'Corporación'], ['psc', 'Corp. de servicios profesionales'], ['benefit', 'Corp. de beneficio social'], ['spc', 'Corp. con propósito social'], ['nonprofit', 'Sin fines de lucro'], ['coop', 'Cooperativa'], ['unsure', 'No estoy seguro']],
     },
     activity: {
       question: '¿Qué tipo de negocio es?',
