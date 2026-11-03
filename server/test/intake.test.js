@@ -4,7 +4,7 @@ import { readFileSync, mkdtempSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { startApp } from './helpers.js';
-import { intakeTurn, planFromCard, buildTimeline, blankCard, confirmedAnswers, extractFacts, isComplete, CARD_FIELDS } from '../src/intake.js';
+import { intakeTurn, parseDirect, planFromCard, buildTimeline, blankCard, confirmedAnswers, extractFacts, isComplete, CARD_FIELDS } from '../src/intake.js';
 
 const seed = (n) => JSON.parse(readFileSync(new URL(`../seed/${n}`, import.meta.url), 'utf8'));
 const places = seed('wa_places.json').places;
@@ -567,4 +567,24 @@ test('a spoken sentence that means skip is accepted for the city, not only the S
   // A real city in the same sentence still wins over the skip words.
   const city = turn({ card: t.card, message: 'skip the county, I am in Spokane', asking: 'place' });
   assert.equal(city.card.values.city, 'Spokane');
+});
+
+test('any way of saying "I cannot decide now" is accepted as not sure, for every question', () => {
+  const phrases = [
+    "I don't know now", "I can't decide right now", "I haven't decided yet", 'not decided', 'let me think about it',
+    'skip this one for now', 'it depends', 'I will tell you later', 'no preference', 'hard to say',
+  ];
+  for (const field of ['hiring', 'subs', 'salestax', 'income', 'tradename']) {
+    for (const msg of phrases) {
+      const d = parseDirect(field, msg);
+      assert.equal(d?.[field], 'unsure', `${field}: ${msg}`);
+    }
+  }
+  for (const msg of phrases) assert.equal(parseDirect('structure', msg)?.structure, 'unsure', `structure: ${msg}`);
+  for (const msg of phrases) assert.ok(parseDirect('activity', msg), `activity: ${msg}`);
+  for (const msg of ['no sé todavía', 'aún no he decidido', 'no puedo decidir ahora', 'lo decido después']) assert.equal(parseDirect('hiring', msg)?.hiring, 'unsure', msg);
+  // Clear answers still win.
+  assert.equal(parseDirect('hiring', 'yes')?.hiring, 'yes');
+  assert.equal(parseDirect('hiring', 'no')?.hiring, 'no');
+  assert.equal(parseDirect('salestax', 'yes we collect it')?.salestax, 'yes');
 });

@@ -37,10 +37,11 @@ export function blankCard() {
 
 const YN_WORD = { yes: 'Yes', no: 'No', unsure: 'Not sure' };
 const NUMBER_WORDS = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, a: 1, an: 1 };
-const UNSURE_RX = /\b(not sure|unsure|don'?t know|do not know|no idea|no clue|(?:don'?t|do not) have (?:any|an) (?:idea|clue)|maybe|not certain)\b/i;
+// Any way of saying "I can't answer this right now": not sure, can't decide, haven't decided, skip it, later, for now.
+const UNSURE_RX = /\b(not sure|unsure|undecided|don'?t know|do not know|no idea|no clue|(?:don'?t|do not) have (?:any|an) (?:idea|clue)|maybe|not certain|(?:can'?t|cannot|can not|couldn'?t|unable to) (?:decide|say|tell|choose|answer|remember)|(?:haven'?t|have not|hasn'?t|not) (?:decided|chosen|figured|made up)|(?:yet|still) to (?:decide|be decided|figure)|to be decided|tbd|hard to say|not clear|don'?t remember|it depends|depends|decide later|think about it|figure (?:it |that )?out|skip|later|for now|not now|no preference|no opinion)\b/i;
 // Spanish patterns use lookarounds instead of \b, because \b does not treat accented letters as letters.
 const wb = (src) => new RegExp(`(?<![\\p{L}])(?:${src})(?![\\p{L}])`, 'iu');
-const ES_UNSURE = wb('no estoy segur[oa]|no s[eé]|ni idea|quiz[aá]s?|tal vez|no estoy cierto');
+const ES_UNSURE = wb('no estoy segur[oa]|no s[eé]|ni idea|quiz[aá]s?|tal vez|no estoy cierto|no puedo decidir|no he decidido|sin decidir|no me decido|a[uú]n no (?:s[eé]|decid[ií])|depende|no recuerdo|lo pensar[eé]|omitir|omite|omito|por ahora|ahora no|despu[eé]s|luego|m[aá]s tarde');
 const ES_NUM = { uno: 1, una: 1, un: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10 };
 
 // ---- Reading the owner's words -------------------------------------------------------------------------------------
@@ -212,6 +213,7 @@ export function parseDirect(field, text, places) {
   }
   if (field === 'activity') {
     const cats = categoriesFrom(t);
+    if (!cats.length && (UNSURE_RX.test(t) || ES_UNSURE.test(t))) return { cats: [], desc: '' }; // not decided yet: left open, never guessed
     if (/food|comida|restaurante|cocina/.test(t) && !/construction|construcci/.test(t)) return { cats: ['food'], desc: cleanDesc(raw) };
     if (/construction|construcci|contratista/.test(t)) return { cats: ['construction'], desc: cleanDesc(raw) };
     if (/other|retail|service|otro|servicio|comercio|tienda/.test(t) && !cats.length) return { cats: ['other'], desc: cleanDesc(raw) };
