@@ -227,6 +227,7 @@ export const pagesEn = {
   // Questionnaire
   'qn.h1': 'Business questionnaire',
   'qn.label': (i, n) => `Question ${i} of ${n}`,
+  'qn.reviewLabel': 'Review your answers',
   'qn.progress': 'Questionnaire progress',
   'qn.pickOne': 'Please choose one option so we can continue.',
   'qn.pickYn': 'Please pick Yes, No or Not sure so we can continue.',
@@ -641,6 +642,7 @@ export const pagesEs = {
   'nt.markRead': 'Marcar como leída',
   'qn.h1': 'Cuestionario del negocio',
   'qn.label': (i, n) => `Pregunta ${i} de ${n}`,
+  'qn.reviewLabel': 'Revise sus respuestas',
   'qn.progress': 'Avance del cuestionario',
   'qn.pickOne': 'Elija una opción para poder continuar.',
   'qn.pickYn': 'Elija Sí, No o No estoy seguro para poder continuar.',

@@ -30,6 +30,8 @@ export default function Questionnaire({ embedded = false } = {}) {
   }, [step, extraData]); // eslint-disable-line react-hooks/exhaustive-deps
   const index = Math.max(0, Math.min(step, list.length - 1));
   const id = list[index];
+  // Same count as the chat card: the description and the business types are one question, and the review page is not a question.
+  const counted = list.filter((x) => x !== 'review' && !(x === 'cats' && list.includes('desc')));
   const custom = id.startsWith('x:') ? extraQs.find((x) => x.id === id.slice(2)) : null;
   const std = standard.find((x) => x.field === ({ desc: 'activity', city: 'place' }[id] || id));
   const q = custom ? { title: custom.text, hint: custom.hint } : { title: std?.text || t(`qn.q.${id}.t`), hint: std?.hint || t(`qn.q.${id}.h`) };
@@ -191,7 +193,7 @@ export default function Questionnaire({ embedded = false } = {}) {
       {embedded
         ? <h2 className="sr-only" tabIndex={-1}>{t('qn.h1')}</h2>
         : <h1 className="sr-only" tabIndex={-1}>{t('qn.h1')}</h1>}
-      <p className="step-label">{t('qn.label', index + 1, list.length)}</p>
+      <p className="step-label">{id === 'review' ? t('qn.reviewLabel') : t('qn.label', counted.indexOf(id === 'cats' && list.includes('desc') ? 'desc' : id) + 1, counted.length)}</p>
       <Meter percent={percent} label={t('qn.progress')} />
       <fieldset>
         <legend>{q.title}</legend>
