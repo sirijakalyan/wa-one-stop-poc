@@ -21,6 +21,11 @@ describe('Terms and Privacy pages', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Privacy policy' })).toBeInTheDocument();
     expect(screen.getByText(/may be sent to an AI service/)).toBeInTheDocument();
   });
+  it('each page sets its own title', async () => {
+    renderAt('/privacy');
+    await screen.findByRole('heading', { level: 1, name: 'Privacy policy' });
+    expect(document.title).toMatch(/^Privacy policy \|/);
+  });
   it('the footer links to both pages', async () => {
     renderAt('/terms');
     await screen.findByRole('heading', { level: 1, name: 'Terms of use' });

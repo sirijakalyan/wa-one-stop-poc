@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useT } from '../i18n.js';
 
@@ -28,6 +29,13 @@ export default function Legal({ kind }) {
   const t = useT();
   const terms = kind === 'terms';
   const rows = terms ? TERMS : PRIVACY;
+  const heading = terms ? t('legal.terms') : t('legal.privacy');
+  // Each page gets its own tab title, so a screen reader and the browser history tell the two pages apart.
+  useEffect(() => {
+    const before = document.title;
+    document.title = `${heading} | ${before}`;
+    return () => { document.title = before; };
+  }, [heading]);
   return (
     <div className="panel legal legal-full">
       <h1 tabIndex={-1}>{terms ? t('legal.terms') : t('legal.privacy')}</h1>
