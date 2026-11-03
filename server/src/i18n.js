@@ -22,7 +22,7 @@ export const ES = {
   county: (name) => `Condado de ${name}`,
   asks: {
     structure: {
-      question: '¿Cómo estará organizado su negocio? Puede elegir propietario único, sociedad colectiva, sociedad en comandita, LLLP, LLP, LLC, LLC profesional, corporación, corporación de servicios profesionales, de beneficio social o con propósito social, corporación sin fines de lucro o cooperativa. Si no está seguro, no hay problema.',
+      question: '¿Cómo estará organizado su negocio? Toque una opción abajo, o dígame. Si no está seguro, no hay problema.',
       chips: [['sole', 'Propietario único'], ['gp', 'Sociedad colectiva'], ['lp', 'Sociedad en comandita (LP)'], ['lllp', 'LLLP'], ['llp', 'LLP'], ['llc', 'LLC'], ['plc', 'LLC profesional'], ['corp', 'Corporación'], ['psc', 'Corp. de servicios profesionales'], ['benefit', 'Corp. de beneficio social'], ['spc', 'Corp. con propósito social'], ['nonprofit', 'Sin fines de lucro'], ['coop', 'Cooperativa'], ['unsure', 'No estoy seguro']],
     },
     activity: {
