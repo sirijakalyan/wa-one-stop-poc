@@ -218,12 +218,12 @@ export function parseDirect(field, text, places) {
     return cats.length ? { cats, desc: cleanDesc(raw) } : null;
   }
   if (field === 'place') {
-    if (/^(skip|later|no|none|not now|not sure|prefer not|omitir|omito|despu[eé]s|luego|ahora no|prefiero no|ninguna)/.test(t) || UNSURE_RX.test(t) || ES_UNSURE.test(t)) return { city: '', county: '', skipped: true };
     const list = loadPlaces(places);
     const county = findCounty(raw, places);
     const p = findPlace(raw, list, { anywhere: true });
-    if (p) return { city: p.name, county: county || p.county };
+    if (p) return { city: p.name, county: county || p.county }; // a city named in the sentence wins over skip words
     if (county) return { city: '', county };
+    if (/^(skip|later|no|none|not now|not sure|prefer not|omitir|omito|despu[eé]s|luego|ahora no|prefiero no|ninguna)/.test(t) || UNSURE_RX.test(t) || ES_UNSURE.test(t)) return { city: '', county: '', skipped: true };
     // A spoken answer is a sentence, not one word: "wait for now, keep it for now" or "skip it, I have no idea" is a skip too.
     if (SKIP_ANYWHERE.test(raw)) return { city: '', county: '', skipped: true };
     return null;
