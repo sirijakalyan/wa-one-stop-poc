@@ -48,7 +48,7 @@ const SAVE_ES = /^\s*(?:(?:ok|okay|s[ií]|por favor|ahora|entonces|bueno)[\s,]+)
 
 // Main screen: the conversation on the left; the business card, the plan and the road to opening day fill in on the right.
 // embedded: shown inside the home page. mode and start come from the home page's Talk / Type switch and its sentence box.
-export default function Guide({ embedded = false, mode: modeProp, start: startProp } = {}) {
+export default function Guide({ embedded = false, mode: modeProp, start: startProp, resync = 0 } = {}) {
   const { user, requireLogin, guide, setGuide, setLive, clearDraft, setAnswers, setLabel, setStep, setCatsAuto } = useApp();
   const t = useT();
   const langRef = useRef(t.lang);
@@ -89,7 +89,7 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
   const prevMode = useRef(mode);
   // A returning visitor is not read the old conversation again, only the question that is waiting (the last guide line).
   const resumeIdx = (msgs) => (msgs.length > 1 ? (msgs[msgs.length - 1].role === 'guide' ? msgs.length - 1 : msgs.length) : 0);
-  const spokenIdx = useRef(resumeIdx(guide.messages));
+  const spokenIdx = useRef(resync ? guide.messages.length : resumeIdx(guide.messages)); // after the form, the new next question is spoken, not the old one
   const greetHeard = useRef(false);
   const lastSpeechEnd = useRef(0);
   const guideHeard = () => speakingCount.current > 0 || Date.now() - lastSpeechEnd.current < 2500; // the tail of the guide's voice may still be in the air
@@ -354,6 +354,12 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
     if (!guideRef.current.messages.length) setGuide((g) => ({ ...g, messages: [GREETING] }));
     else refreshPlan(guideRef.current.card).catch(() => {});
   }, [refreshPlan, setGuide]);
+  const handledResync = useRef(0);
+  useEffect(() => {
+    if (!resync || handledResync.current === resync || !qsLoaded) return;
+    handledResync.current = resync;
+    turnRef.current({}); // the card now holds the form's answers: ask the next open question
+  }, [resync, qsLoaded]);
   const handledStart = useRef(null);
   useEffect(() => {
     const req = startProp || (location.state?.start ? { text: location.state.start, id: 'location' } : null);

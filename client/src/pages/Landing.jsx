@@ -7,7 +7,7 @@ import GuideArt from '../components/GuideArt.jsx';
 import { SAMPLES_ES, useT } from '../i18n.js';
 import { canSpeak } from '../voice.js';
 import { useApp } from '../AppContext.jsx';
-import { answersFromCard, confirmedCount } from '../guideCard.js';
+import { answersFromCard, cardFromForm, confirmedCount } from '../guideCard.js';
 import { blankAnswers } from '../questions.js';
 import Guide from './Guide.jsx';
 import Questionnaire from './Questionnaire.jsx';
@@ -18,7 +18,8 @@ const SAMPLE_ICON = { home: 'home', restaurant: 'utensils', contractor: 'hammer'
 // What the owner types goes to the guide through the router's history state, never through the address bar.
 export default function Landing() {
   const t = useT();
-  const { guide, live, answers, setAnswers, setLabel, setStep, setCatsAuto } = useApp();
+  const { guide, setGuide, live, answers, setAnswers, setLabel, setStep, setCatsAuto } = useApp();
+  const [resync, setResync] = useState(0);
   const location = useLocation();
   const [mode, setMode] = useState(['form', 'type'].includes(location.state?.mode) ? location.state.mode : (canSpeak() ? 'talk' : 'type')); // 'talk' by default so the guide greets out loud; null | 'talk' | 'type' | 'form': the guide and the form both live on this page
   const [startReq, setStartReq] = useState(null);
@@ -36,6 +37,14 @@ export default function Landing() {
       setLabel('');
       setCatsAuto(false);
       setStep(-1); // the form opens on the first question the guide has not had answered yet
+    }
+    // Leaving the form for Talk or Type: what was answered in the form goes onto the chat card, and the guide carries on with the next open question.
+    if (mode === 'form' && next !== 'form') {
+      const card = cardFromForm(answers, guide.card);
+      if (JSON.stringify(card) !== JSON.stringify(guide.card) && JSON.stringify(answers) !== JSON.stringify(blankAnswers())) {
+        setGuide((g) => ({ ...g, card, complete: false, chips: [] }));
+        setResync((n) => n + 1);
+      }
     }
     setMode(next);
   }
@@ -115,7 +124,7 @@ export default function Landing() {
 
         <section className="workspace" id="workspace" ref={workRef} tabIndex={-1} aria-label={t('mode.title')}>
           {mode === 'form' ? <Questionnaire embedded /> : null}
-          {mode === 'talk' || mode === 'type' ? <Guide embedded mode={mode} start={startReq} /> : null}
+          {mode === 'talk' || mode === 'type' ? <Guide embedded mode={mode} start={startReq} resync={resync} /> : null}
         </section>
       </div>
 

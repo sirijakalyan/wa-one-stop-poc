@@ -24,6 +24,29 @@ export function cardFromAnswers(answers) {
   return { values: { ...blankAnswers(), ...answers, cats: [...(answers?.cats || [])] }, status, employees: null, language: 'en' };
 }
 
+// What the chat card should hold after the owner used the form: every question they answered there is confirmed.
+// A question the card had already confirmed but left empty (skipped) stays skipped; anything else the form left blank is asked again.
+export function cardFromForm(answers, card) {
+  const base = card || blankCard();
+  const has = {
+    structure: Boolean(answers.structure),
+    activity: Boolean(answers.desc?.trim() || answers.cats?.length),
+    place: Boolean(answers.city?.trim()),
+    hiring: Boolean(answers.hiring), subs: Boolean(answers.subs), salestax: Boolean(answers.salestax), income: Boolean(answers.income), tradename: Boolean(answers.tradename),
+  };
+  const map = { structure: ['structure'], activity: ['desc', 'cats'], place: ['city', 'county'], hiring: ['hiring'], subs: ['subs'], salestax: ['salestax'], income: ['income'], tradename: ['tradename'] };
+  const values = { ...base.values, extra: { ...(base.values.extra || {}) } };
+  const status = {};
+  for (const f of CARD_FIELDS) {
+    const skipped = base.status[f] === 'confirmed' && !map[f].some((k) => (Array.isArray(base.values[k]) ? base.values[k].length : base.values[k]));
+    if (has[f]) { for (const k of map[f]) values[k] = k === 'cats' ? [...(answers.cats || [])] : answers[k] || ''; status[f] = 'confirmed'; }
+    else if (skipped) status[f] = 'confirmed';
+    else { for (const k of map[f]) values[k] = k === 'cats' ? [] : ''; }
+  }
+  for (const [id, v] of Object.entries(answers.extra || {})) if (v) { values.extra[id] = v; status[xField(id)] = 'confirmed'; }
+  return { ...base, values, status };
+}
+
 // What the form should hold after a chat. Only confirmed rows are copied, so nothing unconfirmed leaks across.
 export function answersFromCard(card) {
   const a = blankAnswers();
