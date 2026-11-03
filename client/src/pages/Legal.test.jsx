@@ -33,3 +33,14 @@ describe('Terms and Privacy pages', () => {
     expect(screen.getAllByRole('link', { name: 'Terms of use' }).length).toBeGreaterThan(0);
   });
 });
+
+describe('Spanish', () => {
+  it('shows the terms and privacy text in Spanish', async () => {
+    window.localStorage.setItem('wa-onestop-lang', 'es');
+    renderAt('/terms');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Términos de uso' })).toBeInTheDocument();
+    expect(screen.getByText('Confirme con la agencia')).toBeInTheDocument();
+    expect(screen.queryByText('Check with the agency')).not.toBeInTheDocument();
+    window.localStorage.removeItem('wa-onestop-lang');
+  });
+});

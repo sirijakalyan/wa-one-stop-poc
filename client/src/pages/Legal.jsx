@@ -25,10 +25,33 @@ const PRIVACY = [
   ['Changes', 'We may update this page. The date below shows when it last changed.'],
 ];
 
+const TERMS_ES = [
+  ['Qué es esto', 'WA Business One-Stop-Shop es un asistente para quienes empiezan un negocio en el estado de Washington. Crea una lista de pasos a partir de reglas escritas y páginas oficiales de las agencias. Es una guía útil, no asesoría legal, de impuestos ni financiera.'],
+  ['Confirme con la agencia', 'Las reglas, tarifas y fechas límite pueden cambiar. Confirme cada requisito y cada fecha con la agencia antes de actuar. Un paso marcado como "Fuente revisada" significa que una persona leyó la página de la agencia en esa fecha. No es una aprobación de la agencia. "Verificación pendiente" significa que aún no se ha revisado.'],
+  ['Sin conexión con la agencia', 'Esta aplicación no está conectada a ningún sistema de una agencia. Su avance lo informa usted mismo, y la aplicación no presenta, solicita ni paga nada por usted.'],
+  ['La guía de IA', 'La guía escucha y hace preguntas. Las reglas escritas, no la IA, deciden qué se aplica a su negocio. Las respuestas fuera de las reglas escritas se marcan como información general y pueden ser incorrectas. No las use como asesoría oficial.'],
+  ['Su cuenta', 'Mantenga su contraseña en privado. Avísenos si cree que otra persona usó su cuenta. Puede dejar de usar la aplicación en cualquier momento.'],
+  ['Uso justo', 'Use la aplicación para su propósito previsto. No intente dañarla, sobrecargarla ni ver la información de otras personas.'],
+  ['Sin garantías', 'La aplicación se ofrece tal como está, sin garantía de que esté completa, actualizada o siempre disponible. Puede cambiar o dejar de funcionar.'],
+];
+
+const PRIVACY_ES = [
+  ['Qué recopilamos', 'Las respuestas que da sobre su negocio (como el tipo de empresa, el tipo de negocio, la ciudad y el condado, y preguntas de sí o no). Si crea una cuenta: su nombre, su correo electrónico y una forma protegida de su contraseña. Si activa los recordatorios de renovación: las fechas de renovación que ingrese. No pedimos direcciones, números de impuestos ni datos bancarios.'],
+  ['Qué se conserva', 'La guía no conserva su conversación. Solo se conserva el plan que usted decide guardar. Los planes guardados, las notificaciones y la configuración están vinculados a su cuenta, o a este navegador si no ha iniciado sesión. También guardamos un breve registro de actividad, como "guardó un plan" o "marcó un paso como hecho", que un administrador puede ver.'],
+  ['Quién puede verlo', 'Usted puede ver su propia información. Los administradores de la aplicación pueden ver las cuentas, las respuestas guardadas, el avance de la lista y la actividad para operar y mejorar la aplicación. No vendemos su información.'],
+  ['Preguntas que escribe', 'Cuando hace una pregunta que las reglas escritas no cubren, su pregunta y los últimos mensajes pueden enviarse a un servicio de IA para redactar una respuesta general. No escriba nombres, direcciones, números de impuestos ni otros datos personales en el chat.'],
+  ['Voz', 'Si usa Hablar, las herramientas de voz de su navegador convierten su voz en texto. Según el navegador, el proveedor del navegador puede procesar el audio. La voz está desactivada cuando elige Escribir. Puede silenciar la voz en cualquier momento.'],
+  ['Correo electrónico', 'Si activa los recordatorios, le enviamos un correo a la dirección de su cuenta antes de una fecha de renovación que usted ingresó. Cada correo incluye un enlace para detenerlos. Al detenerlos, se quita su dirección de los recordatorios.'],
+  ['Este navegador', 'El sitio guarda algunas cosas en su navegador, como un identificador anónimo de visitante, su sesión y un borrador sin guardar, para que la aplicación funcione entre visitas.'],
+  ['Sus opciones', 'Puede editar sus respuestas, empezar de nuevo (lo cual elimina su plan guardado), detener los recordatorios por correo o pedir que se elimine su cuenta. [Los datos de contacto se agregarán.]'],
+  ['Cambios', 'Podemos actualizar esta página. La fecha de abajo indica cuándo cambió por última vez.'],
+];
+
 export default function Legal({ kind }) {
   const t = useT();
   const terms = kind === 'terms';
-  const rows = terms ? TERMS : PRIVACY;
+  const spanish = t.lang === 'es';
+  const rows = terms ? (spanish ? TERMS_ES : TERMS) : (spanish ? PRIVACY_ES : PRIVACY);
   const heading = terms ? t('legal.terms') : t('legal.privacy');
   // Each page gets its own tab title, so a screen reader and the browser history tell the two pages apart.
   useEffect(() => {
@@ -39,8 +62,7 @@ export default function Legal({ kind }) {
   return (
     <div className="panel legal legal-full">
       <h1 tabIndex={-1}>{terms ? t('legal.terms') : t('legal.privacy')}</h1>
-      {t.lang === 'es' && <p className="hint" lang="en">{t('legal.english')}</p>}
-      <div lang="en">
+      <div>
         {rows.map(([h, p]) => (
           <section key={h}>
             <h2>{h}</h2>
@@ -48,7 +70,7 @@ export default function Legal({ kind }) {
           </section>
         ))}
       </div>
-      <p className="hint">Last updated: November 3, 2026.</p>
+      <p className="hint">{spanish ? 'Última actualización: 3 de noviembre de 2026.' : 'Last updated: November 3, 2026.'}</p>
       <p><Link to={terms ? '/privacy' : '/terms'}>{terms ? t('legal.privacy') : t('legal.terms')}</Link></p>
     </div>
   );
