@@ -129,18 +129,23 @@ function UserDetail({ id, onBack }) {
         );
       })}
 
-      <section className="panel wide" aria-labelledby="ud-activity">
-        <h3 id="ud-activity">{tr('Activity', 'Actividad')} ({events.length})</h3>
-        {events.length === 0 ? <p className="hint">{tr('No activity yet.', 'Aún no hay actividad.')}</p> : (
-          <ol className="activity">
-            {events.map((e, i) => (
-              <li key={`${e.at}-${i}`}>
-                <time dateTime={e.at}>{when(e.at, tr)}</time>
-                <span><strong>{EVENT[e.type] || e.type}</strong>{e.detail && !['signup', 'login'].includes(e.type) ? `: ${detailText(e.detail)}` : ''}</span>
-              </li>
-            ))}
-          </ol>
-        )}
+      <section className="panel wide ud-activity-panel" aria-labelledby="ud-activity">
+        <details className="fold">
+          <summary>
+            <span id="ud-activity" className="fold-title">{tr('Activity of', 'Actividad de')} {user.name} ({events.length})</span>
+            {events[0] && <span className="fold-latest">{tr('Latest', 'Último')}: {EVENT[events[0].type] || events[0].type}, {when(events[0].at, tr)}</span>}
+          </summary>
+          {events.length === 0 ? <p className="hint">{tr('No activity yet.', 'Aún no hay actividad.')}</p> : (
+            <ol className="activity">
+              {events.map((e, i) => (
+                <li key={`${e.at}-${i}`}>
+                  <time dateTime={e.at}>{when(e.at, tr)}</time>
+                  <span><strong>{EVENT[e.type] || e.type}</strong>{e.detail && !['signup', 'login'].includes(e.type) ? `: ${detailText(e.detail)}` : ''}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+        </details>
       </section>
     </>
   );
