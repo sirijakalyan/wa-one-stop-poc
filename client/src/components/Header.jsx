@@ -44,9 +44,11 @@ export default function Header() {
           <span className="lang-full">{t('lang.button')}</span>
           <span className="lang-short" aria-hidden="true">{lang === 'es' ? 'EN' : 'ES'}</span>
         </button>
-        <button type="button" className="theme-btn" aria-pressed={dark} aria-label={dark ? t('theme.toLight') : t('theme.toDark')} title={dark ? t('theme.toLight') : t('theme.toDark')} onClick={toggle}>
-          <Icon name="bulb" size={20} />
-          <span className="theme-label">{dark ? t('theme.light') : t('theme.dark')}</span>
+        <button type="button" className="theme-btn" role="switch" aria-checked={dark} aria-label={dark ? t('theme.toLight') : t('theme.toDark')} title={dark ? t('theme.toLight') : t('theme.toDark')} onClick={toggle}>
+          <span className="theme-track" aria-hidden="true">
+            <span className="theme-knob"><Icon name="bulb" size={16} /></span>
+          </span>
+          <span className="theme-label">{dark ? t('theme.dark') : t('theme.light')}</span>
         </button>
         <div className="head-auth"><AccountMenu /></div>
         <nav id="main-nav" aria-label="Main" className={open ? 'is-open' : ''}>
