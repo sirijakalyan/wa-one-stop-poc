@@ -41,3 +41,33 @@ describe('calendar buttons on renewal dates', () => {
     expect(screen.getByRole('button', { name: 'Add all to my calendar (.ics file)' })).toBeDisabled();
   });
 });
+
+describe('renewal date saves without leaving the field', () => {
+  it('saves a picked date after a short pause, once, and ignores a half-typed year', async () => {
+    vi.useFakeTimers();
+    const onSave = vi.fn();
+    const { fireEvent } = await import('@testing-library/react');
+    render(<DashRenewals data={data} onSave={onSave} />);
+    const input = screen.getByLabelText(/Renewal date for Employer taxes/);
+    fireEvent.change(input, { target: { value: '0002-11-27' } });
+    vi.advanceTimersByTime(700);
+    expect(onSave).not.toHaveBeenCalled();
+    fireEvent.change(input, { target: { value: '2026-11-27' } });
+    vi.advanceTimersByTime(700);
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(onSave).toHaveBeenCalledWith('esd', '2026-11-27');
+    fireEvent.blur(input);
+    expect(onSave).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+  it('saves a cleared date', async () => {
+    vi.useFakeTimers();
+    const onSave = vi.fn();
+    const { fireEvent } = await import('@testing-library/react');
+    render(<DashRenewals data={data} onSave={onSave} />);
+    fireEvent.change(screen.getByLabelText(/Renewal date for Apply for your license/), { target: { value: '' } });
+    vi.advanceTimersByTime(700);
+    expect(onSave).toHaveBeenCalledWith('dor', '');
+    vi.useRealTimers();
+  });
+});

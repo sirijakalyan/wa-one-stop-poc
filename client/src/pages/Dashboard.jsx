@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import ExternalLink from '../components/ExternalLink.jsx';
 import { Simulated } from '../components/Parts.jsx';
 import { Link } from 'react-router-dom';
@@ -65,6 +65,31 @@ export function DashSummary({ data }) {
   );
 }
 
+// A date saves as soon as it is picked or typed in full, and when the field is left. Typing a year one digit at a time
+// passes through odd years like 0002, so a typed date waits a moment and only a sensible year (2000 to 2100) is saved.
+const sensible = (v) => v === '' || (/^\d{4}-\d{2}-\d{2}$/.test(v) && Number(v.slice(0, 4)) >= 2000 && Number(v.slice(0, 4)) <= 2100);
+export function RenewalInput({ id, value, onSave }) {
+  const timer = useRef(null);
+  const last = useRef(value);
+  const save = (v) => {
+    clearTimeout(timer.current);
+    if (v === last.current || !sensible(v)) return;
+    last.current = v;
+    onSave(v);
+  };
+  useEffect(() => () => clearTimeout(timer.current), []);
+  return (
+    <input
+      id={id}
+      type="date"
+      className="date"
+      defaultValue={value}
+      onChange={(e) => { const v = e.target.value; clearTimeout(timer.current); timer.current = setTimeout(() => save(v), 600); }}
+      onBlur={(e) => save(e.target.value)}
+    />
+  );
+}
+
 const eventOf = (i, t) => ({
   id: i.id,
   date: i.renewal,
@@ -100,13 +125,7 @@ export function DashRenewals({ data, onSave, savedId, actionError }) {
                 <td data-label={t('pr.agency')}>{i.agency}</td>
                 <td data-label={t('pr.renewDate')}>
                   <label className="sr-only" htmlFor={`renew-${i.id}`}>{t('pr.renewFor', i.title)}</label>
-                  <input
-                    id={`renew-${i.id}`}
-                    type="date"
-                    className="date"
-                    defaultValue={i.renewal || ''}
-                    onBlur={(e) => { if ((e.target.value || '') !== (i.renewal || '')) onSave(i.id, e.target.value); }}
-                  />
+                  <RenewalInput id={`renew-${i.id}`} value={i.renewal || ''} onSave={(v) => onSave(i.id, v)} />
                   {savedId === i.id && <span className="saved">{t('pr.saved')}</span>}
                 </td>
                 <td data-label={t('cal.col')}>
