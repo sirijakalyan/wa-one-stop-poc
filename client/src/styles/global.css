@@ -401,7 +401,7 @@ td.to { font-weight: 700; }
 .api-status--connected { border-color: var(--applies-line); color: var(--applies-fg); }
 .api-status--offline, .api-status--error { border-color: var(--danger); color: var(--danger); }
 footer { background: var(--navy-950); color: #a9bdd4; font-size: .88rem; padding-block: 1.75rem; }
-footer p { margin: 0 0 .5rem; max-width: 60rem; }
+footer p { margin: 0 0 .5rem; }
 footer .api-status { background: transparent; color: #a9bdd4; border-color: rgba(255,255,255,.25); }
 
 @media (max-width: 52rem) {
@@ -1461,4 +1461,4 @@ details.fold { border: 0; padding: 0; background: transparent; }
 /* Calendar buttons next to a renewal date. */
 .cal-actions { display: flex; flex-wrap: wrap; gap: .4rem; }
 .cal-all { margin-top: 1rem; display: grid; gap: .5rem; justify-items: start; }
-.cal-all .hint { margin: 0; max-width: 62ch; }
+.cal-all .hint { margin: 0; }
