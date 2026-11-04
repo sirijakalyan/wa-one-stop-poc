@@ -1485,3 +1485,8 @@ details.fold { border: 0; padding: 0; background: transparent; }
   .desk-switch { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; }
   .desk-switch button { padding: .5rem .4rem; text-align: center; }
 }
+
+/* The talking guide's reply bubbles have a light background in every theme, so their text must stay dark when the device is in dark mode. */
+.is-embedded .bubble:not(.you):not(.owner) { color: #14263d; }
+.is-embedded .bubble:not(.you):not(.owner) .bubble-who { color: #5b6b82; }
+.is-embedded .bubble:not(.you):not(.owner) a { color: #0b5f6b; }
