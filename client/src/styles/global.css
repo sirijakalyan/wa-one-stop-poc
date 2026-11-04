@@ -276,9 +276,9 @@ textarea { min-height: 7rem; resize: vertical; }
 .pending-note { display: flex; gap: .6rem; align-items: flex-start; border: 1px solid var(--pending-line); border-left-width: 4px; background: var(--pending-bg); color: var(--pending-fg); padding: .65rem .9rem; border-radius: var(--radius); font-size: .93rem; }
 .item-actions { display: flex; flex-direction: column; align-items: stretch; gap: .85rem; margin: .4rem 0 1rem; }
 .action-block { display: flex; flex-direction: column; align-items: flex-start; gap: .4rem; }
-.action-block .hint { max-width: 62ch; margin: 0; }
+.action-block .hint { margin: 0; }
 .action-block .btn { min-width: 12rem; }
-.link-fallback { display: block; color: var(--muted); font-size: .85rem; overflow-wrap: anywhere; max-width: 62ch; }
+.link-fallback { display: block; color: var(--muted); font-size: .85rem; overflow-wrap: anywhere; }
 .link-url { display: block; margin-top: .15rem; font-family: var(--font-mono); font-size: .74rem; }
 .linklike { min-height: 32px; padding: 0 .25rem; background: none; border: 0; padding: 0; color: var(--link); text-decoration: underline; cursor: pointer; font: inherit; }
 .mark-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .9rem; padding: .6rem .85rem; border: 1px dashed var(--line-strong); border-radius: var(--radius); background: var(--surface-2); }
