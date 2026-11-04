@@ -3,18 +3,18 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { useTheme } from './theme.js';
 
 function Probe() {
-  const { theme, toggle } = useTheme();
-  return <button onClick={toggle}>{theme}</button>;
+  const { theme, choose } = useTheme();
+  return (<div><span data-testid="t">{theme}</span><button onClick={() => choose('dark')}>dark</button><button onClick={() => choose('light')}>light</button></div>);
 }
 
-describe('theme toggle', () => {
+describe('theme choice', () => {
   beforeEach(() => { document.documentElement.setAttribute('data-theme', 'light'); localStorage.clear(); });
-  it('switches light to dark, sets the attribute and remembers it', () => {
+  it('sets the attribute and remembers the choice', () => {
     render(<Probe />);
-    fireEvent.click(screen.getByRole('button'));
+    fireEvent.click(screen.getByText('dark'));
     expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
     expect(localStorage.getItem('wa-theme')).toBe('dark');
-    fireEvent.click(screen.getByRole('button'));
+    fireEvent.click(screen.getByText('light'));
     expect(document.documentElement.getAttribute('data-theme')).toBe('light');
     expect(localStorage.getItem('wa-theme')).toBe('light');
   });

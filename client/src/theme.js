@@ -10,12 +10,10 @@ function current() {
 export function useTheme() {
   const [theme, setTheme] = useState(current);
   useEffect(() => { document.documentElement.setAttribute('data-theme', theme); }, [theme]);
-  const toggle = useCallback(() => {
-    setTheme((t) => {
-      const next = t === 'dark' ? 'light' : 'dark';
-      try { localStorage.setItem(KEY, next); } catch { /* storage may be blocked */ }
-      return next;
-    });
+  const choose = useCallback((next) => {
+    setTheme(next === 'dark' ? 'dark' : 'light');
+    try { localStorage.setItem(KEY, next === 'dark' ? 'dark' : 'light'); } catch { /* storage may be blocked */ }
   }, []);
-  return { theme, toggle };
+  const toggle = useCallback(() => choose(current() === 'dark' ? 'light' : 'dark'), [choose]);
+  return { theme, toggle, choose };
 }

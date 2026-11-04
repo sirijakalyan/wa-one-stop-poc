@@ -11,6 +11,7 @@ export const LANGS = [
 
 const en = {
   'lang.switchTo': 'Cambiar a español',
+  'theme.label': 'Color theme',
   'theme.toDark': 'Switch to dark mode',
   'theme.toLight': 'Switch to light mode',
   'theme.dark': 'Dark',
@@ -123,6 +124,7 @@ const en = {
 
 const es = {
   'lang.switchTo': 'Switch to English',
+  'theme.label': 'Tema de color',
   'theme.toDark': 'Cambiar a modo oscuro',
   'theme.toLight': 'Cambiar a modo claro',
   'theme.dark': 'Oscuro',
