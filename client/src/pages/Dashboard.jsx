@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { api, useLoad } from '../api.js';
 import { useT } from '../i18n.js';
 import Icon from '../components/Icon.jsx';
+import { buildIcs, downloadIcs, fileSafe, googleUrl } from '../calendar.js';
 import { ErrorNote, Loading, Meter } from '../components/Parts.jsx';
 
 
@@ -64,9 +65,19 @@ export function DashSummary({ data }) {
   );
 }
 
+const eventOf = (i, t) => ({
+  id: i.id,
+  date: i.renewal,
+  title: t('cal.title', i.title),
+  description: t('cal.desc', i.agency, `${window.location.origin}/my-business`, i.apply?.url || i.source?.url || ''),
+  url: `${window.location.origin}/my-business`,
+});
+
 export function DashRenewals({ data, onSave, savedId, actionError }) {
   const t = useT();
   const set = data.items.filter((i) => i.renewal).length;
+  const dated = data.items.filter((i) => i.renewal);
+  const saveFile = (list, name) => downloadIcs(`${fileSafe(name)}.ics`, buildIcs(list.map((i) => eventOf(i, t)), { alarmText: t('cal.alarm') }));
   return (
     <section className="renewals-card" id="renewals" aria-labelledby="renewals-title">
       <header className="renewals-head">
@@ -80,7 +91,7 @@ export function DashRenewals({ data, onSave, savedId, actionError }) {
       <div className="table-scroll">
         <table className="stack">
           <thead>
-            <tr><th scope="col">{t('pr.step')}</th><th scope="col">{t('pr.agency')}</th><th scope="col">{t('pr.renewDate')}</th></tr>
+            <tr><th scope="col">{t('pr.step')}</th><th scope="col">{t('pr.agency')}</th><th scope="col">{t('pr.renewDate')}</th><th scope="col">{t('cal.col')}</th></tr>
           </thead>
           <tbody>
             {data.items.map((i) => (
@@ -98,10 +109,22 @@ export function DashRenewals({ data, onSave, savedId, actionError }) {
                   />
                   {savedId === i.id && <span className="saved">{t('pr.saved')}</span>}
                 </td>
+                <td data-label={t('cal.col')}>
+                  {i.renewal ? (
+                    <span className="cal-actions">
+                      <button type="button" className="btn btn-quiet btn-sm" onClick={() => saveFile([i], i.title)} aria-label={t('cal.addFor', i.title)}>{t('cal.add')}</button>
+                      <a className="btn btn-quiet btn-sm" href={googleUrl(eventOf(i, t))} target="_blank" rel="noopener noreferrer" aria-label={t('cal.googleFor', i.title)}>{t('cal.google')}</a>
+                    </span>
+                  ) : <span className="hint">{t('cal.needDate')}</span>}
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
+      </div>
+      <div className="cal-all">
+        <button type="button" className="btn btn-primary btn-sm" disabled={!dated.length} onClick={() => saveFile(dated, `${data.label || 'Business'} renewals`)}>{t('cal.all')}</button>
+        <p className="hint">{t('cal.hint')}</p>
       </div>
     </section>
   );

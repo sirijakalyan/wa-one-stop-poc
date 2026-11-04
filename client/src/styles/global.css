@@ -1457,3 +1457,8 @@ details.fold { border: 0; padding: 0; background: transparent; }
 .need-box li { position: relative; padding-left: 1.7rem; }
 .need-box li::before { content: ""; position: absolute; left: 0; top: .22em; width: .95rem; height: .95rem; border: 2px solid var(--brand-strong); border-radius: 4px; }
 .need-box .hint { margin: .7rem 0 0; font-size: .9rem; }
+
+/* Calendar buttons next to a renewal date. */
+.cal-actions { display: flex; flex-wrap: wrap; gap: .4rem; }
+.cal-all { margin-top: 1rem; display: grid; gap: .5rem; justify-items: start; }
+.cal-all .hint { margin: 0; max-width: 62ch; }
