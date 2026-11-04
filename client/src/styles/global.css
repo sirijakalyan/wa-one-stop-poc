@@ -1449,3 +1449,11 @@ details.fold { border: 0; padding: 0; background: transparent; }
 .fold-latest { color: var(--muted); font-size: .92rem; }
 .fold > summary:focus-visible { outline: 3px solid var(--brand-strong, #1b5cd6); outline-offset: 3px; border-radius: 4px; }
 .fold[open] > summary { margin-bottom: .75rem; }
+
+/* "What you'll need" on a step card. */
+.need-box { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: .9rem 1.15rem; margin: 1rem 0 0; }
+.need-box h4 { margin: 0 0 .5rem; font-size: 1rem; }
+.need-box ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
+.need-box li { position: relative; padding-left: 1.7rem; }
+.need-box li::before { content: ""; position: absolute; left: 0; top: .22em; width: .95rem; height: .95rem; border: 2px solid var(--brand-strong); border-radius: 4px; }
+.need-box .hint { margin: .7rem 0 0; font-size: .9rem; }

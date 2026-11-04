@@ -160,8 +160,12 @@
           "This demo asks about only some triggers. Run the Business Licensing Wizard to be sure.",
           "If your structure is an LLC, corporation or partnership, DOR says to file with the Secretary of State first."
         ],
-        "prepare": [],
-        "prepareNote": "DOR gives the forms and endorsements for your case after you run the Business Licensing Wizard.",
+        "prepare": [
+          "A My DOR online account, to apply online. To apply by mail, the completed Business License Application and any other forms it needs.",
+          "If you form a Washington LLC, corporation or partnership, your Secretary of State filing first.",
+          "Payment for the application fee. The fee varies, and each endorsement has its own fee."
+        ],
+        "prepareNote": "",
         "steps": [
           {
             "text": "Check which registration triggers are true for you."
@@ -560,8 +564,11 @@
           "Use the independent contractor step to check whether a contractor must be covered.",
           "Employers submit quarterly reports and premium payments based on their industry and workers' hours."
         ],
-        "prepare": [],
-        "prepareNote": "No document list was reviewed. L&I explains how to get an account on its site.",
+        "prepare": [
+          "Your mailing address. L&I sends your account letter, rate notice and certificate of coverage there.",
+          "Your business license application, or an update to it, that says you are hiring employees."
+        ],
+        "prepareNote": "",
         "steps": [
           {
             "text": "Decide whether your workers must be covered."
@@ -629,8 +636,11 @@
           "Reimbursable employers do not pay unemployment taxes. They pay ESD back for benefits paid to their separated employees.",
           "Pending verification. The ESD pages reviewed did not state the account registration step, so this demo does not describe it."
         ],
-        "prepare": [],
-        "prepareNote": "Not reviewed.",
+        "prepare": [
+          "Your UBI number from your Washington business license.",
+          "Your business license application, or an update to it, that says you plan to hire. DOR passes it to ESD, which sets up your account and mails you an account packet within two business days."
+        ],
+        "prepareNote": "",
         "steps": [
           {
             "text": "If you are a new employer, ESD says you apply for a state business license from DOR before you can file a quarterly tax and wage report. If you are already licensed but hiring for the first time, update your business license application."
@@ -847,8 +857,11 @@
           "Bellevue was not on the DOR city list when checked on 2026-10-26. Confirm Bellevue requirements with the City of Bellevue.",
           "Pending verification. No city or county source has been reviewed."
         ],
-        "prepare": [],
-        "prepareNote": "Not reviewed.",
+        "prepare": [
+          "Your city. DOR lists the cities whose endorsements you can add when you file your state application.",
+          "For a city that is not on DOR's list, that city's own contact information. DOR says to contact the city directly."
+        ],
+        "prepareNote": "",
         "steps": [
           {
             "text": "See whether your city is on the DOR city endorsements list.",

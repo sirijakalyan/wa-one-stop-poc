@@ -69,6 +69,20 @@ function FoundLinks({ links }) {
 }
 
 // One checklist card: title, status label, short reason, one action button, "Mark as done".
+// "What you'll need": the documents and details to have ready, set by an admin from the agency's own page. Shown only when a list exists.
+function NeedBox({ item }) {
+  const t = useT();
+  const list = (item.guide?.prepare || []).map((x) => (typeof x === 'string' ? x : x?.text)).filter(Boolean);
+  if (!list.length) return null;
+  return (
+    <section className="need-box" aria-labelledby={`need-${item.id}`}>
+      <h4 id={`need-${item.id}`}>{t('item.need')}</h4>
+      <ul>{list.map((x) => <li key={x}>{x}</li>)}</ul>
+      <p className="hint">{t('item.needNote')}</p>
+    </section>
+  );
+}
+
 // Explanations live in the Guide. Provenance lives in Source details.
 export default function ChecklistItem({ item, onToggle, speaking = false }) {
   const t = useT();
@@ -116,6 +130,7 @@ export default function ChecklistItem({ item, onToggle, speaking = false }) {
           {item.foundLinks?.length > 0 && <FoundLinks links={item.foundLinks} />}
         </div>
       </div>
+      <NeedBox item={item} />
       <Guide item={item} />
       <SourceDetails rule={item} />
       {onToggle && (

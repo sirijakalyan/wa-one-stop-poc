@@ -32,11 +32,25 @@ const uuid = () =>
   globalThis.crypto?.randomUUID?.() ?? `id-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 
 // Rule fields an admin may change. Everything else is fixed.
-const EDITABLE = ['title', 'detail', 'source.label', 'source.url', 'apply.label', 'apply.url', 'verification.status', 'verification.note'];
+const EDITABLE = ['title', 'detail', 'source.label', 'source.url', 'apply.label', 'apply.url', 'verification.status', 'verification.note', 'guide.prepare'];
+// "What you'll need": the admin types one item per line. It is stored as the guide's list of strings.
+const LIST_FIELDS = ['guide.prepare'];
+const MAX_LIST_ITEMS = 12;
+const MAX_LIST_ITEM = 300;
+const listLines = (v) => String(v ?? '').split('\n').map((x) => x.trim()).filter(Boolean);
 const URL_FIELDS = ['source.url', 'apply.url'];
 
-const getPath = (obj, p) => p.split('.').reduce((o, k) => (o == null ? o : o[k]), obj);
+const getPath = (obj, p) => {
+  if (LIST_FIELDS.includes(p)) return (obj?.guide?.prepare || []).map((x) => (typeof x === 'string' ? x : x?.text)).filter(Boolean).join('\n');
+  return p.split('.').reduce((o, k) => (o == null ? o : o[k]), obj);
+};
 function setPath(obj, p, value) {
+  if (LIST_FIELDS.includes(p)) {
+    // A step with no guide yet (an added step) gets an empty one so the card can show the list.
+    const g = obj.guide || { meaning: '', who: [], conditions: [], prepare: [], prepareNote: '', steps: [], facts: [], whyExternal: '' };
+    obj.guide = { ...g, prepare: listLines(value), prepareNote: '' };
+    return;
+  }
   const keys = p.split('.');
   let o = obj;
   keys.slice(0, -1).forEach((k) => {
@@ -50,6 +64,13 @@ function validateDraft(fields) {
   const clean = {};
   for (const [key, raw] of Object.entries(fields || {})) {
     if (!EDITABLE.includes(key)) return { error: `Field "${key}" cannot be edited.` };
+    if (LIST_FIELDS.includes(key)) {
+      const lines = listLines(raw);
+      if (lines.length > MAX_LIST_ITEMS) return { error: `Add ${MAX_LIST_ITEMS} items or fewer.` };
+      if (lines.some((l) => l.length > MAX_LIST_ITEM)) return { error: `Each item must be ${MAX_LIST_ITEM} characters or fewer.` };
+      clean[key] = lines.join('\n');
+      continue;
+    }
     const value = String(raw ?? '').trim();
     if (key === 'title' && (!value || value.length > 200)) return { error: 'Title is required and must be 200 characters or fewer.' };
     if (key !== 'title' && value.length > 1000) return { error: `${key} is too long.` };

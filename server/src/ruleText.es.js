@@ -87,8 +87,12 @@ export const RULES_ES = {
         'Esta demostración pregunta solo por algunos motivos. Use el Asistente de licencias comerciales para estar seguro.',
         'Si su estructura es una LLC, corporación o sociedad, el DOR indica presentar primero ante el Secretario de Estado.',
       ],
-      prepare: [],
-      prepareNote: 'El DOR le da los formularios y endosos para su caso después de que usted use el Asistente de licencias comerciales.',
+      prepare: [
+        "Una cuenta My DOR en línea, para solicitar por internet. Para solicitar por correo, la Solicitud de licencia comercial completa y cualquier otro formulario que necesite.",
+        "Si forma una LLC, corporación o sociedad de Washington, primero su presentación ante el Secretario de Estado.",
+        "El pago de la tarifa de solicitud. La tarifa varía, y cada endoso tiene su propia tarifa.",
+      ],
+      prepareNote: '',
       steps: [
         'Revise cuáles motivos de registro se cumplen en su caso.',
         'Use el Asistente de licencias comerciales. Le da una lista de agencias con las que comunicarse y los endosos que correspondan.',
@@ -224,8 +228,11 @@ export const RULES_ES = {
       meaning: 'El seguro de compensación para trabajadores da reemplazo de salario y beneficios médicos a los trabajadores lesionados en el trabajo. En Washington usted compra la cobertura a L&I, o se le aprueba como empleador autoasegurado. No se permite la cobertura privada.',
       who: ['Negocios que tienen trabajadores, sean empleados o contratistas independientes. L&I indica que es posible que deba proporcionar cobertura.'],
       conditions: ['L&I indica que todos los trabajadores tienen derecho a cobertura a menos que cumplan definiciones estrictas de exención.', 'Use el paso de contratistas independientes para revisar si un contratista debe estar cubierto.', 'Los empleadores presentan informes trimestrales y pagos de primas según su industria y las horas de sus trabajadores.'],
-      prepare: [],
-      prepareNote: 'No se revisó una lista de documentos. L&I explica cómo obtener una cuenta en su sitio.',
+      prepare: [
+        "Su dirección postal. L&I envía allí la carta de su cuenta, el aviso de tarifa y el certificado de cobertura.",
+        "Su solicitud de licencia comercial, o una actualización, que indique que contratará empleados.",
+      ],
+      prepareNote: '',
       steps: [
         'Decida si sus trabajadores deben estar cubiertos.',
         'Si va a contratar empleados, L&I indica que usted obtiene su cuenta de compensación para trabajadores al solicitar, o actualizar, su licencia comercial estatal ante el DOR. Si no tiene licencia comercial, solicite una. Si ya tiene una, actualice la información de su negocio para indicar que va a contratar personal.',
@@ -254,8 +261,11 @@ export const RULES_ES = {
       meaning: 'El Departamento de Seguridad del Empleo (ESD) cobra impuestos de desempleo a los empleadores. El ESD indica que todo empleador en Washington presenta dos informes de impuestos y salarios cada trimestre.',
       who: ['Empleadores. La demostración muestra este paso cuando usted planea contratar personal.'],
       conditions: ['Los empleadores de reembolso no pagan impuestos de desempleo. Le reembolsan al ESD los beneficios pagados a sus empleados que se separaron.', 'Verificación pendiente. Las páginas del ESD que se revisaron no indicaron el paso de registro de la cuenta, por eso esta demostración no lo describe.'],
-      prepare: [],
-      prepareNote: 'No revisado.',
+      prepare: [
+        "Su número UBI de su licencia comercial de Washington.",
+        "Su solicitud de licencia comercial, o una actualización, que indique que planea contratar. El DOR la pasa al ESD, que crea su cuenta y le envía un paquete con los datos de la cuenta en dos días hábiles.",
+      ],
+      prepareNote: '',
       steps: [
         'Si es un empleador nuevo, el ESD indica que usted solicita una licencia comercial estatal al DOR antes de poder presentar un informe trimestral de impuestos y salarios. Si ya tiene licencia pero contrata personal por primera vez, actualice su solicitud de licencia comercial.',
         'Presente su informe de impuestos y salarios cada trimestre, aunque no tenga nómina que informar.',
@@ -337,8 +347,11 @@ export const RULES_ES = {
       meaning: 'Las ciudades y los condados pueden tener sus propias licencias comerciales, zonificación y reglas además de las licencias estatales.',
       who: ['Negocios ubicados en, o que viajan a, una ciudad o condado con requisitos locales. Esta demostración no sabe cuáles aplican.'],
       conditions: ['El DOR indica que usted puede solicitar los endosos de las ciudades de la lista al mismo tiempo que su presentación estatal, y comunicarse directamente con una ciudad que no aparezca.', 'Bellevue no estaba en la lista de ciudades del DOR cuando se revisó el 2026-10-26. Confirme los requisitos de Bellevue con la Ciudad de Bellevue.', 'Verificación pendiente. No se revisó ninguna fuente de ciudad o condado.'],
-      prepare: [],
-      prepareNote: 'No revisado.',
+      prepare: [
+        "Su ciudad. El DOR enumera las ciudades cuyos endosos usted puede agregar al presentar su solicitud estatal.",
+        "Para una ciudad que no está en la lista del DOR, la información de contacto de esa ciudad. El DOR indica comunicarse directamente con la ciudad.",
+      ],
+      prepareNote: '',
       steps: ['Vea si su ciudad está en la lista de endosos de ciudad del DOR.', 'Si no está, comuníquese directamente con su ciudad o condado y pregunte por licencias comerciales y zonificación.'],
       facts: [],
       pendingNote: 'No se afirma ningún requisito local ni enlace más allá de la lista de ciudades del DOR.',

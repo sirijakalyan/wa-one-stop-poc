@@ -169,3 +169,18 @@ describe('ChecklistItem card', () => {
     expect(within(container).queryByTestId('found-links')).toBeNull();
   });
 });
+
+describe('What you\'ll need', () => {
+  it('shows an admin-provided list on the step card and the Guide points to it', () => {
+    const base = { ...pendingItem(), guide: { ...pendingItem().guide, prepare: ['Your UBI number.', 'Your mailing address.'], prepareNote: '' } };
+    renderItem(base);
+    const box = screen.getByRole('region', { name: /What you'll need/ });
+    expect(within(box).getByText('Your UBI number.')).toBeInTheDocument();
+    expect(within(box).getByText('Your mailing address.')).toBeInTheDocument();
+    expect(screen.getAllByText('Your UBI number.')).toHaveLength(1);
+  });
+  it('shows no box when no list exists', () => {
+    renderItem(pendingItem());
+    expect(screen.queryByRole('region', { name: /What you'll need/ })).toBeNull();
+  });
+});

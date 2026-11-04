@@ -88,7 +88,7 @@ export default function Guide({ item }) {
 
       <h4>{t('guide.prep')}</h4>
       {g.prepare?.length > 0
-        ? <ul>{g.prepare.map((t) => <li key={t}>{t}</li>)}</ul>
+        ? <p className="hint">{t('guide.prepAbove')}</p>
         : <p className="hint">{g.prepareNote || t('guide.prepNone')}</p>}
 
       <h4>{t('gstep.title')}</h4>

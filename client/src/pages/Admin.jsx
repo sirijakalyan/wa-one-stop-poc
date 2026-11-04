@@ -20,8 +20,12 @@ const fieldsFor = (a) => [
   { key: 'source.url', label: a('Source link (https)', 'Enlace de la fuente (https)'), type: 'text' },
   { key: 'apply.label', label: a('Apply button text', 'Texto del botón de solicitud'), type: 'text' },
   { key: 'apply.url', label: a('Apply link (https)', 'Enlace de solicitud (https)'), type: 'text' },
+  { key: 'guide.prepare', label: a("What you'll need (one item per line)", 'Lo que necesitará (un elemento por línea)'), type: 'list', hint: a('Documents and details owners should have ready. Owners see this list on the step. Use only what the agency page says.', 'Documentos y datos que los dueños deben tener listos. Los dueños ven esta lista en el paso. Use solo lo que dice la página de la agencia.') },
 ];
-const getPath = (o, p) => p.split('.').reduce((x, k) => (x == null ? x : x[k]), o) ?? '';
+const getPath = (o, p) => {
+  if (p === 'guide.prepare') return (o?.guide?.prepare || []).map((x) => (typeof x === 'string' ? x : x?.text)).filter(Boolean).join('\n');
+  return p.split('.').reduce((x, k) => (x == null ? x : x[k]), o) ?? '';
+};
 const STALE_DAYS = 365;
 
 function staleness(rule, a) {
@@ -194,6 +198,12 @@ function AdminPanel({ signedIn = false }) {
                 {FIELDS.map((f) => (
                   <div className="field" key={f.key}>
                     <label htmlFor={`f-${f.key}`}>{f.label}</label>
+                    {f.type === 'list' && (
+                      <>
+                        <textarea id={`f-${f.key}`} rows={5} aria-describedby={`h-${f.key}`} value={form[f.key] ?? ''} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} />
+                        <p className="hint" id={`h-${f.key}`}>{f.hint}</p>
+                      </>
+                    )}
                     {f.type === 'area' && (
                       <textarea id={`f-${f.key}`} value={form[f.key] ?? ''} onChange={(e) => setForm({ ...form, [f.key]: e.target.value })} />
                     )}
