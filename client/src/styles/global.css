@@ -1462,3 +1462,26 @@ details.fold { border: 0; padding: 0; background: transparent; }
 .cal-actions { display: flex; flex-wrap: wrap; gap: .4rem; }
 .cal-all { margin-top: 1rem; display: grid; gap: .5rem; justify-items: start; }
 .cal-all .hint { margin: 0; }
+
+/* Phones: every tap target is at least 44px tall. */
+@media (max-width: 52rem) {
+  .bell-btn, .lang-btn, .menu-btn, .acct-btn, .site-head .acct-links .btn, .site-head .acct-links .btn-primary,
+  .desk-switch button, .board-filters button, .is-embedded .voice-controls .btn, .site-head .brand { min-height: 44px; }
+  .bell-btn { width: 44px; height: 44px; }
+  .chat-close { width: 44px; height: 44px; }
+  .is-embedded .voice-controls .btn { padding-block: .4rem; }
+}
+
+/* Admin user page on phones: avatar and name side by side, the role picker on its own full-width row. */
+@media (max-width: 52rem) {
+  .user-head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .75rem 1rem; align-items: center; }
+  .user-head .hint { overflow-wrap: anywhere; }
+  .user-role { grid-column: 1 / -1; margin-left: 0; width: 100%; }
+  .user-role select { width: 100%; min-height: 44px; }
+}
+
+/* Admin section switch (Steps, Questions, People) on phones: three equal pills in one row. */
+@media (max-width: 52rem) {
+  .desk-switch { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; }
+  .desk-switch button { padding: .5rem .4rem; text-align: center; }
+}
