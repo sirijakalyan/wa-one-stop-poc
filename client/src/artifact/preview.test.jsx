@@ -450,7 +450,8 @@ describe('accounts and the admin users area', () => {
     await user.click(within(row).getByRole('button', { name: /View Ana Rivera/ }));
     expect(await screen.findByText('Saved answers')).toBeInTheDocument();
     expect(screen.getByText('LLC')).toBeInTheDocument();
-    expect(screen.getByText(/Marked a step done/)).toBeInTheDocument();
+    expect(screen.getByText(/Activity of Ana Rivera/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Marked a step done/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Saved a plan/)).toBeInTheDocument();
     expect(screen.getByText(/Created the account/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /Back to users/ }));
