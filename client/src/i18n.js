@@ -11,6 +11,10 @@ export const LANGS = [
 
 const en = {
   'lang.switchTo': 'Cambiar a español',
+  'theme.toDark': 'Switch to dark mode',
+  'theme.toLight': 'Switch to light mode',
+  'theme.dark': 'Dark',
+  'theme.light': 'Light',
   'lang.name': 'English',
   'lang.button': 'Español',
   'nav./': 'Home',
@@ -119,6 +123,10 @@ const en = {
 
 const es = {
   'lang.switchTo': 'Switch to English',
+  'theme.toDark': 'Cambiar a modo oscuro',
+  'theme.toLight': 'Cambiar a modo claro',
+  'theme.dark': 'Oscuro',
+  'theme.light': 'Claro',
   'lang.name': 'Español',
   'lang.button': 'English',
   'nav./': 'Inicio',

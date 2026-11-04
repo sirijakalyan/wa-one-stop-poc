@@ -46,8 +46,7 @@
   --font-body: 'Figtree', 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif;
   --font-mono: ui-monospace, 'SF Mono', Consolas, 'Liberation Mono', monospace;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
+:root[data-theme="dark"] {
     --bg: #07172b; --surface: #0e2440; --surface-2: #0b1f38;
     --ink: #e8eff8; --muted: #a5b6c9; --line: #213a5a; --line-strong: #2f4c72;
     --brand: #35b6c6; --brand-strong: #6fd0dc; --brand-ink: #04202a; --brand-soft: #0f3340; --link: #7fc4f5;
@@ -59,7 +58,6 @@
     --bar-bg: #2f2608; --bar-fg: #ffe9a8; --bar-line: #5c4a14;
     --shadow: 0 1px 2px rgba(0,0,0,.4); --shadow-lift: 0 8px 24px rgba(0,0,0,.45);
     color-scheme: dark;
-  }
 }
 
 * { box-sizing: border-box; }
@@ -1490,3 +1488,39 @@ details.fold { border: 0; padding: 0; background: transparent; }
 .is-embedded .bubble:not(.you):not(.owner) { color: #14263d; }
 .is-embedded .bubble:not(.you):not(.owner) .bubble-who { color: #5b6b82; }
 .is-embedded .bubble:not(.you):not(.owner) a { color: #0b5f6b; }
+
+.theme-btn { order: 3; display: inline-flex; align-items: center; justify-content: center; gap: .4rem; min-width: 44px; min-height: 44px; padding: 0 .75rem; border: 1.5px solid rgba(255,255,255,.35); border-radius: 99px; background: transparent; color: #fff; font: inherit; font-weight: 650; cursor: pointer; }
+.theme-btn:hover { background: rgba(255,255,255,.1); }
+.theme-btn[aria-pressed="true"] { background: #ffe9a8; border-color: #ffe9a8; color: #3a2d00; }
+.theme-btn .theme-label { display: none; }
+@media (min-width: 70rem) { .theme-btn .theme-label { display: inline; } }
+
+/* ---- Dark theme: surfaces that were hardcoded white or pale blue ---- */
+:root[data-theme="dark"] .guide-bubble, :root[data-theme="dark"] .guide-bubble::after,
+:root[data-theme="dark"] .home-split .guide-chat, :root[data-theme="dark"] .home .guide-page.is-embedded,
+:root[data-theme="dark"] .home .guide-page.is-embedded .guide-chat, :root[data-theme="dark"] .is-embedded .guide-side .biz-card,
+:root[data-theme="dark"] .stat-row li, :root[data-theme="dark"] .empty, :root[data-theme="dark"] .next-card,
+:root[data-theme="dark"] .renewals-card, :root[data-theme="dark"] .acct-pop, :root[data-theme="dark"] .stat-chips li,
+:root[data-theme="dark"] .chip, :root[data-theme="dark"] .chat-id, :root[data-theme="dark"] .chat-id > div,
+:root[data-theme="dark"] .chat-id > div > span, :root[data-theme="dark"] .is-embedded .tap-chip,
+:root[data-theme="dark"] .is-embedded .mic-bar { background: var(--surface); color: var(--ink); }
+:root[data-theme="dark"] .is-embedded .tap-chip { color: var(--brand-strong); }
+:root[data-theme="dark"] .is-embedded .bubble:not(.you):not(.owner) { background: var(--surface-2); color: var(--ink); }
+:root[data-theme="dark"] .is-embedded .bubble.guide, :root[data-theme="dark"] .bubble.guide { background: var(--surface-2); color: var(--ink); }
+:root[data-theme="dark"] .item details, :root[data-theme="dark"] main table th { background: var(--surface-2); color: var(--ink); }
+:root[data-theme="dark"] .renewals-card tbody tr:hover { background: var(--surface-2); }
+:root[data-theme="dark"] .icon-tile { background: var(--brand-soft); color: var(--brand-strong); }
+:root[data-theme="dark"] .st-left .icon { background: var(--maybe-bg); color: var(--maybe-fg); }
+:root[data-theme="dark"] .st-pend .icon { background: var(--pending-bg); color: var(--pending-fg); }
+:root[data-theme="dark"] .msg--error { background: var(--danger-bg); border-color: var(--danger); color: var(--ink); }
+:root[data-theme="dark"] .draft-note { background: var(--pending-bg); color: var(--pending-fg); border-color: var(--pending-line); }
+:root[data-theme="dark"] .guide-bubble strong, :root[data-theme="dark"] .guide-bubble p { color: var(--ink); }
+:root[data-theme="dark"] .auth { background: var(--surface); }
+:root[data-theme="dark"] .guide-chat .captions { background: var(--brand-soft); color: var(--ink); }
+:root[data-theme="dark"] .biz-add { color: var(--brand-strong); }
+:root[data-theme="dark"] .item details h4, :root[data-theme="dark"] .item details summary, :root[data-theme="dark"] .item details { color: var(--ink); }
+:root[data-theme="dark"] .stat-row strong, :root[data-theme="dark"] .guide h4 { color: var(--ink); }
+:root[data-theme="dark"] .guide-bubble .live-status, :root[data-theme="dark"] .item details > summary,
+:root[data-theme="dark"] .next-card h2, :root[data-theme="dark"] .admin-tabs button[aria-selected="true"] { color: var(--brand-strong); }
+:root[data-theme="dark"] .st-pct .icon, :root[data-theme="dark"] .renewals-icon, :root[data-theme="dark"] .chip-count,
+:root[data-theme="dark"] .guide-audio [aria-pressed="true"] { background: var(--brand-soft); color: var(--brand-strong); }
