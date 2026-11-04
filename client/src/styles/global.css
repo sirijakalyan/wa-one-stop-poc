@@ -1524,3 +1524,5 @@ details.fold { border: 0; padding: 0; background: transparent; }
 :root[data-theme="dark"] .next-card h2, :root[data-theme="dark"] .admin-tabs button[aria-selected="true"] { color: var(--brand-strong); }
 :root[data-theme="dark"] .st-pct .icon, :root[data-theme="dark"] .renewals-icon, :root[data-theme="dark"] .chip-count,
 :root[data-theme="dark"] .guide-audio [aria-pressed="true"] { background: var(--brand-soft); color: var(--brand-strong); }
+:root[data-theme="dark"] .desk-switch button[aria-selected="true"], :root[data-theme="dark"] .board-filters button[aria-pressed="true"], :root[data-theme="dark"] .tile.is-on { background: #fff; color: #0b1f3a; }
+:root[data-theme="dark"] .who-edits li strong { color: var(--ink); }
