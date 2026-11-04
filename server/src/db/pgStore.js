@@ -144,9 +144,18 @@ export function createPgStore(pool) {
     },
     async addNotification(v, n) {
       await pool.query(
-        'INSERT INTO notifications (id, visitor_id, type, simulated, read, created_at, title, body) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)',
-        [n.id, v, n.type, n.simulated !== false, Boolean(n.read), n.createdAt, n.title, n.body],
+        'INSERT INTO notifications (id, visitor_id, type, simulated, read, created_at, title, body, biz) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)',
+        [n.id, v, n.type, n.simulated !== false, Boolean(n.read), n.createdAt, n.title, n.body, n.biz || null],
       );
+    },
+    // Removing a business removes its renewal notifications. Older ones have no business id; they match "(Business name)" in the title,
+    // and when no business is left all renewal notifications go. Same rules as the file store.
+    async removeBusinessNotifications(v, biz, { label = '', none = false } = {}) {
+      const r = await pool.query(
+        `DELETE FROM notifications WHERE visitor_id = $1 AND type = 'renewal' AND (biz = $2 OR (biz IS NULL AND ($3::boolean OR ($4 <> '' AND right(title, length($4) + 2) = '(' || $4 || ')'))))`,
+        [v, biz, none, label],
+      );
+      return r.rowCount;
     },
     async markRead(v, id) {
       const r = await pool.query('UPDATE notifications SET read = TRUE WHERE id = $1 AND visitor_id = $2', [id, v]);

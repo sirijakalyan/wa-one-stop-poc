@@ -162,7 +162,7 @@ test('migrations 002 to 004 created the evidence tables with their indexes and c
   const idx = (await pool.query("SELECT indexname FROM pg_indexes WHERE schemaname = 'public'")).rows.map((r) => r.indexname);
   for (const name of ['source_reviews_rule_idx', 'source_reviews_reviewed_at_idx', 'county_sources_status_idx']) assert.ok(idx.includes(name), name);
   const applied = (await pool.query('SELECT id FROM schema_migrations ORDER BY id')).rows.map((r) => r.id);
-  assert.deepEqual(applied, ['001_init.sql', '002_source_reviews.sql', '003_county_sources.sql', '004_email_reminders.sql', '005_accounts.sql']);
+  assert.deepEqual(applied, ['001_init.sql', '002_source_reviews.sql', '003_county_sources.sql', '004_email_reminders.sql', '005_accounts.sql', '006_notification_biz.sql']);
   await assert.rejects(pool.query("INSERT INTO source_reviews (id, rule_id, source_url, reviewed_by, result) VALUES ('x','dor','https://a.example','R','approved')"));
   await assert.rejects(pool.query("INSERT INTO county_sources (county, official_url, reviewed_by, status) VALUES ('x','https://a.example','R','approved')"));
   await store.init(); // running migrations again changes nothing
@@ -207,4 +207,18 @@ test('accounts, sessions, reset tokens and the activity log work in Postgres', a
   const ev = await store.listEvents('acct-acct1');
   assert.deepEqual(ev.map((e) => e.type), ['login', 'signup']);
   assert.equal((await store.listAccounts()).length, 1);
+});
+
+test('removing a business removes only its renewal notifications in Postgres', async (t) => {
+  if (skipReason) return t.skip(skipReason);
+  const add = (v, id, biz, title) => store.addNotification(v, { id, type: 'renewal', biz, read: false, createdAt: '2026-01-01T00:00:00Z', title, body: 'x' });
+  await add('rb1', 'a', 'main', 'Renewal reminder: License');
+  await add('rb1', 'b', 'abc123', 'Renewal reminder: License (Cafe)');
+  await add('rb1', 'c', undefined, 'Renewal reminder: Filing (Cafe)');
+  await add('rb2', 'd', 'abc123', 'Renewal reminder: License (Cafe)');
+  assert.equal(await store.removeBusinessNotifications('rb1', 'abc123', { label: 'Cafe' }), 2);
+  assert.deepEqual((await store.listNotifications('rb1')).map((x) => x.id), ['a']);
+  assert.equal((await store.listNotifications('rb2')).length, 1);
+  assert.equal(await store.removeBusinessNotifications('rb1', 'main', { none: true }), 1);
+  assert.equal((await store.listNotifications('rb1')).length, 0);
 });
