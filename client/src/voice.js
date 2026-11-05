@@ -6,13 +6,17 @@ export const canSpeak = () => typeof window !== 'undefined' && 'speechSynthesis'
 export const recognitionClass = () => (typeof window === 'undefined' ? null : window.SpeechRecognition || window.webkitSpeechRecognition || null);
 // Mute is remembered while the tab is open, so moving between pages never brings the voice or the microphone back by itself.
 const MUTE_KEY = 'wa-voice-muted';
-let mutedMemory = false;
+let mutedMemory = null; // null = not muted, otherwise { mic: boolean } (was the microphone on when the owner muted)
 export function isMuted() {
-  try { return window.sessionStorage.getItem(MUTE_KEY) === '1'; } catch { return mutedMemory; }
+  try { return window.sessionStorage.getItem(MUTE_KEY) !== null; } catch { return mutedMemory !== null; }
 }
-export function setMuted(on) {
-  mutedMemory = Boolean(on);
-  try { if (on) window.sessionStorage.setItem(MUTE_KEY, '1'); else window.sessionStorage.removeItem(MUTE_KEY); } catch { /* memory only */ }
+// Whether the microphone was on at the moment of muting, so Unmute can switch it back on even after moving between pages.
+export function micWasOnAtMute() {
+  try { return window.sessionStorage.getItem(MUTE_KEY) === 'mic'; } catch { return Boolean(mutedMemory?.mic); }
+}
+export function setMuted(on, micWasOn = false) {
+  mutedMemory = on ? { mic: Boolean(micWasOn) } : null;
+  try { if (on) window.sessionStorage.setItem(MUTE_KEY, micWasOn ? 'mic' : '1'); else window.sessionStorage.removeItem(MUTE_KEY); } catch { /* memory only */ }
 }
 export const canListen = () => Boolean(recognitionClass());
 

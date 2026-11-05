@@ -10,7 +10,7 @@ import GuideArt from '../components/GuideArt.jsx';
 import ExternalLink from '../components/ExternalLink.jsx';
 import Icon from '../components/Icon.jsx';
 import { ErrorNote } from '../components/Parts.jsx';
-import { canListen, canSpeak, createListener, hasVoice, isMuted, setMuted, listenErrorText, speak, speakable, stopSpeaking, synthBusy } from '../voice.js';
+import { canListen, canSpeak, createListener, hasVoice, isMuted, micWasOnAtMute, setMuted, listenErrorText, speak, speakable, stopSpeaking, synthBusy } from '../voice.js';
 import { answersFromCard, confirmedCount, fieldsOf, isComplete } from '../guideCard.js';
 import { speechLang, useT } from '../i18n.js';
 
@@ -349,23 +349,21 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
     document.addEventListener('visibilitychange', onHide);
     return () => document.removeEventListener('visibilitychange', onHide);
   }, [micOn]); // eslint-disable-line react-hooks/exhaustive-deps
-  // Mute turns off sound both ways: the guide stops talking and the microphone stops listening. Unmute brings the microphone back
-  // only if it was on before the owner muted.
-  const micBeforeMute = useRef(false);
+  // Mute turns off sound both ways: the guide stops talking and the microphone stops listening. Unmute turns both back on.
   function muteToggle() {
     if (voiceOn) {
       stopSpeaking(); speakingCount.current = 0; setSpeaking(false);
-      setMuted(true);
-      micBeforeMute.current = micOn;
+      setMuted(true, micOn);
       if (micOn) { setMicOn(false); listenerRef.current?.stop(); setListening(false); }
       setVoiceMsg(t('voice.mutedBoth'));
       setVoiceOn(false);
     } else {
+      // Unmute brings the microphone back if it was on when muted, and always in Talk mode, which opens with the microphone on.
+      const micBack = micWasOnAtMute() || mode === 'talk';
       setMuted(false);
       setVoiceMsg('');
       setVoiceOn(true);
-      if (micBeforeMute.current && ensureListener()) setMicOn(true);
-      micBeforeMute.current = false;
+      if (micBack && ensureListener()) setMicOn(true);
     }
   }
   // Skip: end the guide's line now and go straight to listening. Nothing is left in the air, so no quiet time is needed.

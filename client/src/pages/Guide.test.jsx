@@ -332,6 +332,8 @@ describe('voice', () => {
     await new Promise((r) => setTimeout(r, 400));
     expect(spoken.length).toBe(0);
     expect(FakeRec.last?.started || false).toBe(false);
+    await user.click(screen.getByRole('button', { name: 'Unmute voice' }));
+    await waitFor(() => expect(FakeRec.last?.started).toBe(true)); // Unmute brings the microphone back in Talk mode, even after leaving the page
   });
 
   it('the microphone pauses by itself when the tab is hidden, so it never listens while the owner is away', async () => {
