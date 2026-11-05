@@ -1,7 +1,8 @@
 // Optional general-help model for questions the written rules and guides do not cover.
 // Leave ANTHROPIC_API_KEY empty and the chat keeps its plain "I don't have that" answer. The key is read from the environment only.
 export function createAnthropicLlm({ apiKey = process.env.ANTHROPIC_API_KEY, model = process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5', timeoutMs = Number(process.env.ANTHROPIC_TIMEOUT_MS) || 20000 } = {}) {
-  if (!apiKey?.trim()) return null;
+  if (!apiKey?.trim()) { console.log('General help model: off (ANTHROPIC_API_KEY is not set)'); return null; }
+  console.log(`General help model: on (${model})`);
   return async function anthropicChat({ system, user, history = [], temperature = 0.3, numPredict = 400 }) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -12,7 +13,11 @@ export function createAnthropicLlm({ apiKey = process.env.ANTHROPIC_API_KEY, mod
         signal: controller.signal,
         body: JSON.stringify({ model, max_tokens: numPredict, temperature, system, messages: [...history, { role: 'user', content: user }] }),
       });
-      if (!res.ok) throw new Error(`Model returned HTTP ${res.status}`);
+      if (!res.ok) {
+        let why = '';
+        try { why = (await res.json())?.error?.message || ''; } catch { /* no body */ }
+        throw new Error(`Model returned HTTP ${res.status}${why ? `: ${String(why).slice(0, 200)}` : ''}`);
+      }
       const text = (await res.json())?.content?.map((b) => b.text || '').join('').trim();
       if (!text) throw new Error('Model returned an empty response');
       return text;

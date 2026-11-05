@@ -595,7 +595,8 @@ async function generalHelp(base, { message, conversation, generalLlm, lang }) {
     const text = String(reply || '').replace(/https?:\/\/\S+/g, '').replace(/\u2014/g, ',').trim();
     if (!text) return base;
     return { answer: `${GENERAL_LABEL[es ? 'es' : 'en']}\n${text}`, links: [], matched: [], mode: 'general', suggestions: base.suggestions || [] };
-  } catch {
+  } catch (err) {
+    console.error(`General help model failed: ${err?.message || err}`);
     return base;
   }
 }
@@ -611,7 +612,8 @@ async function smallTalk(base, { message, conversation, generalLlm, lang }) {
     });
     const text = String(reply || '').replace(/https?:\/\/\S+/g, '').replace(/\u2014/g, ',').trim();
     return text ? { ...base, answer: text } : base;
-  } catch {
+  } catch (err) {
+    console.error(`General help model failed: ${err?.message || err}`);
     return base;
   }
 }
