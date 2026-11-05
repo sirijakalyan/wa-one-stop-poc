@@ -6,6 +6,8 @@ export const canSpeak = () => typeof window !== 'undefined' && 'speechSynthesis'
 export const recognitionClass = () => (typeof window === 'undefined' ? null : window.SpeechRecognition || window.webkitSpeechRecognition || null);
 // Mute is remembered while the tab is open, so moving between pages never brings the voice or the microphone back by itself.
 const MUTE_KEY = 'wa-voice-muted';
+// A fresh page load (open or refresh) always starts with the voice on. Mute only carries across pages inside the app.
+try { window.sessionStorage.removeItem(MUTE_KEY); } catch { /* ignore */ }
 let mutedMemory = null; // null = not muted, otherwise { mic: boolean } (was the microphone on when the owner muted)
 export function isMuted() {
   try { return window.sessionStorage.getItem(MUTE_KEY) !== null; } catch { return mutedMemory !== null; }
