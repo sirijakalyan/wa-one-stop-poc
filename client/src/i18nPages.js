@@ -1,6 +1,17 @@
 // Text for the pages other than the home page and the guide: checklist, progress, notifications, questionnaire, sources, side chat,
 // footer and shared labels. The Spanish is a DRAFT that a person (Olger Palma, per the build spec) must review.
 // Text that comes from the rule records (step titles, reasons, guides, agency names, notification bodies) stays in English.
+// "30, 7 and 1 days before" built from the admin's reminder days (0 means on the day itself).
+function alertList(days, lang) {
+  const es = lang === 'es';
+  const before = [...new Set(days)].filter((d) => d > 0).sort((a, b) => b - a);
+  const sameDay = days.includes(0);
+  const join = (a) => (a.length < 2 ? a.join('') : `${a.slice(0, -1).join(', ')} ${es ? 'y' : 'and'} ${a[a.length - 1]}`);
+  if (!before.length) return es ? 'el mismo día' : 'on the day';
+  const base = es ? `${join(before)} ${before.length === 1 && before[0] === 1 ? 'día' : 'días'} antes` : `${join(before)} ${before.length === 1 && before[0] === 1 ? 'day' : 'days'} before`;
+  return sameDay ? `${base} ${es ? 'y el mismo día' : 'and on the day'}` : base;
+}
+
 export const pagesEn = {
   'auth.code': '6-digit code',
   'auth.confirmTitle': 'Check your email',
@@ -195,7 +206,7 @@ export const pagesEn = {
   'cal.googleFor': (t) => `Add ${t} to Google Calendar (opens in a new tab)`,
   'cal.needDate': 'Enter a date first',
   'cal.all': 'Add all to my calendar (.ics file)',
-  'cal.hint': 'This downloads a calendar file. Open it to add each renewal as an all-day event, with alerts 30, 7 and 1 days before. It uses the dates you entered, so confirm each date with the agency. If you change a date here, download the file again.',
+  'cal.hint': (days = [30, 7, 1]) => `This downloads a calendar file. Open it to add each renewal as an all-day event, with alerts ${alertList(days, 'en')}. It uses the dates you entered, so confirm each date with the agency. If you change a date here, download the file again.`,
   'cal.title': (t) => `Renewal due: ${t}`,
   'cal.desc': (agency, checklist, official) => `This is the renewal date you entered. Confirm the date with ${agency}. Your checklist: ${checklist}${official ? ` Official page: ${official}` : ''}`,
   'cal.alarm': 'Renewal coming up',
@@ -642,7 +653,7 @@ export const pagesEs = {
   'cal.googleFor': (t) => `Agregar ${t} a Google Calendar (se abre en una pestaña nueva)`,
   'cal.needDate': 'Primero escriba una fecha',
   'cal.all': 'Agregar todo a mi calendario (archivo .ics)',
-  'cal.hint': 'Esto descarga un archivo de calendario. Ábralo para agregar cada renovación como evento de todo el día, con alertas 30, 7 y 1 días antes. Usa las fechas que usted escribió, así que confirme cada fecha con la agencia. Si cambia una fecha aquí, vuelva a descargar el archivo.',
+  'cal.hint': (days = [30, 7, 1]) => `Esto descarga un archivo de calendario. Ábralo para agregar cada renovación como evento de todo el día, con alertas ${alertList(days, 'es')}. Usa las fechas que usted escribió, así que confirme cada fecha con la agencia. Si cambia una fecha aquí, vuelva a descargar el archivo.`,
   'cal.title': (t) => `Renovación: ${t}`,
   'cal.desc': (agency, checklist, official) => `Esta es la fecha de renovación que usted escribió. Confirme la fecha con ${agency}. Su lista: ${checklist}${official ? ` Página oficial: ${official}` : ''}`,
   'cal.alarm': 'Se acerca una renovación',

@@ -160,6 +160,7 @@ export const api = {
   disableRule: (id) => request('POST', `/api/rules/${id}/disable`),
   enableRule: (id) => request('POST', `/api/rules/${id}/enable`),
   changes: () => request('GET', '/api/changes'),
+  reminderDays: () => request('GET', '/api/reminder-days'),
   reminderSettings: () => request('GET', '/api/admin/reminders'),
   saveReminderSettings: (cfg) => request('PUT', '/api/admin/reminders', cfg),
   testReminderEmail: () => request('POST', '/api/admin/reminders/test'),

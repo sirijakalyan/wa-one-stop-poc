@@ -1,5 +1,5 @@
 // Calendar files for renewal dates. Everything is built in the browser; nothing is sent anywhere.
-// Each renewal becomes an all-day event on the date the owner entered, with alerts 30, 7 and 1 days before.
+// Each renewal becomes an all-day event on the date the owner entered, with alerts on the days the admin chose (default 30, 7 and 1 days before).
 
 const pad = (n) => String(n).padStart(2, '0');
 const compact = (iso) => iso.replaceAll('-', '');
@@ -28,7 +28,9 @@ function fold(line) {
 }
 
 // events: [{ id, date: 'YYYY-MM-DD', title, description, url }]
-export function buildIcs(events, { now = new Date(), alarmText = 'Renewal coming up' } = {}) {
+export const DEFAULT_ALARM_DAYS = [30, 7, 1];
+
+export function buildIcs(events, { now = new Date(), alarmText = 'Renewal coming up', alarmDays = DEFAULT_ALARM_DAYS } = {}) {
   const stamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}Z`;
   const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//WA Business One-Stop//Renewals//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH'];
   for (const e of events.filter((x) => isDate(x.date))) {
@@ -42,7 +44,7 @@ export function buildIcs(events, { now = new Date(), alarmText = 'Renewal coming
       `DESCRIPTION:${esc(e.description)}`,
     );
     if (e.url) lines.push(`URL:${e.url}`);
-    for (const days of [30, 7, 1]) lines.push('BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${esc(alarmText)}`, `TRIGGER:-P${days}D`, 'END:VALARM');
+    for (const days of alarmDays) lines.push('BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${esc(alarmText)}`, days === 0 ? 'TRIGGER:PT0S' : `TRIGGER:-P${days}D`, 'END:VALARM');
     lines.push('END:VEVENT');
   }
   lines.push('END:VCALENDAR');

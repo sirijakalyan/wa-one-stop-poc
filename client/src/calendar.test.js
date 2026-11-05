@@ -40,3 +40,12 @@ describe('calendar file', () => {
     expect(fileSafe('Apply for your Washington business license / (DOR)')).toBe('Apply-for-your-Washington-business-license-DOR');
   });
 });
+
+describe('alarm days follow the admin setting', () => {
+  it('uses the days it is given, including the day itself', () => {
+    const ics = buildIcs([{ id: 'a', date: '2027-03-31', title: 'T', description: 'D' }], { alarmDays: [14, 0] });
+    expect(ics).toContain('TRIGGER:-P14D');
+    expect(ics).toContain('TRIGGER:PT0S');
+    expect(ics).not.toContain('TRIGGER:-P30D');
+  });
+});

@@ -475,6 +475,8 @@ export function createService(store, options = {}) {
 
   route('GET', '/api/status', async () => ({ ok: true, storage: store.kind || 'unknown', data: await store.counts() }));
 
+  // Public: the reminder days an admin chose, so calendar files and page text match the emails.
+  route('GET', '/api/reminder-days', async () => ({ ok: true, windows: (await reminderConfig()).windows }));
   route('GET', '/api/samples', async () => ({ ok: true, samples: SAMPLES }));
 
   route('POST', '/api/suggest', async ({ body }) => ({

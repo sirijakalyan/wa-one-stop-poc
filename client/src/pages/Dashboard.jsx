@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { api, useLoad } from '../api.js';
 import { useT } from '../i18n.js';
 import Icon from '../components/Icon.jsx';
-import { buildIcs, downloadIcs, fileSafe, googleUrl } from '../calendar.js';
+import { buildIcs, downloadIcs, fileSafe, googleUrl, DEFAULT_ALARM_DAYS } from '../calendar.js';
 import { ErrorNote, Loading, Meter } from '../components/Parts.jsx';
 
 
@@ -103,7 +103,15 @@ export function DashRenewals({ data, onSave, savedId, actionError }) {
   const t = useT();
   const set = data.items.filter((i) => i.renewal).length;
   const dated = data.items.filter((i) => i.renewal);
-  const saveFile = (list, name) => downloadIcs(`${fileSafe(name)}.ics`, buildIcs(list.map((i) => eventOf(i, t)), { alarmText: t('cal.alarm') }));
+  const [alarmDays, setAlarmDays] = useState(DEFAULT_ALARM_DAYS);
+  useEffect(() => {
+    let live = true;
+    try {
+      Promise.resolve(api.reminderDays()).then((r) => { if (live && Array.isArray(r?.windows) && r.windows.length) setAlarmDays(r.windows); }).catch(() => {});
+    } catch { /* keep the default days */ }
+    return () => { live = false; };
+  }, []);
+  const saveFile = (list, name) => downloadIcs(`${fileSafe(name)}.ics`, buildIcs(list.map((i) => eventOf(i, t)), { alarmText: t('cal.alarm'), alarmDays }));
   return (
     <section className="renewals-card" id="renewals" aria-labelledby="renewals-title">
       <header className="renewals-head">
@@ -144,7 +152,7 @@ export function DashRenewals({ data, onSave, savedId, actionError }) {
       </div>
       <div className="cal-all">
         <button type="button" className="btn btn-primary btn-sm" disabled={!dated.length} onClick={() => saveFile(dated, `${data.label || 'Business'} renewals`)}>{t('cal.all')}</button>
-        <p className="hint">{t('cal.hint')}</p>
+        <p className="hint">{t('cal.hint', alarmDays)}</p>
       </div>
     </section>
   );
