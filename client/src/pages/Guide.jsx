@@ -358,8 +358,8 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
       setVoiceMsg(t('voice.mutedBoth'));
       setVoiceOn(false);
     } else {
-      // Unmute brings the microphone back if it was on when muted, and always in Talk mode, which opens with the microphone on.
-      const micBack = micWasOnAtMute() || mode === 'talk';
+      // Unmute brings the voice and the microphone back together, so the owner can talk again right away.
+      const micBack = true;
       setMuted(false);
       setVoiceMsg('');
       setVoiceOn(true);
