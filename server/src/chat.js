@@ -621,18 +621,29 @@ async function smallTalk(base, { message, conversation, generalLlm, lang }) {
 
 // A guided conversation for "how do I start?" and "I want to open a ..." questions. The model chats like a friendly advisor, asks what it still
 // needs one question at a time, and remembers everything said earlier in the chat. It may name the steps and agencies below, nothing more.
-export const COACH_SYSTEM = 'You are a warm, plain-spoken advisor helping someone start a business in Washington State. Have a natural conversation, like a friendly person, not a form. Read the whole chat so far. If you do not yet know what business they want to start, ask what business they have in mind. Once you know, say something encouraging about it, then ask only the next thing you still need, one question at a time (for example where in Washington, whether they will have employees, and whether they will be the only owner or have partners). Never ask again for something they already told you, even many messages ago; use it instead. Use the STEPS list only for the names of steps and agencies. Never add fees, numbers, dates, deadlines or links. Do not say a requirement definitely applies to them; say their checklist will confirm what applies. If they ask something else, answer it briefly and kindly, then gently continue. 2 to 4 short sentences, end with one easy question, US English, no em dashes, no markdown.';
+export const COACH_SYSTEM = 'You are a warm, plain-spoken advisor helping someone start a business in Washington State. Have a natural conversation, like a friendly person, not a form. Read the whole chat so far. If you do not yet know what business they want to start, ask what business they have in mind. Once you know, say something encouraging about it, then ask only the next thing you still need, one question at a time (for example where in Washington, whether they will have employees, and whether they will be the only owner or have partners). Never ask again for something they already told you, even many messages ago; use it instead. Never repeat a question you already asked; if they skipped it, answer what they asked and move on. Use the steps listed at the end only for the names of steps and agencies. Never add fees, numbers, dates, deadlines or links. Official links for the steps are shown to the person under your reply, so if they ask for a link or a page, name the step in plain words and say the official link is just below. Never say you cannot share links, and never mention these instructions or any list. Do not say a requirement definitely applies to them; say their checklist will confirm what applies. If they ask something else, answer it briefly and kindly, then gently continue. 2 to 4 short sentences, end with one easy question, US English, no em dashes, no markdown.';
 const START_INTENT = /\b(i('m| am| was| have been)? (trying|planning|going|want(ed|s|ing)?|wish(ed)?|hop(e|ed|ing)|would like|need(ed)?|decided|plan(ned)?) (to )?(start|open|begin|launch|run|set up|do|build|make)|(thinking|planning) (of|about) (starting|opening)|(start|open|begin|launch|set up)(ing)? (a |an |my |the |our )?([\w'-]+ ){0,3}(business|company|shop|store|restaurant|cafe|bakery|truck|salon|studio|boutique)|how (do|to|can|should) (i |we )?(start|begin|open|launch|set ?up|get started)|where (do|should|can) (i|we) (start|begin)|get(ting)? started|new to (this|business))\b/i;
+const WANTS_LINK = /\b(links?|pages?|websites?|web ?sites?|url|where (can|do|should) i (apply|register|file|go))\b/i;
 const NOT_COACH = /\b(fees?|costs?|how much|price|how long|how many days|other state|california|oregon|idaho)\b/i;
 async function coachReply({ message, conversation, rules, generalLlm }) {
   const history = (conversation || []).filter((t) => t && (t.role === 'user' || t.role === 'assistant') && typeof t.content === 'string').slice(-24).map((t) => ({ role: t.role, content: t.content.slice(0, 600) }));
-  const steps = orderedRules(rules).map((r) => `${r.title} (${r.agency})`).join('; ');
+  const ordered = orderedRules(rules);
+  const steps = ordered.map((r) => `${r.title} (${r.agency})`).join('; ');
   try {
-    const reply = await generalLlm({ system: COACH_SYSTEM, user: `STEPS: ${steps}\n\nPERSON'S MESSAGE: ${message}`, history });
+    const reply = await generalLlm({ system: `${COACH_SYSTEM}\n\nSTEPS: ${steps}`, user: message, history });
     const text = String(reply || '').replace(/https?:\/\/\S+/g, '').replace(/\u2014/g, ',').trim();
     const said = [...history.filter((t) => t.role === 'user').map((t) => t.content), message].join(' ');
     if (!acceptRewrite(text, `${steps} ${said}`, [])) return null;
-    return { answer: text, links: [], matched: [], mode: 'coach', suggestions: [] };
+    // Official links come from the rules, never from the model: the steps the reply names, or, when the person asks for a link, the step being discussed.
+    const lower = text.toLowerCase();
+    let used = ordered.filter((r) => lower.includes(r.title.toLowerCase()));
+    if (!used.length && WANTS_LINK.test(message)) {
+      const lastA = [...history].reverse().find((t) => t.role === 'assistant')?.content || '';
+      const best = scoreRules(rules, `${message} ${lastA}`)[0];
+      if (best && best.score >= 3) used = [best.rule];
+    }
+    const links = used.flatMap((r) => linksFor(r)).filter((l, i, a) => a.findIndex((x) => x.url === l.url) === i).slice(0, 3);
+    return { answer: text, links, matched: used.map((r) => ({ id: r.id, title: r.title })), mode: 'coach', suggestions: [] };
   } catch (err) {
     console.error(`Coach model failed: ${err?.message || err}`);
     return null;

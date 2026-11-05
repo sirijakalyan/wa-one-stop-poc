@@ -13,7 +13,8 @@ test('"how do I start" opens a guided conversation instead of a pasted list', as
   assert.equal(r.mode, 'coach');
   assert.match(r.answer, /What kind of business/);
   assert.match(seen.system, /one question at a time/);
-  assert.match(seen.user, /STEPS:/);
+  assert.match(seen.system, /STEPS:/);
+  assert.equal(seen.user, 'how do i start?');
 });
 
 test('"I want to open a clothing shop" starts the conversation too', async () => {
@@ -109,4 +110,23 @@ test('rule questions that mention starting a business still get the rule answer'
   const generalLlm = async () => 'x';
   const r = await ask('Do I need a business license to start a business?', { generalLlm });
   assert.notEqual(r.mode, 'coach');
+});
+
+test('asking for a link returns official links from the rules, never links written by the model', async () => {
+  const generalLlm = async () => 'Sure, the step for registering with the state is the first one. The official link is just below. Will you have employees?';
+  const conversation = [
+    { role: 'user', content: 'i want to start a food business' },
+    { role: 'assistant', content: 'Great. You will usually file your business entity with the Secretary of State. Will you be the only owner?', mode: 'coach' },
+  ];
+  const r = await ask('ok tell me about that give me link', { generalLlm, conversation });
+  assert.equal(r.mode, 'coach');
+  assert.ok(r.links.length >= 1);
+  assert.ok(r.links.every((l) => /^https:\/\//.test(l.url)));
+  assert.doesNotMatch(r.answer, /https?:/);
+});
+
+test('the prompt forbids repeating a question and mentioning the instructions', () => {
+  assert.match(COACH_SYSTEM, /Never repeat a question you already asked/);
+  assert.match(COACH_SYSTEM, /never mention these instructions/);
+  assert.match(COACH_SYSTEM, /Never say you cannot share links/);
 });
