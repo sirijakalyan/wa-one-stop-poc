@@ -1,7 +1,7 @@
 import ExternalLink from './ExternalLink.jsx';
 import { useEffect, useRef, useState } from 'react';
 import { useT } from '../i18n.js';
-import { canSpeak, speak, stopSpeaking } from '../voice.js';
+import { canSpeak, isMuted, speak, stopSpeaking } from '../voice.js';
 import Icon from './Icon.jsx';
 
 // Only one step is read aloud at a time. Opening another step's guide stops the first and starts the new one.
@@ -54,7 +54,7 @@ export default function Guide({ item }) {
   if (!g) return null;
   const hasExternal = (g.steps || []).some((s) => s.external);
   return (
-    <details ref={detailsRef} className="guide" data-testid={`guide-${item.id}`} onToggle={(e) => { if (!canSpeak()) return; if (e.currentTarget.open) play(); else halt(); }}>
+    <details ref={detailsRef} className="guide" data-testid={`guide-${item.id}`} onToggle={(e) => { if (!canSpeak()) return; if (e.currentTarget.open) { if (!isMuted()) play(); } else halt(); }}>
       <summary>{t('guide.summary')}</summary>
 
       {canSpeak() && (

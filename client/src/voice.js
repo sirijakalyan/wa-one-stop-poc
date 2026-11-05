@@ -4,6 +4,16 @@
 
 export const canSpeak = () => typeof window !== 'undefined' && 'speechSynthesis' in window && typeof window.SpeechSynthesisUtterance !== 'undefined';
 export const recognitionClass = () => (typeof window === 'undefined' ? null : window.SpeechRecognition || window.webkitSpeechRecognition || null);
+// Mute is remembered while the tab is open, so moving between pages never brings the voice or the microphone back by itself.
+const MUTE_KEY = 'wa-voice-muted';
+let mutedMemory = false;
+export function isMuted() {
+  try { return window.sessionStorage.getItem(MUTE_KEY) === '1'; } catch { return mutedMemory; }
+}
+export function setMuted(on) {
+  mutedMemory = Boolean(on);
+  try { if (on) window.sessionStorage.setItem(MUTE_KEY, '1'); else window.sessionStorage.removeItem(MUTE_KEY); } catch { /* memory only */ }
+}
 export const canListen = () => Boolean(recognitionClass());
 
 // Prefer a voice installed on the computer. Chrome's network voices ("Google ...") are known to go silent after the first line or on longer text.

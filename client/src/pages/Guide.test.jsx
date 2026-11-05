@@ -207,6 +207,7 @@ describe('voice', () => {
     say(text) { this.onresult({ resultIndex: 0, results: [Object.assign([{ transcript: text }], { isFinal: true })] }); this.started = false; this.onend(); }
   }
   beforeEach(() => {
+    window.sessionStorage.clear();
     spoken = [];
     window.SpeechSynthesisUtterance = class { constructor(t) { this.text = t; } };
     window.speechSynthesis = {
@@ -314,6 +315,23 @@ describe('voice', () => {
     expect(screen.getByText(/Muted\. The guide is quiet and your microphone is off/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Unmute voice' }));
     await waitFor(() => expect(FakeRec.last.started).toBe(true));
+  });
+
+  it('a mute is remembered when the owner leaves the page and comes back: no voice, no microphone, until Unmute', async () => {
+    const user = userEvent.setup();
+    const first = renderAt({ pathname: '/guide', state: { mode: 'type' } });
+    await user.click(await screen.findByRole('button', { name: /Microphone off/ }));
+    await waitFor(() => expect(FakeRec.last?.started).toBe(true));
+    await user.click(screen.getByRole('button', { name: 'Mute voice' }));
+    await waitFor(() => expect(FakeRec.last.started).toBe(false));
+    first.unmount();
+    FakeRec.last = null;
+    spoken.length = 0;
+    renderAt({ pathname: '/guide', state: { mode: 'talk' } });
+    expect(await screen.findByRole('button', { name: 'Unmute voice' })).toBeInTheDocument();
+    await new Promise((r) => setTimeout(r, 400));
+    expect(spoken.length).toBe(0);
+    expect(FakeRec.last?.started || false).toBe(false);
   });
 
   it('the microphone pauses by itself when the tab is hidden, so it never listens while the owner is away', async () => {

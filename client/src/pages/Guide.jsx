@@ -10,7 +10,7 @@ import GuideArt from '../components/GuideArt.jsx';
 import ExternalLink from '../components/ExternalLink.jsx';
 import Icon from '../components/Icon.jsx';
 import { ErrorNote } from '../components/Parts.jsx';
-import { canListen, canSpeak, createListener, hasVoice, listenErrorText, speak, speakable, stopSpeaking, synthBusy } from '../voice.js';
+import { canListen, canSpeak, createListener, hasVoice, isMuted, setMuted, listenErrorText, speak, speakable, stopSpeaking, synthBusy } from '../voice.js';
 import { answersFromCard, confirmedCount, fieldsOf, isComplete } from '../guideCard.js';
 import { speechLang, useT } from '../i18n.js';
 
@@ -80,7 +80,7 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
   const started = useRef(false);
 
   // Voice: the guide speaks its replies and the owner can talk back. It starts only after a tap (Talk to me, the microphone or Unmute).
-  const [voiceOn, setVoiceOn] = useState(mode === 'talk' && canSpeak());
+  const [voiceOn, setVoiceOn] = useState(mode === 'talk' && canSpeak() && !isMuted());
   const [micOn, setMicOn] = useState(false);
   const [activity, setActivity] = useState(0); // bumped whenever the owner speaks or the guide finishes talking, to restart the idle timer
   const [speaking, setSpeaking] = useState(false);
@@ -304,7 +304,7 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
   function toggleMic() {
     setVoiceMsg('');
     if (!ensureListener()) return;
-    if (!micOn && canSpeak()) setVoiceOn(true);
+    if (!micOn && canSpeak() && !isMuted()) setVoiceOn(true); // a muted guide stays quiet even when the microphone is turned on
     setMicOn(!micOn);
   }
   // Talk mode opens with the greeting spoken and the microphone on, with no tap needed. If the browser holds the voice back
@@ -313,6 +313,7 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
   useEffect(() => {
     if (mode !== 'talk' || autoMic.current) return;
     autoMic.current = true;
+    if (isMuted()) { setVoiceMsg(t('voice.mutedBoth')); return; } // muted earlier: stay quiet until Unmute
     if (ensureListener()) setMicOn(true);
   }, [mode]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
@@ -354,11 +355,13 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
   function muteToggle() {
     if (voiceOn) {
       stopSpeaking(); speakingCount.current = 0; setSpeaking(false);
+      setMuted(true);
       micBeforeMute.current = micOn;
       if (micOn) { setMicOn(false); listenerRef.current?.stop(); setListening(false); }
       setVoiceMsg(t('voice.mutedBoth'));
       setVoiceOn(false);
     } else {
+      setMuted(false);
       setVoiceMsg('');
       setVoiceOn(true);
       if (micBeforeMute.current && ensureListener()) setMicOn(true);
