@@ -3,7 +3,7 @@
 export function createAnthropicLlm({ apiKey = process.env.ANTHROPIC_API_KEY, model = process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5', timeoutMs = Number(process.env.ANTHROPIC_TIMEOUT_MS) || 20000 } = {}) {
   if (!apiKey?.trim()) { console.log('General help model: off (ANTHROPIC_API_KEY is not set)'); return null; }
   console.log(`General help model: on (${model})`);
-  return async function anthropicChat({ system, user, history = [], temperature = 0.3, numPredict = 400 }) {
+  return async function anthropicChat({ system, user, history = [], numPredict = 400 }) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
@@ -11,7 +11,8 @@ export function createAnthropicLlm({ apiKey = process.env.ANTHROPIC_API_KEY, mod
         method: 'POST',
         headers: { 'content-type': 'application/json', 'x-api-key': apiKey.trim(), 'anthropic-version': '2023-06-01' },
         signal: controller.signal,
-        body: JSON.stringify({ model, max_tokens: numPredict, temperature, system, messages: [...history, { role: 'user', content: user }] }),
+        // No temperature: newer models reject it (HTTP 400 "temperature is deprecated for this model").
+        body: JSON.stringify({ model, max_tokens: numPredict, system, messages: [...history, { role: 'user', content: user }] }),
       });
       if (!res.ok) {
         let why = '';
