@@ -20,6 +20,8 @@ import { speechLang, useT } from '../i18n.js';
 const words = (x) => String(x).toLowerCase().replace(/[^\p{L}\p{N}\s']/gu, ' ').split(/\s+/).filter(Boolean);
 // How long the microphone stays off after the guide stops, so the end of its voice (and room echo) is not picked up.
 export const QUIET_AFTER_SPEECH_MS = 500;
+// The microphone switches itself off after this long with nobody speaking to the guide, so it never listens all day while the owner reads or scrolls.
+export const MIC_IDLE_MS = 60000;
 export function isEcho(heard, spoken) {
   const h = words(heard);
   if (!h.length) return true;
@@ -80,6 +82,7 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
   // Voice: the guide speaks its replies and the owner can talk back. It starts only after a tap (Talk to me, the microphone or Unmute).
   const [voiceOn, setVoiceOn] = useState(mode === 'talk' && canSpeak());
   const [micOn, setMicOn] = useState(false);
+  const [activity, setActivity] = useState(0); // bumped whenever the owner speaks or the guide finishes talking, to restart the idle timer
   const [speaking, setSpeaking] = useState(false);
   const [listening, setListening] = useState(false);
   const [voiceMsg, setVoiceMsg] = useState('');
@@ -206,6 +209,7 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
     speakingCount.current = Math.max(0, speakingCount.current - 1);
     if (speakingCount.current) return;
     lastSpeechEnd.current = Date.now();
+    setActivity((n) => n + 1);
     setSpeaking(false);
     setHold(true);
     clearTimeout(holdTimer.current);
@@ -273,12 +277,14 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
           if (speakingCount.current > 0) return; // the microphone is meant to be off while the guide talks: anything heard now is its own voice
           if (guideHeard() && (isEcho(t, spokenNow.current) || (Date.now() - lastSpeechEnd.current < 3000 && isLineEcho(t, spokenNow.current)))) return;
           interrupt(); // the owner is talking over the guide
+          setActivity((n) => n + 1);
           setText(t);
         },
         onFinal: (t) => {
           if (speakingCount.current > 0) return;
           if (guideHeard() && (isEcho(t, spokenNow.current) || (Date.now() - lastSpeechEnd.current < 3000 && isLineEcho(t, spokenNow.current)))) return;
           interrupt();
+          setActivity((n) => n + 1);
           setText('');
           turnRef.current({ message: t }, t);
         },
@@ -329,6 +335,19 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
     document.addEventListener('keydown', unlock, { once: true });
     return () => { document.removeEventListener('pointerdown', unlock); document.removeEventListener('keydown', unlock); };
   }, [mode, voiceOn]);
+  // Do not keep listening forever. A microphone left open while the owner scrolls, reads or talks to someone else would send
+  // that talk to the guide. It pauses after a minute of quiet, and at once when the tab is hidden.
+  useEffect(() => {
+    if (!micOn) return undefined;
+    const idle = setTimeout(() => { setMicOn(false); setVoiceMsg(t('voice.pausedIdle')); }, MIC_IDLE_MS);
+    return () => clearTimeout(idle);
+  }, [micOn, activity]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!micOn) return undefined;
+    const onHide = () => { if (document.hidden) { setMicOn(false); setVoiceMsg(t('voice.pausedHidden')); } };
+    document.addEventListener('visibilitychange', onHide);
+    return () => document.removeEventListener('visibilitychange', onHide);
+  }, [micOn]); // eslint-disable-line react-hooks/exhaustive-deps
   function muteToggle() {
     if (voiceOn) { stopSpeaking(); speakingCount.current = 0; setSpeaking(false); }
     setVoiceOn(!voiceOn);

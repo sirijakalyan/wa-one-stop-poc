@@ -303,6 +303,18 @@ describe('voice', () => {
     expect(spoken.length).toBe(before);
   });
 
+  it('the microphone pauses by itself when the tab is hidden, so it never listens while the owner is away', async () => {
+    const user = userEvent.setup();
+    renderAt({ pathname: '/guide', state: { mode: 'type' } });
+    await user.click(await screen.findByRole('button', { name: /Microphone off/ }));
+    await waitFor(() => expect(FakeRec.last?.started).toBe(true));
+    Object.defineProperty(document, 'hidden', { value: true, configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+    await waitFor(() => expect(FakeRec.last.started).toBe(false));
+    expect(await screen.findByText(/paused because you left this tab/)).toBeInTheDocument();
+    Object.defineProperty(document, 'hidden', { value: false, configurable: true });
+  });
+
   it('the microphone turns spoken words into a message the guide answers, and Stop turns it off', async () => {
     const user = userEvent.setup();
     renderAt({ pathname: '/guide', state: { mode: 'type' } });
