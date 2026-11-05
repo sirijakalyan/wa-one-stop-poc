@@ -2,6 +2,10 @@ import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { startApp, ANSWERS } from './helpers.js';
 import { createMailer } from '../src/mailer.js';
+import { localParts } from '../src/service.js';
+
+// Reminder days are counted on the calendar of the admin's time zone (Pacific by default), not UTC.
+const inDays = (n) => localParts(new Date(Date.now() + n * 86400000), 'America/Los_Angeles').date;
 
 const sent = [];
 const mailer = { mode: 'live', async send(m) { sent.push(m); } };
@@ -29,7 +33,7 @@ test('opt-in needs a valid email and sends only a confirmation message', async (
 
 test('no reminder is sent before the address is confirmed', async () => {
   await app.call('POST', '/api/checklist', { answers: ANSWERS, label: 'x' }, V);
-  const soon = new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10);
+  const soon = inDays(3);
   await app.call('PUT', '/api/checklist/renewal', { ruleId: 'sos', date: soon }, V);
   const before = sent.length;
   assert.deepEqual(await service.runReminders(), { checked: 0, sent: 0, failed: 0 });
@@ -62,7 +66,7 @@ test('confirm link turns reminders on, due reminders send once, with unsubscribe
 });
 
 test('a date more than 30 days away and a past date send nothing', async () => {
-  const far = new Date(Date.now() + 90 * 86400000).toISOString().slice(0, 10);
+  const far = inDays(90);
   await app.call('PUT', '/api/checklist/renewal', { ruleId: 'sos', date: far }, V);
   const n = sent.length;
   assert.equal((await service.runReminders()).sent, 0);

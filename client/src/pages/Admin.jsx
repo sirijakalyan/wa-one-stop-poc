@@ -7,6 +7,7 @@ import EvidencePanel from '../components/EvidencePanel.jsx';
 import ExternalLink from '../components/ExternalLink.jsx';
 import AdminUsers from './AdminUsers.jsx';
 import AdminQuestions from './AdminQuestions.jsx';
+import AdminReminders from './AdminReminders.jsx';
 import AddRuleForm from '../components/AddRuleForm.jsx';
 import AppliesPicker, { pickerFrom } from '../components/AppliesPicker.jsx';
 import SpanishRuleFields from '../components/SpanishRuleFields.jsx';
@@ -422,7 +423,7 @@ export default function Admin() {
       </div>
     );
   }
-  const tabs = [['rules', a('Steps', 'Pasos')], ['questions', a('Questions', 'Preguntas')], ['people', a('People', 'Personas')]];
+  const tabs = [['rules', a('Steps', 'Pasos')], ['questions', a('Questions', 'Preguntas')], ['people', a('People', 'Personas')], ['reminders', a('Email reminders', 'Recordatorios por correo')]];
   const asked = params.get('tab');
   const wanted = asked === 'users' ? 'people' : asked === 'sources' ? 'rules' : asked;
   const tab = tabs.some(([k]) => k === wanted) ? wanted : (data?.strict ? 'people' : 'rules');
@@ -442,6 +443,7 @@ export default function Admin() {
           </>
         ))}
         {tab === 'questions' && <AdminQuestions />}
+        {tab === 'reminders' && <AdminReminders />}
         {tab === 'rules' && <AdminPanel signedIn={Boolean(data?.required && (getAdminKey() || data?.accountAdmin))} />}
       </div>
     </>

@@ -39,7 +39,7 @@ async function main() {
   app.listen(port, () => console.log(`WA One-Stop-Shop server listening on port ${port}`));
 
   // Send due renewal reminders once an hour (and once at start). Each reminder is sent only once.
-  const tick = () => app.service.runReminders().then((r) => { if (r.sent || r.failed) console.log(`[email] reminders: ${r.sent} sent, ${r.failed} failed`); }).catch((e) => console.error('[email] reminder run failed:', e.message));
+  const tick = () => app.service.runReminders(new Date(), '', { atSendTime: true }).then((r) => { if (r.sent || r.failed) console.log(`[email] reminders: ${r.sent} sent, ${r.failed} failed`); }).catch((e) => console.error('[email] reminder run failed:', e.message));
   setTimeout(tick, 5000).unref();
   setInterval(tick, 60 * 60 * 1000).unref();
 }

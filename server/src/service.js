@@ -21,7 +21,18 @@ import { intakeTurn, isCardComplete, parseDirect, spokenConfirmation, planFromCa
 
 const DEFAULT_VISITOR = 'public-demo';
 const EMAIL_RX = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/;
-const REMINDER_WINDOWS = [30, 14, 7, 1]; // days before a renewal date
+// Reminder schedule. An admin can change it (stored under the app config key "reminders"); these are the starting values.
+const REMINDER_DEFAULTS = { windows: [30, 14, 7, 1], sendHour: 9, timezone: 'America/Los_Angeles' };
+export const REMINDER_ZONES = [
+  ['America/Los_Angeles', 'Pacific Time (Seattle)'], ['America/Denver', 'Mountain Time'], ['America/Chicago', 'Central Time'],
+  ['America/New_York', 'Eastern Time'], ['UTC', 'UTC'],
+];
+// The calendar date and hour in a time zone, so "9:00 AM Pacific" and "days left" mean the same thing wherever the server runs.
+export function localParts(now, timeZone) {
+  const f = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23' });
+  const p = Object.fromEntries(f.formatToParts(now).map((x) => [x.type, x.value]));
+  return { date: `${p.year}-${p.month}-${p.day}`, hour: Number(p.hour) % 24 };
+}
 const randomToken = () => {
   const b = new Uint8Array(24);
   globalThis.crypto.getRandomValues(b);
@@ -184,11 +195,35 @@ export function createService(store, options = {}) {
     await mailer.send({ to, subject: `Action needed: renew "${rule.title}"${business ? ` for ${business}` : ''} ${when}`, text, html });
   }
 
+  async function reminderConfig() {
+    const saved = await store.getAppConfig('reminders');
+    return { ...REMINDER_DEFAULTS, ...(saved || {}), windows: Array.isArray(saved?.windows) && saved.windows.length ? saved.windows : REMINDER_DEFAULTS.windows };
+  }
+  function cleanReminderConfig(body) {
+    const raw = Array.isArray(body?.windows) ? body.windows : [];
+    const days = [...new Set(raw.map(Number))];
+    if (days.some((n) => !Number.isInteger(n) || n < 0 || n > 365)) fail('Days must be whole numbers from 0 to 365.');
+    if (!days.length) fail('Choose at least one reminder day.');
+    if (days.length > 8) fail('Choose at most 8 reminder days.');
+    const sendHour = Number(body?.sendHour);
+    if (!Number.isInteger(sendHour) || sendHour < 0 || sendHour > 23) fail('Pick a send time.');
+    const timezone = String(body?.timezone || '');
+    if (!REMINDER_ZONES.some(([z]) => z === timezone)) fail('Pick a time zone from the list.');
+    return { windows: days.sort((a, b) => b - a), sendHour, timezone };
+  }
+  const hourLabel = (h) => `${h % 12 === 0 ? 12 : h % 12}:00 ${h < 12 ? 'AM' : 'PM'}`;
+  const zoneName = (z) => (REMINDER_ZONES.find(([k]) => k === z) || [z, z])[1];
+
   // Sends reminders that are due. Safe to run often: each (rule, date, window) is sent once.
-  async function runReminders(now = new Date(), onlyVisitor = '') {
+  // opts.atSendTime: the hourly run only sends from the admin's chosen hour onwards (in the chosen time zone).
+  // A signed-in owner who has just saved a date is not made to wait for that hour.
+  async function runReminders(now = new Date(), onlyVisitor = '', opts = {}) {
     const result = { checked: 0, sent: 0, failed: 0 };
     if (!mailer) return result;
-    const startOfDay = Date.parse(`${now.toISOString().slice(0, 10)}T00:00:00Z`);
+    const cfg = await reminderConfig();
+    const local = localParts(now, cfg.timezone);
+    if (opts.atSendTime && local.hour < cfg.sendHour) return result;
+    const startOfDay = Date.parse(`${local.date}T00:00:00Z`);
     const rulesDoc = await loadAll();
     for (const sub of await store.listEmailSubscribers()) {
       if (onlyVisitor && sub.id !== onlyVisitor) continue;
@@ -201,7 +236,7 @@ export function createService(store, options = {}) {
         if (!rule || !/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
         result.checked += 1;
         const days = Math.round((Date.parse(`${date}T00:00:00Z`) - startOfDay) / 86400000);
-        const crossed = REMINDER_WINDOWS.filter((w) => days <= w);
+        const crossed = cfg.windows.filter((w) => days <= w);
         if (days < 0 || !crossed.length) continue;
         const key = `${biz === 'main' ? '' : `${biz}|`}${ruleId}|${date}|${Math.min(...crossed)}`;
         if (await store.hasReminderSent(sub.id, key)) continue;
@@ -658,6 +693,43 @@ export function createService(store, options = {}) {
     if (!v) return { ok: true, message: 'You are already unsubscribed.' };
     await store.putSettings(v, { emailOptIn: false, email: '', emailConfirmed: false, emailToken: '' });
     return { ok: true, message: 'You are unsubscribed. We removed your email address and will not send more reminders.' };
+  });
+
+  // The renewal reminder schedule an admin controls: which days before a renewal an email is sent, and when in the day.
+  route('GET', '/api/admin/reminders', async ({ ctx }) => {
+    requireAdmin(ctx);
+    const saved = (await store.getAppConfig('reminders')) || {};
+    const cfg = await reminderConfig();
+    return {
+      ok: true, config: cfg, defaults: REMINDER_DEFAULTS, zones: REMINDER_ZONES.map(([id, label]) => ({ id, label })), emailMode,
+      updatedAt: saved.updatedAt || '', updatedBy: saved.updatedBy || '', history: saved.history || [],
+    };
+  });
+  route('PUT', '/api/admin/reminders', async ({ body, ctx }) => {
+    requireAdmin(ctx);
+    const before = await reminderConfig();
+    const next = cleanReminderConfig(body);
+    const changes = [];
+    if (next.windows.join() !== before.windows.join()) changes.push(`days ${before.windows.join(', ')} to ${next.windows.join(', ')}`);
+    if (next.sendHour !== before.sendHour) changes.push(`send time ${hourLabel(before.sendHour)} to ${hourLabel(next.sendHour)}`);
+    if (next.timezone !== before.timezone) changes.push(`time zone ${zoneName(before.timezone)} to ${zoneName(next.timezone)}`);
+    const saved = (await store.getAppConfig('reminders')) || {};
+    const by = ctx.account?.name || ctx.account?.email || 'Admin key';
+    const at = new Date().toISOString();
+    const history = changes.length ? [{ at, by, summary: changes.join('; ') }, ...(saved.history || [])].slice(0, 10) : (saved.history || []);
+    await store.putAppConfig('reminders', { ...next, updatedAt: changes.length ? at : saved.updatedAt || '', updatedBy: changes.length ? by : saved.updatedBy || '', history });
+    return { ok: true, changed: changes.length > 0, config: next, updatedAt: changes.length ? at : saved.updatedAt || '', updatedBy: changes.length ? by : saved.updatedBy || '', history };
+  });
+  // A sample reminder to the admin's own address, so the wording and the look can be checked before real owners get one.
+  route('POST', '/api/admin/reminders/test', async ({ ctx }) => {
+    requireAdmin(ctx);
+    if (!mailer) fail('Email is not set up on this server.', 400);
+    const to = ctx.account?.email;
+    if (!to) fail('Sign in with your admin account to send a test email to your address.', 400);
+    const sample = { title: 'Sample renewal (test email)', agency: 'Sample agency', apply: null, source: null };
+    const date = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+    await sendReminderEmail(to, 'test', sample, date, 7);
+    return { ok: true, to, mode: mailer.mode, message: mailer.mode === 'live' ? `A test email was sent to ${to}.` : 'Demo mode: the test email was written to the server log, not delivered.' };
   });
 
   // Sends the caller's due reminders now (they are also sent automatically once an hour).

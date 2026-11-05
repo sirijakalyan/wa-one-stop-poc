@@ -162,6 +162,18 @@ export function createPgStore(pool) {
       return r.rowCount > 0;
     },
 
+    async getAppConfig(key) {
+      const r = await pool.query('SELECT value FROM app_config WHERE key = $1', [key]);
+      return r.rows[0]?.value ?? null;
+    },
+    async putAppConfig(key, value) {
+      await pool.query(
+        `INSERT INTO app_config (key, value, updated_at) VALUES ($1, $2::jsonb, now())
+         ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
+        [key, JSON.stringify(value)],
+      );
+    },
+
     async getSettings(v) {
       const r = await pool.query('SELECT email_opt_in, email, email_confirmed, email_token FROM visitor_settings WHERE visitor_id = $1', [v]);
       const row = r.rows[0] || {};

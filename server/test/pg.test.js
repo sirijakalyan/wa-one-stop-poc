@@ -162,7 +162,7 @@ test('migrations 002 to 004 created the evidence tables with their indexes and c
   const idx = (await pool.query("SELECT indexname FROM pg_indexes WHERE schemaname = 'public'")).rows.map((r) => r.indexname);
   for (const name of ['source_reviews_rule_idx', 'source_reviews_reviewed_at_idx', 'county_sources_status_idx']) assert.ok(idx.includes(name), name);
   const applied = (await pool.query('SELECT id FROM schema_migrations ORDER BY id')).rows.map((r) => r.id);
-  assert.deepEqual(applied, ['001_init.sql', '002_source_reviews.sql', '003_county_sources.sql', '004_email_reminders.sql', '005_accounts.sql', '006_notification_biz.sql']);
+  assert.deepEqual(applied, ['001_init.sql', '002_source_reviews.sql', '003_county_sources.sql', '004_email_reminders.sql', '005_accounts.sql', '006_notification_biz.sql', '007_app_config.sql']);
   await assert.rejects(pool.query("INSERT INTO source_reviews (id, rule_id, source_url, reviewed_by, result) VALUES ('x','dor','https://a.example','R','approved')"));
   await assert.rejects(pool.query("INSERT INTO county_sources (county, official_url, reviewed_by, status) VALUES ('x','https://a.example','R','approved')"));
   await store.init(); // running migrations again changes nothing
@@ -221,4 +221,13 @@ test('removing a business removes only its renewal notifications in Postgres', a
   assert.equal((await store.listNotifications('rb2')).length, 1);
   assert.equal(await store.removeBusinessNotifications('rb1', 'main', { none: true }), 1);
   assert.equal((await store.listNotifications('rb1')).length, 0);
+});
+
+test('app config (the reminder schedule) is saved in Postgres and replaced on the next save', async (t) => {
+  if (skipReason) return t.skip(skipReason);
+  assert.equal(await store.getAppConfig('reminders-test'), null);
+  await store.putAppConfig('reminders-test', { windows: [30, 7], sendHour: 9, timezone: 'UTC' });
+  assert.deepEqual(await store.getAppConfig('reminders-test'), { windows: [30, 7], sendHour: 9, timezone: 'UTC' });
+  await store.putAppConfig('reminders-test', { windows: [1], sendHour: 8, timezone: 'UTC' });
+  assert.deepEqual((await store.getAppConfig('reminders-test')).windows, [1]);
 });

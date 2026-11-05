@@ -61,6 +61,18 @@ export function createDocStore({ read, write, seed }) {
       return true;
     },
 
+    // App-wide settings an admin can change (one JSON value per key), for example the renewal reminder schedule.
+    async getAppConfig(key) {
+      const doc = await read('app_config');
+      return doc.config && key in doc.config ? clone(doc.config[key]) : null;
+    },
+    async putAppConfig(key, value) {
+      const doc = await read('app_config');
+      doc.config = doc.config || {};
+      doc.config[key] = clone(value);
+      await write('app_config', doc);
+    },
+
     async getSettings(v) {
       const doc = await read('users');
       const u = doc.users.find((x) => x.id === v) || {};
