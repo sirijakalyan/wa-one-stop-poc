@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
 describe('listener waits through short pauses', () => {
-  it('joins speech around a 1.5 second pause and sends it once after 2.5 seconds of quiet', async () => {
+  it('joins speech around a 0.6 second pause and sends it once after 1 second of quiet', async () => {
     vi.useFakeTimers();
     let inst;
     window.SpeechRecognition = class {
@@ -19,10 +19,10 @@ describe('listener waits through short pauses', () => {
     inst.say('I want to open');
     inst.onend(); // browser closes the mic after a short silence
     expect(inst.starts).toBe(2); // reopened
-    await vi.advanceTimersByTimeAsync(1500);
+    await vi.advanceTimersByTimeAsync(600);
     expect(onFinal).not.toHaveBeenCalled();
     inst.say('a food business');
-    await vi.advanceTimersByTimeAsync(2600);
+    await vi.advanceTimersByTimeAsync(1100);
     expect(onFinal).toHaveBeenCalledTimes(1);
     expect(onFinal).toHaveBeenCalledWith('I want to open a food business');
     await vi.advanceTimersByTimeAsync(10);

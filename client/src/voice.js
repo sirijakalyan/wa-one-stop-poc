@@ -167,7 +167,7 @@ export const listenErrorText = (code, lang = 'en') => (lang === 'es' ? ERRORS_ES
 // One listener. start() begins one round of listening and ends by itself after the owner pauses.
 // How long the owner can pause mid-answer before the sentence is sent. The browser closes the microphone after about a second of quiet,
 // so the words heard so far are kept, the microphone is reopened, and the answer is sent only after this much silence.
-let pauseMs = 2500;
+let pauseMs = 1000;
 export const setPauseMs = (ms) => { pauseMs = Math.max(0, Number(ms) || 0); };
 
 export function createListener({ onInterim, onFinal, onEnd, onError, getLang = () => 'en-US' }) {
