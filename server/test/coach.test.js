@@ -96,3 +96,17 @@ test('a chat that was not started with a start question is not taken over', asyn
   const r = await ask('yes', { generalLlm: async () => 'x', conversation });
   assert.notEqual(r.mode, 'coach');
 });
+
+test('natural ways of saying "I want to start a ... business" all open the conversation', async () => {
+  const generalLlm = async () => 'Food is a great area. Where in Washington will it be?';
+  for (const m of ['i wanted to start food business', 'I want to start a bakery', 'i am planning to open a clothing store', 'we decided to launch a coffee truck', 'start food business', 'thinking about opening a salon']) {
+    const r = await ask(m, { generalLlm });
+    assert.equal(r.mode, 'coach', m);
+  }
+});
+
+test('rule questions that mention starting a business still get the rule answer', async () => {
+  const generalLlm = async () => 'x';
+  const r = await ask('Do I need a business license to start a business?', { generalLlm });
+  assert.notEqual(r.mode, 'coach');
+});
