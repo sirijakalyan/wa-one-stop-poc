@@ -14,7 +14,7 @@ import { createLocalIdp } from './localIdp.js';
 import { DISCLAIMER } from './disclaimer.js';
 import { evaluate, normalizeAnswers, suggestCategories, countyLabel } from './engine.js';
 import { SAMPLES } from './samples.js';
-import { answerQuestion } from './chat.js';
+import { answerQuestion, classifyAnswer } from './chat.js';
 import { cleanLang, ES, ES_RX, esToEn } from './i18n.js';
 import { localizeRules, localizeFound, localizeCountyNote, localizeCountyAgency, localizeTimes } from './localize.js';
 import { intakeTurn, isCardComplete, parseDirect, spokenConfirmation, planFromCard, buildTimeline, blankCard, CARD_FIELDS, FIELD_LABELS, ASKS, extractFacts } from './intake.js';
@@ -1452,6 +1452,14 @@ export function createService(store, options = {}) {
     // Not a business detail and not an answer to the question: the owner may be talking, not answering, so try the grounded helper.
     if (said && turn.note === 'no-facts' && (es ? ES_RX.confused : /\b(confused|don'?t understand|do not understand|lost|stuck|no idea)\b/i).test(message)) {
       return reply(es ? ES.confused : 'No problem. Tell me, in your own words, what kind of business you want to start, for example "a food truck in Spokane". Or tap one of the answers below. You can also use the step-by-step form instead.');
+    }
+    // The words did not match a plain yes or no, but they may still answer the question ("I am thinking to pay"). Let the model read
+    // them as one of the listed answers. It only picks an id from the list; the same step as tapping that answer follows.
+    if (said && !es && !question && turn.note === 'no-facts' && options.generalLlm && ['hiring', 'subs', 'salestax', 'income', 'tradename', 'structure'].includes(body?.asking)) {
+      const spec = ASKS[body.asking];
+      const ids = spec.chips === 'yn' ? ['yes', 'no', 'unsure'] : spec.chips.map((c) => c[0]);
+      const picked = await classifyAnswer({ llm: options.generalLlm, question: gctx?.standard?.[body.asking]?.text || spec.question, ids, message });
+      if (picked) return { ok: true, ...intakeTurn({ ...input, message: '', action: 'set', field: body.asking, value: picked }, { places, ...gctx }) };
     }
     // A free-text answer (a city) that was not understood stays a "did not catch that", unless the helper has a real topic for it.
     if (said && turn.note === 'no-facts' && !(es ? /^(s[ií]|no|ok|okay|vale|claro|qu[eé]|eh)\b[\s!.?]*$/i : /^(yes|no|ok|okay|yeah|yep|nope|sure|what|huh)\b[\s!.?]*$/i).test(message)) {

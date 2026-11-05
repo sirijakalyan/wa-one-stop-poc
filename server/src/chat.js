@@ -650,6 +650,21 @@ async function coachReply({ message, conversation, rules, generalLlm }) {
   }
 }
 
+// Turns a reply in free wording into one of the listed answers for a questionnaire question ("I am thinking to pay" -> yes).
+// The model only picks an id from the list; anything else, or any failure, returns '' and the guide carries on as before.
+export const CLASSIFY_SYSTEM = 'You read one reply to a question in a Washington small business questionnaire and decide which of the listed answer ids it gives. Reply with only that id, or the word other if the reply does not answer the question, asks something instead, or is unclear. A plan or intention counts as an answer: for a yes or no question, "I am thinking to pay", "will do", "probably" and "of course" mean yes; "no plans", "not really" and "never" mean no; "maybe" and "not sure" mean unsure. Never guess a business detail the person did not say.';
+export async function classifyAnswer({ llm, question, ids, message }) {
+  if (!llm || !message || !Array.isArray(ids) || !ids.length) return '';
+  try {
+    const reply = await llm({ system: CLASSIFY_SYSTEM, user: `QUESTION: ${question}\nANSWER IDS: ${ids.join(', ')}\nREPLY: ${String(message).slice(0, 300)}`, history: [], numPredict: 12 });
+    const id = String(reply || '').toLowerCase().replace(/[^a-z]/g, '');
+    return ids.includes(id) ? id : '';
+  } catch (err) {
+    console.error(`Answer reading model failed: ${err?.message || err}`);
+    return '';
+  }
+}
+
 export async function answerQuestion({ generalLlm = null, lang = 'en', ...args }) {
   const m = String(args.message || '').trim();
   // Guided conversation: "how do I start?", "I want to open a shop", and every reply after that while the chat is in that conversation.
