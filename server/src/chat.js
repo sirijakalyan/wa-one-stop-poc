@@ -644,7 +644,11 @@ export async function answerQuestion({ generalLlm = null, lang = 'en', ...args }
   // Guided conversation: "how do I start?", "I want to open a shop", and every reply after that while the chat is in that conversation.
   if (generalLlm && lang !== 'es' && args.rules) {
     const turns = args.conversation || [];
-    const inCoach = turns.some((t) => t && t.role === 'assistant' && t.mode === 'coach');
+    // The chat page marks coach replies (mode 'coach'). An older page may not, so a chat that began with a start question and whose last
+    // reply asked something is treated as the same conversation.
+    const lastAssistant = [...turns].reverse().find((t) => t && t.role === 'assistant');
+    const startedByUser = turns.some((t) => t && t.role === 'user' && (START.test(t.content || '') || START_INTENT.test(t.content || '')));
+    const inCoach = turns.some((t) => t && t.role === 'assistant' && t.mode === 'coach') || Boolean(startedByUser && lastAssistant && /\?\s*$/.test(lastAssistant.content || '') && lastAssistant.mode !== 'grounded');
     const top = scoreRules(args.rules, m)[0];
     const specific = (top && top.score >= 6 && /\?|^(what|which|do|does|can|how|where|when|why|is|are)\b/i.test(m)) || NOT_COACH.test(m);
     if ((START.test(m) || START_INTENT.test(m) || inCoach) && !specific) {

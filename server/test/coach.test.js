@@ -75,3 +75,24 @@ test('the prompt names no fees, links or numbers and has no em dash', () => {
   assert.match(COACH_SYSTEM, /Never add fees, numbers, dates, deadlines or links/);
   assert.doesNotMatch(COACH_SYSTEM, /—/);
 });
+
+test('an older chat page that does not send the mode still continues the conversation', async () => {
+  let seen;
+  const generalLlm = async (a) => { seen = a; return 'A cloth business, lovely. Which city will it be in?'; };
+  const conversation = [
+    { role: 'user', content: 'how do i start?' },
+    { role: 'assistant', content: 'Starting is very doable. What kind of business do you have in mind?' },
+  ];
+  const r = await ask('cloth business', { generalLlm, conversation });
+  assert.equal(r.mode, 'coach');
+  assert.equal(seen.history.length, 2);
+});
+
+test('a chat that was not started with a start question is not taken over', async () => {
+  const conversation = [
+    { role: 'user', content: 'tell me about workers compensation' },
+    { role: 'assistant', content: 'It is insurance for employees. Do you have employees?' },
+  ];
+  const r = await ask('yes', { generalLlm: async () => 'x', conversation });
+  assert.notEqual(r.mode, 'coach');
+});
