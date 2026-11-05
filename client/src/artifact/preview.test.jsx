@@ -235,7 +235,7 @@ describe('chat panel', () => {
     expect(await within(dialog).findByText(/I don't have that in the current rules\/guides/)).toBeInTheDocument();
   });
 
-  it('starts from suggested questions, sends at most 8 earlier turns, and closes with Escape', async () => {
+  it('starts from suggested questions, sends up to 24 earlier turns, and closes with Escape', async () => {
     const user = userEvent.setup();
     const seen = [];
     const real = globalThis.fetch;
@@ -253,7 +253,8 @@ describe('chat panel', () => {
       await waitFor(() => expect(seen).toHaveLength(i + 2));
     }
     expect(seen[0].conversation).toEqual([]);
-    expect(seen[seen.length - 1].conversation.length).toBeLessThanOrEqual(8);
+    expect(seen[seen.length - 1].conversation.length).toBeLessThanOrEqual(24);
+    expect(seen[seen.length - 1].conversation.length).toBeGreaterThan(8);
     await user.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(screen.getByRole('button', { name: 'Ask a question' })).toBeInTheDocument();
