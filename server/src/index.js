@@ -4,7 +4,7 @@ import { createCognitoIdp } from './cognito.js';
 import { createStore } from './store.js';
 import { createPgStore } from './db/pgStore.js';
 import { createPool, isDatabaseConfigured } from './db/pool.js';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -12,6 +12,13 @@ import { fileURLToPath } from 'node:url';
 try { process.loadEnvFile?.(new URL('../.env', import.meta.url)); } catch { /* no .env file */ }
 
 const port = Number(process.env.PORT) || 3001;
+
+// A common slip: the key typed into .env.example (never read, and committed to GitHub). Say so plainly.
+try {
+  if (!process.env.ANTHROPIC_API_KEY?.trim() && /^ANTHROPIC_API_KEY=\S+/m.test(readFileSync(new URL('../.env.example', import.meta.url), 'utf8'))) {
+    console.warn('WARNING: ANTHROPIC_API_KEY is in server/.env.example, which is not read and is committed to GitHub. Run "npm run setup:local" to move it to server/.env.');
+  }
+} catch { /* no example file */ }
 
 async function main() {
   // Secrets first (database address, SendGrid key, admin key), so every module below sees them.

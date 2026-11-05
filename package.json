@@ -13,6 +13,7 @@
   "scripts": {
     "dev": "concurrently -n server,client -c blue,green \"npm run dev -w server\" \"npm run dev -w client\"",
     "start": "npm run start -w server",
+    "setup:local": "node server/scripts/setup-local.js",
     "build": "npm run build -w client",
     "test": "npm run test -w server && npm run test -w client",
     "a11y": "node scripts/a11y-scan.mjs"
