@@ -71,3 +71,28 @@ test('an id that is not on the list is never used', async () => {
     assert.notEqual(r.body.card.status.structure, 'confirmed');
   } finally { await app.stop(); }
 });
+
+test('a request that is not phrased as a question is answered, and the guide asks its question again', async () => {
+  const generalLlm = async (a) => (/decide which of the listed answer ids/.test(a.system)
+    ? 'other'
+    : 'A certificate of good standing shows your business is registered and active with the state. Is your business a sole proprietor, an LLC, or something else?');
+  const app = await startApp({ generalLlm });
+  try {
+    const { card } = await atQuestion(app, { tapStructure: false });
+    const r = await turn(app, { message: 'so I wanted to I want a details about good standing certificate', card, asking: 'structure' });
+    assert.equal(r.status, 200);
+    assert.match(r.body.reply, /certificate of good standing/i);
+    assert.equal(r.body.ask?.field, 'structure');
+    assert.notEqual(r.body.card.status.structure, 'confirmed');
+  } finally { await app.stop(); }
+});
+
+test('a few junk words are still not taken as a question', async () => {
+  const generalLlm = async (a) => (/decide which of the listed answer ids/.test(a.system) ? 'other' : 'Some long answer.');
+  const app = await startApp({ generalLlm });
+  try {
+    const { card } = await atQuestion(app, { tapStructure: false });
+    const r = await turn(app, { message: 'purple monkey', card, asking: 'structure' });
+    assert.doesNotMatch(r.body.reply, /Some long answer/);
+  } finally { await app.stop(); }
+});

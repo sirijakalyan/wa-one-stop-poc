@@ -1466,6 +1466,12 @@ export function createService(store, options = {}) {
       const g = await askGrounded(message, { keepOnFallback: true });
       if (g && !(body?.asking === 'place' && !looseQ.test(message))) return g;
     }
+    // Still not an answer, and it is a real sentence ("I want details about the good standing certificate"): the person is asking, not answering.
+    // Answer it in full (the rules first, then the model), and the guide goes back to its own question afterwards.
+    if (said && !es && turn.note === 'no-facts' && options.generalLlm && message.split(/\s+/).filter(Boolean).length >= 4
+      && !/^(yes|no|ok|okay|yeah|yep|nope|sure)\b/i.test(message)) {
+      return askGrounded(message);
+    }
     // Some businesses need licenses this demo has no rules for. Say so now instead of staying silent.
     if (said && hasFacts && (es ? SPECIAL_ES : SPECIAL).test(message) && turn.reply) {
       turn.reply += es ? ES.special : ' One more thing: some businesses, such as those that sell alcohol or run child care, need special licenses from other agencies. This demo has no rules for those, so ask the agency.';
