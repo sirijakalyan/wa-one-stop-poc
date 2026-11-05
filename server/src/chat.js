@@ -579,9 +579,7 @@ async function rewriteNext(r, message, llm) {
   return r;
 }
 
-// Questions the written rules and guides do not cover: a short general answer from the optional model, always labeled as general
-// information. It may not give fees, dates or links, and it points the person to the agency to confirm. No model: the plain fallback stays.
-const GENERAL_LABEL = { en: 'General information, not an official rule and not part of your checklist.', es: 'Información general, no es una regla oficial ni parte de su lista.' };
+// Questions the written rules and guides do not cover: a short general answer from the optional model, shown as a plain answer (mode 'general'; the page header and Legal page say AI answers outside the rules are general information). It may not give fees, dates or links, and it points the person to the agency to confirm. No model: the plain fallback stays.
 async function generalHelp(base, { message, conversation, generalLlm, lang }) {
   if (!generalLlm) return base;
   const es = lang === 'es';
@@ -594,7 +592,7 @@ async function generalHelp(base, { message, conversation, generalLlm, lang }) {
     });
     const text = String(reply || '').replace(/https?:\/\/\S+/g, '').replace(/\u2014/g, ',').trim();
     if (!text) return base;
-    return { answer: `${GENERAL_LABEL[es ? 'es' : 'en']}\n${text}`, links: [], matched: [], mode: 'general', suggestions: base.suggestions || [] };
+    return { answer: text, links: [], matched: [], mode: 'general', suggestions: base.suggestions || [] };
   } catch (err) {
     console.error(`General help model failed: ${err?.message || err}`);
     return base;

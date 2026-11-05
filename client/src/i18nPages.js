@@ -362,7 +362,7 @@ export const pagesEn = {
   // Side chat
   'ch.fab': 'Ask a question',
   'ch.title': 'Ask about your checklist',
-  'ch.sub': "Official answers come only from this app's rules and guides. Other answers are labeled general information.",
+  'ch.sub': "Official answers come only from this app's rules and guides. Other answers come from an AI and are general information.",
   'ch.close': 'Close chat',
   'ch.hi': "Hi, I can help. Ask me what a step means, what to do next, or for a walk through one step at a time. If it is not in this app's guides, I'll still help and tell you it is general information.",
   'ch.s1': 'Do I need a business license?',
@@ -805,7 +805,7 @@ export const pagesEs = {
   'sr.limits': 'Límites: ',
   'ch.fab': 'Hacer una pregunta',
   'ch.title': 'Pregunte sobre su lista de pasos',
-  'ch.sub': 'Las respuestas oficiales vienen solo de las reglas y guías de esta aplicación. Las demás se marcan como información general.',
+  'ch.sub': 'Las respuestas oficiales vienen solo de las reglas y guías de esta aplicación. Las demás vienen de una IA y son información general.',
   'ch.close': 'Cerrar el chat',
   'ch.hi': 'Hola, puedo ayudarle. Pregúnteme qué significa un paso, qué hacer después, o pídame que lo guíe paso por paso. Si no está en las guías de esta aplicación, igual le ayudaré y le diré que es información general.',
   'ch.s1': '¿Necesito una licencia comercial?',

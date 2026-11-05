@@ -7,7 +7,7 @@ const TERMS = [
   ['What this is', 'WA Business One-Stop-Shop is a helper for people starting a business in Washington State. It builds a checklist from written rules and official agency pages. It is a helpful guide, not legal, tax or financial advice.'],
   ['Check with the agency', 'Rules, fees and deadlines can change. Please confirm every requirement and date with the agency before you act. A step marked "Source checked" means a person read the agency page on that date. It is not an approval from the agency. "Pending verification" means it has not been checked yet.'],
   ['No agency connection', 'This app is not connected to any agency system. Your progress is self-reported, and the app does not file, apply or pay for anything for you.'],
-  ['The AI guide', 'The guide listens and asks questions. Written rules, not the AI, decide what applies to your business. Answers outside the written rules are labeled general information and may be wrong. Do not rely on them as official advice.'],
+  ['The AI guide', 'The guide listens and asks questions. Written rules, not the AI, decide what applies to your business. Answers outside the written rules come from an AI, are general information and may be wrong. Do not rely on them as official advice.'],
   ['Your account', 'Keep your password private. Tell us if you think someone else used your account. You can stop using the app at any time.'],
   ['Fair use', 'Please use the app for its intended purpose. Do not try to break it, overload it, or look at other people\'s information.'],
   ['No promises', 'The app is provided as is, without promises that it is complete, current or always available. It may change or be turned off.'],
