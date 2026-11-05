@@ -96,3 +96,18 @@ test('a few junk words are still not taken as a question', async () => {
     assert.doesNotMatch(r.body.reply, /Some long answer/);
   } finally { await app.stop(); }
 });
+
+test('"I am starting a clothing business" answers the what-kind-of-business question as other service or retail', async () => {
+  let seen;
+  const app = await startApp({ generalLlm: async (a) => { seen = a; return 'other'; } });
+  try {
+    const r0 = await turn(app, { action: 'set', field: 'structure', value: 'llc', card: blankCard() });
+    assert.equal(r0.body.ask?.field, 'activity');
+    const r = await turn(app, { message: 'so I told you I am starting doing and clothing business', card: r0.body.card, asking: 'activity' });
+    assert.equal(r.status, 200);
+    assert.equal(r.body.card.status.activity, 'confirmed');
+    assert.deepEqual(r.body.card.values.cats, ['other']);
+    assert.match(r.body.card.values.desc, /clothing business/);
+    assert.match(seen.user, /ANSWER IDS: food, construction, other/);
+  } finally { await app.stop(); }
+});

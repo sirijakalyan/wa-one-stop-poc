@@ -1455,11 +1455,16 @@ export function createService(store, options = {}) {
     }
     // The words did not match a plain yes or no, but they may still answer the question ("I am thinking to pay"). Let the model read
     // them as one of the listed answers. It only picks an id from the list; the same step as tapping that answer follows.
-    if (said && !es && !question && turn.note === 'no-facts' && options.generalLlm && ['hiring', 'subs', 'salestax', 'income', 'tradename', 'structure'].includes(body?.asking)) {
+    if (said && !es && !question && turn.note === 'no-facts' && options.generalLlm && ['hiring', 'subs', 'salestax', 'income', 'tradename', 'structure', 'activity'].includes(body?.asking)) {
       const spec = ASKS[body.asking];
       const ids = spec.chips === 'yn' ? ['yes', 'no', 'unsure'] : spec.chips.map((c) => c[0]);
       const picked = await classifyAnswer({ llm: options.generalLlm, question: gctx?.standard?.[body.asking]?.text || spec.question, ids, message });
-      if (picked) return { ok: true, ...intakeTurn({ ...input, message: '', action: 'set', field: body.asking, value: picked }, { places, ...gctx }) };
+      if (picked) {
+        // For "what kind of business", keep the owner's own words as the description ("clothing business"), not just the group.
+        const kind = body.asking === 'activity' ? (/\b([a-z]+(?: [a-z]+)? (?:business|shop|store|boutique|company|brand))\b/i.exec(message)?.[1] || '').slice(0, 60) : '';
+        const value = body.asking === 'activity' ? { cats: [picked], desc: kind } : picked;
+        return { ok: true, ...intakeTurn({ ...input, message: '', action: 'set', field: body.asking, value }, { places, ...gctx }) };
+      }
     }
     // A free-text answer (a city) that was not understood stays a "did not catch that", unless the helper has a real topic for it.
     if (said && turn.note === 'no-facts' && !(es ? /^(s[ií]|no|ok|okay|vale|claro|qu[eé]|eh)\b[\s!.?]*$/i : /^(yes|no|ok|okay|yeah|yep|nope|sure|what|huh)\b[\s!.?]*$/i).test(message)) {
