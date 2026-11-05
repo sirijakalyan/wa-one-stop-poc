@@ -602,6 +602,25 @@ async function generalHelp(base, { message, conversation, generalLlm, lang }) {
   }
 }
 
+// "Which business structure should I pick?" is advice, not a lookup. The written rules never answer it, so a nearby rule must not
+// be dressed up as the answer. The model explains the usual choices and why, and says what to confirm.
+const STRUCTURE_ADVICE = /\b(suggest|recommend|advise|advice|best|better|which|what|should|come under|fit)\b[^.?!]*\b(structure|entity|llc|sole proprietor(ship)?|corporation|partnership)\b|\b(structure|entity|llc|corporation)\b[^.?!]*\b(suggest|recommend|best|better|should i)\b/i;
+async function structureAdvice({ message, conversation, generalLlm }) {
+  const history = (conversation || []).filter((t) => t && (t.role === 'user' || t.role === 'assistant') && typeof t.content === 'string').slice(-24).map((t) => ({ role: t.role, content: t.content.slice(0, 600) }));
+  try {
+    const reply = await generalLlm({
+      system: 'You are a friendly, plain-spoken helper inside a Washington State small business app. The person wants a suggestion for a business structure. Use what they told you earlier in the chat (type of business, hiring) and never ask for it again. Give a real suggestion, not a refusal: name the one or two structures people with that kind of business usually choose, and say why in plain words (for example personal liability protection, simplicity, paperwork, taxes, adding owners later). Mention that a sole proprietor is simplest but keeps personal liability, and an LLC adds protection with more paperwork. 4 to 6 short sentences, US English, no em dashes, no markdown, no fees, dollar amounts, dates or web addresses. Say this is general information and that an accountant or attorney can confirm the best fit. Finish with one easy question that moves them forward, such as whether they will have partners or employees.',
+      user: message,
+      history,
+    });
+    const text = String(reply || '').replace(/https?:\/\/\S+/g, '').replace(/\u2014/g, ',').trim();
+    return text ? { answer: text, links: [], matched: [], mode: 'general', suggestions: [] } : null;
+  } catch (err) {
+    console.error(`General help model failed: ${err?.message || err}`);
+    return null;
+  }
+}
+
 // Hello, thanks and goodbye get a warm reply from the model when one is set; the app's plain canned lines stay as the fallback.
 async function smallTalk(base, { message, conversation, generalLlm, lang }) {
   const history = (conversation || []).filter((t) => t && (t.role === 'user' || t.role === 'assistant') && typeof t.content === 'string').slice(-24).map((t) => ({ role: t.role, content: t.content.slice(0, 600) }));
@@ -681,6 +700,10 @@ export async function answerQuestion({ generalLlm = null, lang = 'en', ...args }
       const c = await coachReply({ message: m, conversation: turns, rules: args.rules, generalLlm });
       if (c) return c;
     }
+  }
+  if (generalLlm && lang !== 'es' && STRUCTURE_ADVICE.test(m) && !/\b(register|file|filing|form|fee|cost|how (do|to)|link)\b/i.test(m)) {
+    const a = await structureAdvice({ message: m, conversation: args.conversation, generalLlm });
+    if (a) return a;
   }
   const r = await answerGrounded(args);
   if (generalLlm && r.mode === 'grounded' && !r.matched?.length && ((GREETING.test(m) && m.split(/\s+/).length <= 5) || THANKS.test(m) || BYE.test(m))) return smallTalk(r, { message: m, conversation: args.conversation, generalLlm, lang });
