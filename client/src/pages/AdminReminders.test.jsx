@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import AdminReminders, { minusDays, hourLabel } from './AdminReminders.jsx';
+import AdminReminders, { minusDays, hourLabel, pacificHour } from './AdminReminders.jsx';
 
 const DATA = {
   ok: true, emailMode: 'live', history: [],
@@ -24,6 +24,18 @@ describe('admin email reminder schedule', () => {
     expect(hourLabel(13)).toBe('1:00 PM');
   });
 
+  it('shows what a send time means on the clock in Washington (Pacific Time)', () => {
+    const winter = new Date('2026-12-15T12:00:00Z');
+    const summer = new Date('2026-07-15T12:00:00Z');
+    expect(pacificHour(9, 'America/New_York', winter)).toBe(6);
+    expect(pacificHour(9, 'America/Chicago', winter)).toBe(7);
+    expect(pacificHour(9, 'America/Denver', winter)).toBe(8);
+    expect(pacificHour(9, 'America/Los_Angeles', winter)).toBe(9);
+    expect(pacificHour(9, 'America/New_York', summer)).toBe(6);
+    expect(pacificHour(12, 'UTC', winter)).toBe(4);
+    expect(pacificHour(12, 'UTC', summer)).toBe(5);
+  });
+
   it('starts with 30, 14, 7 and 1 ticked, a preview of those dates, and Save off until something changes', () => {
     render(<AdminReminders />);
     for (const name of ['30 days away', '14 days away', '7 days away', '1 day away']) expect(screen.getByRole('checkbox', { name })).toBeChecked();
@@ -33,6 +45,7 @@ describe('admin email reminder schedule', () => {
     expect(screen.getByText('Mar 24')).toBeInTheDocument();
     expect(screen.getByText('Mar 30')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Save schedule' })).toBeDisabled();
+    expect(screen.queryByText(/Demo mode/)).toBeNull(); // no demo banner on this screen
   });
 
   it('ticking a day updates the preview and saves the sorted days, hour and zone', async () => {

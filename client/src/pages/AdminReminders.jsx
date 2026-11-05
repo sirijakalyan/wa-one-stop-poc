@@ -8,6 +8,16 @@ const PRESETS = [30, 14, 7, 1, 0];
 const HOURS = Array.from({ length: 15 }, (_, i) => i + 6); // 6:00 AM to 8:00 PM
 const SAMPLE = '2027-03-31';
 
+// What "hour o'clock in this zone" is on the clock in Washington State (Pacific Time) today, for example 9:00 AM Eastern is 6:00 AM Pacific.
+export function pacificHour(hour, zone, now = new Date()) {
+  const parts = (instant, tz) => Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: tz, year: 'numeric', month: 'numeric', day: 'numeric', hour: 'numeric', minute: 'numeric', hourCycle: 'h23' }).formatToParts(instant).map((x) => [x.type, Number(x.value)]));
+  const asUtc = (p) => Date.UTC(p.year, p.month - 1, p.day, p.hour % 24, p.minute);
+  const guess = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), hour, 0);
+  const offset = asUtc(parts(new Date(guess), zone)) - guess; // how far the zone's clock is ahead of UTC
+  const instant = new Date(guess - offset);
+  return parts(instant, 'America/Los_Angeles').hour % 24;
+}
+
 export const hourLabel = (h) => `${h % 12 === 0 ? 12 : h % 12}:00 ${h < 12 ? 'AM' : 'PM'}`;
 // The date that is `days` before a YYYY-MM-DD date, worked out in UTC so it never shifts with the viewer's time zone.
 export function minusDays(date, days) {
@@ -79,9 +89,6 @@ export default function AdminReminders() {
     <section className="rem" aria-labelledby="rem-title">
       <h1 id="rem-title" tabIndex={-1}>{a('Email reminder schedule', 'Calendario de recordatorios por correo')}</h1>
       <p className="lead">{a('Choose how many days before a renewal date an email is sent. Saved changes apply to every owner right away.', 'Elija cuántos días antes de una fecha de renovación se envía un correo. Los cambios guardados se aplican de inmediato a todos los propietarios.')}</p>
-      {data.emailMode !== 'live' && (
-        <p className="rem-demo" role="note">{a('Demo mode: emails are written to the server log, not delivered.', 'Modo de demostración: los correos se escriben en el registro del servidor y no se entregan.')}</p>
-      )}
 
       <fieldset className="rem-days">
         <legend>{a('Send an email when the renewal is', 'Enviar un correo cuando la renovación esté a')}</legend>
@@ -116,7 +123,10 @@ export default function AdminReminders() {
         <select id="rem-zone" value={zone} onChange={(e) => { setZone(e.target.value); setNote(''); }}>
           {data.zones.map((z) => <option key={z.id} value={z.id}>{z.label}</option>)}
         </select>
-        <span className="hint">{a('Days are counted on this time zone\'s calendar, so a reminder is never a day early or late.', 'Los días se cuentan con el calendario de esta zona horaria, así que un recordatorio nunca llega un día antes o después.')}</span>
+        <span className="hint">{a('Washington State uses Pacific Time. Days are counted on the calendar of the zone you pick here.', 'El estado de Washington usa la hora del Pacífico. Los días se cuentan con el calendario de la zona que elija aquí.')}</span>
+        {zone !== 'America/Los_Angeles' && (
+          <span className="hint rem-pacific" role="note">{a(`That is ${hourLabel(pacificHour(hour, zone))} in Washington (Pacific Time).`, `Eso es ${hourLabel(pacificHour(hour, zone))} en Washington (hora del Pacífico).`)}</span>
+        )}
       </div>
 
       <div className="rem-preview" aria-live="polite">
