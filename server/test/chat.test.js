@@ -650,3 +650,19 @@ test('follow-up answers keep official links from the records and the status line
   assert.ok(r.links.length >= 1);
   assert.match(r.answer, /Applies to you|Pending verification|May apply/);
 });
+
+test('the friendly prompt asks for a warm reply built only from the rule records', async () => {
+  const { FRIENDLY_SYSTEM } = await import('../src/chat.js');
+  assert.match(FRIENDLY_SYSTEM, /ONLY the facts in the CONTEXT/);
+  assert.match(FRIENDLY_SYSTEM, /one easy question/);
+  assert.match(FRIENDLY_SYSTEM, /Pending verification/);
+  assert.doesNotMatch(FRIENDLY_SYSTEM, /—/);
+});
+
+test('a warm model reply is used, keeps the status phrase and adds no numbers', async () => {
+  const llm = async () => 'A grocery store, nice. A good first step is registering your business with the Secretary of State. Will you be a sole owner or set up an LLC?';
+  const r = await ask('I am trying to do a grocery business', { llm });
+  assert.equal(r.mode, 'llm');
+  assert.match(r.answer, /^A grocery store, nice\./);
+  assert.match(r.answer, /Not yet Approved|Pending verification/i);
+});

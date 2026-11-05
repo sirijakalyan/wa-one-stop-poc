@@ -564,6 +564,9 @@ export function acceptRewrite(rewrite, grounded, allowedUrls) {
   return true;
 }
 
+// Prompts for the model. The facts, links and status phrases always come from the written rules; the model only chooses the words.
+export const FRIENDLY_SYSTEM = 'You are a warm, plain-spoken guide helping someone start a business in Washington State. Talk like a helpful person, not a form. Start with one friendly sentence that responds to what they said (for example, "A grocery store, nice."). Then give the one or two things that matter most, using ONLY the facts in the CONTEXT records. Do not paste the whole rule. Finish with one easy question that moves them forward. Never add facts, numbers, dates, fees or links that are not in CONTEXT. Do not paste links; they are shown separately. Do not say a requirement applies to the person; say their checklist will confirm. Keep status phrases such as "Pending verification" and "Not yet Approved" exactly. If CONTEXT does not answer the question, say you do not have that in the current rules and ask what they want to do. 3 to 5 short sentences, US English, no em dashes, no markdown. Use earlier turns only to understand follow-ups.';
+
 // Optional friendly rewrite of a short grounded answer. Discarded unless it adds nothing new.
 async function rewriteNext(r, message, llm) {
   try {
@@ -586,7 +589,7 @@ async function generalHelp(base, { message, conversation, generalLlm, lang }) {
   const history = (conversation || []).filter((t) => t && (t.role === 'user' || t.role === 'assistant') && typeof t.content === 'string').slice(-6).map((t) => ({ role: t.role, content: t.content.slice(0, 600) }));
   try {
     const reply = await generalLlm({
-      system: `You are a friendly, plain-spoken helper inside a Washington State small business checklist app. The question is not covered by the app's written rules, so give short general help. Rules: 2 to 5 short sentences, ${es ? 'Spanish' : 'US English'}, no em dashes, no markdown. Do not state specific fees, dollar amounts, deadlines, dates, phone numbers or web addresses. Do not say a requirement applies to the person. Say what you are unsure about. End by telling them to confirm with the responsible agency (for Washington business questions, the Department of Revenue, Secretary of State, Labor and Industries, Employment Security, or the county or city). If the question is not about starting or running a business, answer briefly and kindly.`,
+      system: `You are a friendly, plain-spoken helper inside a Washington State small business checklist app. The question is not covered by the app's written rules, so give short general help. Talk like a helpful person: start with one friendly sentence that responds to what they said, then the most useful general guidance, then one easy question that helps them take the next step. Rules: 3 to 5 short sentences, ${es ? 'Spanish' : 'US English'}, no em dashes, no markdown. Do not state specific fees, dollar amounts, deadlines, dates, phone numbers or web addresses. Do not say a requirement applies to the person. Say what you are unsure about. End by telling them to confirm with the responsible agency (for Washington business questions, the Department of Revenue, Secretary of State, Labor and Industries, Employment Security, or the county or city). If the question is not about starting or running a business, answer briefly and kindly.`,
       user: message,
       history,
     });
@@ -799,7 +802,7 @@ async function answerGrounded({ message, conversation = [], rules, checklist = n
     const history = conversation.filter((t) => t && (t.role === 'user' || t.role === 'assistant') && typeof t.content === 'string').slice(-6).map((t) => ({ role: t.role, content: t.content.slice(0, 600) }));
     try {
       const reply = await llm({
-        system: 'You are a friendly, plain-spoken helper inside a Washington small business checklist app. Answer ONLY from the CONTEXT records. If the context does not answer the question, say you do not have that in the current rules. Never add facts, numbers, dates, fees or links. Do not paste links; they are shown separately. Do not say a requirement applies to the person; point them to their checklist. Keep status phrases such as "Pending verification" and "Not yet Approved" exactly. Be warm, short and clear: 2 to 5 short sentences, US English, no em dashes, no markdown. Use earlier turns only to understand follow-ups.',
+        system: FRIENDLY_SYSTEM,
         user: `CONTEXT:\n${context}\n\nQUESTION: ${message}${vague ? ' (This asks how to do the step in the context. Explain its steps.)' : ''}`,
         history,
       });
