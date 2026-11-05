@@ -1331,8 +1331,8 @@ export function createService(store, options = {}) {
     if (message.length > 500) fail('Keep the question under 500 characters.');
     const conversation = (Array.isArray(body?.conversation) ? body.conversation : [])
       .filter((t) => t && (t.role === 'user' || t.role === 'assistant') && typeof t.content === 'string')
-      .slice(-8)
-      .map((t) => ({ role: t.role, content: t.content.slice(0, 1000) }));
+      .slice(-24)
+      .map((t) => ({ role: t.role, content: t.content.slice(0, 1000), ...(typeof t.mode === 'string' ? { mode: t.mode.slice(0, 20) } : {}) }));
     const rulesDoc = await loadAll();
     const cl = await store.getChecklist(chKey(ctx, query, body));
     const checklist = cl ? await buildChecklist(cl, rulesDoc) : null;

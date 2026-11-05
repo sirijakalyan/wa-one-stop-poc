@@ -565,7 +565,7 @@ export function acceptRewrite(rewrite, grounded, allowedUrls) {
 }
 
 // Prompts for the model. The facts, links and status phrases always come from the written rules; the model only chooses the words.
-export const FRIENDLY_SYSTEM = 'You are a warm, plain-spoken guide helping someone start a business in Washington State. Talk like a helpful person, not a form. Start with one friendly sentence that responds to what they said (for example, "A grocery store, nice."). Then give the one or two things that matter most, using ONLY the facts in the CONTEXT records. Do not paste the whole rule. Finish with one easy question that moves them forward. Never add facts, numbers, dates, fees or links that are not in CONTEXT. Do not paste links; they are shown separately. Do not say a requirement applies to the person; say their checklist will confirm. Keep status phrases such as "Pending verification" and "Not yet Approved" exactly. If CONTEXT does not answer the question, say you do not have that in the current rules and ask what they want to do. 3 to 5 short sentences, US English, no em dashes, no markdown. Use earlier turns only to understand follow-ups.';
+export const FRIENDLY_SYSTEM = 'You are a warm, plain-spoken guide helping someone start a business in Washington State. Talk like a helpful person, not a form. Start with one friendly sentence that responds to what they said (for example, "A grocery store, nice."). Then give the one or two things that matter most, using ONLY the facts in the CONTEXT records. Do not paste the whole rule. Finish with one easy question that moves them forward. Never add facts, numbers, dates, fees or links that are not in CONTEXT. Do not paste links; they are shown separately. Do not say a requirement applies to the person; say their checklist will confirm. Keep status phrases such as "Pending verification" and "Not yet Approved" exactly. If CONTEXT does not answer the question, say you do not have that in the current rules and ask what they want to do. 3 to 5 short sentences, US English, no em dashes, no markdown. Remember what the person already told you earlier in this chat (their kind of business, place, owners, employees) and use it; never ask for something they already said. Use earlier turns to understand follow-ups.';
 
 // Optional friendly rewrite of a short grounded answer. Discarded unless it adds nothing new.
 async function rewriteNext(r, message, llm) {
@@ -586,10 +586,10 @@ async function rewriteNext(r, message, llm) {
 async function generalHelp(base, { message, conversation, generalLlm, lang }) {
   if (!generalLlm) return base;
   const es = lang === 'es';
-  const history = (conversation || []).filter((t) => t && (t.role === 'user' || t.role === 'assistant') && typeof t.content === 'string').slice(-6).map((t) => ({ role: t.role, content: t.content.slice(0, 600) }));
+  const history = (conversation || []).filter((t) => t && (t.role === 'user' || t.role === 'assistant') && typeof t.content === 'string').slice(-24).map((t) => ({ role: t.role, content: t.content.slice(0, 600) }));
   try {
     const reply = await generalLlm({
-      system: `You are a friendly, plain-spoken helper inside a Washington State small business checklist app. The question is not covered by the app's written rules, so give short general help. Talk like a helpful person: start with one friendly sentence that responds to what they said, then the most useful general guidance, then one easy question that helps them take the next step. Rules: 3 to 5 short sentences, ${es ? 'Spanish' : 'US English'}, no em dashes, no markdown. Do not state specific fees, dollar amounts, deadlines, dates, phone numbers or web addresses. Do not say a requirement applies to the person. Say what you are unsure about. End by telling them to confirm with the responsible agency (for Washington business questions, the Department of Revenue, Secretary of State, Labor and Industries, Employment Security, or the county or city). If the question is not about starting or running a business, answer briefly and kindly.`,
+      system: `You are a friendly, plain-spoken helper inside a Washington State small business checklist app. The question is not covered by the app's written rules, so give short general help. Talk like a helpful person: start with one friendly sentence that responds to what they said, then the most useful general guidance, then one easy question that helps them take the next step. Remember what the person already told you earlier in this chat and never ask for it again. Rules: 3 to 5 short sentences, ${es ? 'Spanish' : 'US English'}, no em dashes, no markdown. Do not state specific fees, dollar amounts, deadlines, dates, phone numbers or web addresses. Do not say a requirement applies to the person. Say what you are unsure about. End by telling them to confirm with the responsible agency (for Washington business questions, the Department of Revenue, Secretary of State, Labor and Industries, Employment Security, or the county or city). If the question is not about starting or running a business, answer briefly and kindly.`,
       user: message,
       history,
     });
@@ -604,7 +604,7 @@ async function generalHelp(base, { message, conversation, generalLlm, lang }) {
 
 // Hello, thanks and goodbye get a warm reply from the model when one is set; the app's plain canned lines stay as the fallback.
 async function smallTalk(base, { message, conversation, generalLlm, lang }) {
-  const history = (conversation || []).filter((t) => t && (t.role === 'user' || t.role === 'assistant') && typeof t.content === 'string').slice(-6).map((t) => ({ role: t.role, content: t.content.slice(0, 600) }));
+  const history = (conversation || []).filter((t) => t && (t.role === 'user' || t.role === 'assistant') && typeof t.content === 'string').slice(-24).map((t) => ({ role: t.role, content: t.content.slice(0, 600) }));
   try {
     const reply = await generalLlm({
       system: `You are a warm, friendly helper inside a Washington State small business checklist app. Reply to the greeting, thanks or goodbye like a kind person would, in 1 to 2 short sentences, ${lang === 'es' ? 'Spanish' : 'US English'}, no em dashes, no markdown. Mention once that you can help with the steps on their checklist or with general questions.`,
@@ -619,9 +619,40 @@ async function smallTalk(base, { message, conversation, generalLlm, lang }) {
   }
 }
 
+// A guided conversation for "how do I start?" and "I want to open a ..." questions. The model chats like a friendly advisor, asks what it still
+// needs one question at a time, and remembers everything said earlier in the chat. It may name the steps and agencies below, nothing more.
+export const COACH_SYSTEM = 'You are a warm, plain-spoken advisor helping someone start a business in Washington State. Have a natural conversation, like a friendly person, not a form. Read the whole chat so far. If you do not yet know what business they want to start, ask what business they have in mind. Once you know, say something encouraging about it, then ask only the next thing you still need, one question at a time (for example where in Washington, whether they will have employees, and whether they will be the only owner or have partners). Never ask again for something they already told you, even many messages ago; use it instead. Use the STEPS list only for the names of steps and agencies. Never add fees, numbers, dates, deadlines or links. Do not say a requirement definitely applies to them; say their checklist will confirm what applies. If they ask something else, answer it briefly and kindly, then gently continue. 2 to 4 short sentences, end with one easy question, US English, no em dashes, no markdown.';
+const START_INTENT = /\b(i('m| am)? (trying|planning|going|want(ing)?|wish|hope|would like|need) (to )?(start|open|begin|launch|run|set up|do|build|make)|(thinking|planning) (of|about) (starting|opening)|how (do|to|can|should) (i |we )?(start|begin|open|launch|set ?up|get started)|where (do|should|can) (i|we) (start|begin)|get(ting)? started|new to (this|business))\b/i;
+const NOT_COACH = /\b(fees?|costs?|how much|price|how long|how many days|other state|california|oregon|idaho)\b/i;
+async function coachReply({ message, conversation, rules, generalLlm }) {
+  const history = (conversation || []).filter((t) => t && (t.role === 'user' || t.role === 'assistant') && typeof t.content === 'string').slice(-24).map((t) => ({ role: t.role, content: t.content.slice(0, 600) }));
+  const steps = orderedRules(rules).map((r) => `${r.title} (${r.agency})`).join('; ');
+  try {
+    const reply = await generalLlm({ system: COACH_SYSTEM, user: `STEPS: ${steps}\n\nPERSON'S MESSAGE: ${message}`, history });
+    const text = String(reply || '').replace(/https?:\/\/\S+/g, '').replace(/\u2014/g, ',').trim();
+    const said = [...history.filter((t) => t.role === 'user').map((t) => t.content), message].join(' ');
+    if (!acceptRewrite(text, `${steps} ${said}`, [])) return null;
+    return { answer: text, links: [], matched: [], mode: 'coach', suggestions: [] };
+  } catch (err) {
+    console.error(`Coach model failed: ${err?.message || err}`);
+    return null;
+  }
+}
+
 export async function answerQuestion({ generalLlm = null, lang = 'en', ...args }) {
-  const r = await answerGrounded(args);
   const m = String(args.message || '').trim();
+  // Guided conversation: "how do I start?", "I want to open a shop", and every reply after that while the chat is in that conversation.
+  if (generalLlm && lang !== 'es' && args.rules) {
+    const turns = args.conversation || [];
+    const inCoach = turns.some((t) => t && t.role === 'assistant' && t.mode === 'coach');
+    const top = scoreRules(args.rules, m)[0];
+    const specific = (top && top.score >= 6 && /\?|^(what|which|do|does|can|how|where|when|why|is|are)\b/i.test(m)) || NOT_COACH.test(m);
+    if ((START.test(m) || START_INTENT.test(m) || inCoach) && !specific) {
+      const c = await coachReply({ message: m, conversation: turns, rules: args.rules, generalLlm });
+      if (c) return c;
+    }
+  }
+  const r = await answerGrounded(args);
   if (generalLlm && r.mode === 'grounded' && !r.matched?.length && ((GREETING.test(m) && m.split(/\s+/).length <= 5) || THANKS.test(m) || BYE.test(m))) return smallTalk(r, { message: m, conversation: args.conversation, generalLlm, lang });
   return r.mode === 'fallback' ? generalHelp(r, { message: args.message, conversation: args.conversation, generalLlm, lang }) : r;
 }
@@ -799,7 +830,7 @@ async function answerGrounded({ message, conversation = [], rules, checklist = n
     // RAG: give the model only the retrieved records and the recent turns. It may only rephrase them.
     const used = [top, ...alsoClose.map((x) => x.rule)];
     const context = used.map((r, i) => `[${i + 1}] ${r.title} (${r.agency}). ${ruleText(r)} Status: ${statusLine(r)}`).join('\n\n');
-    const history = conversation.filter((t) => t && (t.role === 'user' || t.role === 'assistant') && typeof t.content === 'string').slice(-6).map((t) => ({ role: t.role, content: t.content.slice(0, 600) }));
+    const history = conversation.filter((t) => t && (t.role === 'user' || t.role === 'assistant') && typeof t.content === 'string').slice(-24).map((t) => ({ role: t.role, content: t.content.slice(0, 600) }));
     try {
       const reply = await llm({
         system: FRIENDLY_SYSTEM,

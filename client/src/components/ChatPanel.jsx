@@ -4,7 +4,7 @@ import Icon from './Icon.jsx';
 import { useT } from '../i18n.js';
 
 const SUGGESTION_KEYS = ['ch.s1', 'ch.s2', 'ch.s3', 'ch.s4'];
-const MAX_TURNS = 8;
+const MAX_TURNS = 24;
 
 // Plain words for every failure. Questions the server rejected for a clear reason keep that reason.
 function friendlyError(e, t) {
@@ -70,7 +70,7 @@ export default function ChatPanel() {
   async function send(question, base = messages) {
     const q = String(question ?? text).trim();
     if (!q || busy) return;
-    const history = base.filter((m) => !m.error).slice(-MAX_TURNS).map((m) => ({ role: m.role, content: m.content }));
+    const history = base.filter((m) => !m.error).slice(-MAX_TURNS).map((m) => ({ role: m.role, content: m.content, ...(m.mode ? { mode: m.mode } : {}) }));
     setMessages([...base, { role: 'user', content: q }]);
     setText('');
     setBusy(true);
