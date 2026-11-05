@@ -303,6 +303,19 @@ describe('voice', () => {
     expect(spoken.length).toBe(before);
   });
 
+  it('Mute voice also switches the microphone off, and Unmute brings it back', async () => {
+    const user = userEvent.setup();
+    renderAt({ pathname: '/guide', state: { mode: 'type' } });
+    await user.click(await screen.findByRole('button', { name: /Microphone off/ }));
+    await waitFor(() => expect(FakeRec.last?.started).toBe(true));
+    await user.click(screen.getByRole('button', { name: 'Mute voice' }));
+    await waitFor(() => expect(FakeRec.last.started).toBe(false));
+    expect(screen.getByRole('button', { name: /Microphone off/ })).toBeInTheDocument();
+    expect(screen.getByText(/Muted\. The guide is quiet and your microphone is off/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Unmute voice' }));
+    await waitFor(() => expect(FakeRec.last.started).toBe(true));
+  });
+
   it('the microphone pauses by itself when the tab is hidden, so it never listens while the owner is away', async () => {
     const user = userEvent.setup();
     renderAt({ pathname: '/guide', state: { mode: 'type' } });

@@ -348,9 +348,22 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
     document.addEventListener('visibilitychange', onHide);
     return () => document.removeEventListener('visibilitychange', onHide);
   }, [micOn]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Mute turns off sound both ways: the guide stops talking and the microphone stops listening. Unmute brings the microphone back
+  // only if it was on before the owner muted.
+  const micBeforeMute = useRef(false);
   function muteToggle() {
-    if (voiceOn) { stopSpeaking(); speakingCount.current = 0; setSpeaking(false); }
-    setVoiceOn(!voiceOn);
+    if (voiceOn) {
+      stopSpeaking(); speakingCount.current = 0; setSpeaking(false);
+      micBeforeMute.current = micOn;
+      if (micOn) { setMicOn(false); listenerRef.current?.stop(); setListening(false); }
+      setVoiceMsg(t('voice.mutedBoth'));
+      setVoiceOn(false);
+    } else {
+      setVoiceMsg('');
+      setVoiceOn(true);
+      if (micBeforeMute.current && ensureListener()) setMicOn(true);
+      micBeforeMute.current = false;
+    }
   }
   // Skip: end the guide's line now and go straight to listening. Nothing is left in the air, so no quiet time is needed.
   function skipTalking() {
