@@ -206,6 +206,8 @@ export const pagesEn = {
   'pr.renewFor': (t) => `Renewal date for ${t}`,
   'pr.stepDone': ' (done)',
   'pr.saved': ' Saved',
+  'pr.saveDate': 'Save',
+  'pr.unsaved': 'Press Save to keep this date.',
   // Notifications
   'nt.title': 'Simulated notifications',
   'nt.live': 'Renewal reminders can be emailed to you if you choose. We only email after you confirm your address, and every email has an unsubscribe link.',
@@ -651,6 +653,8 @@ export const pagesEs = {
   'pr.renewFor': (t) => `Fecha de renovación de ${t}`,
   'pr.stepDone': ' (hecho)',
   'pr.saved': ' Guardado',
+  'pr.saveDate': 'Guardar',
+  'pr.unsaved': 'Presione Guardar para conservar esta fecha.',
   'nt.title': 'Notificaciones simuladas',
   'nt.live': 'Si usted lo elige, los recordatorios de renovación se pueden enviar por correo electrónico. Solo enviamos correo después de que confirme su dirección, y cada correo tiene un enlace para cancelar.',
   'nt.log': 'Modo de demostración: los correos se escriben en el registro del servidor y no llegan a ninguna bandeja de entrada.',

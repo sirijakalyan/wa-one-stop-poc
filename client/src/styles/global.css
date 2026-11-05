@@ -1530,3 +1530,7 @@ details.fold { border: 0; padding: 0; background: transparent; }
 :root[data-theme="dark"] .guide-audio [aria-pressed="true"] { background: var(--brand-soft); color: var(--brand-strong); }
 :root[data-theme="dark"] .desk-switch button[aria-selected="true"], :root[data-theme="dark"] .board-filters button[aria-pressed="true"], :root[data-theme="dark"] .tile.is-on { background: #fff; color: #0b1f3a; }
 :root[data-theme="dark"] .who-edits li strong { color: var(--ink); }
+
+.renew-form { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.renew-form .renew-save { min-height: 44px; }
+.renew-form .renew-save:disabled { opacity: .45; cursor: not-allowed; }

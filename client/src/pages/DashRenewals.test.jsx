@@ -42,32 +42,37 @@ describe('calendar buttons on renewal dates', () => {
   });
 });
 
-describe('renewal date saves without leaving the field', () => {
-  it('saves a picked date after a short pause, once, and ignores a half-typed year', async () => {
-    vi.useFakeTimers();
+describe('renewal date saves only when Save is pressed', () => {
+  it('Save appears once a date is picked, then saves once with the picked date', async () => {
+    const onSave = vi.fn();
+    const { fireEvent } = await import('@testing-library/react');
+    render(<DashRenewals data={data} onSave={onSave} />);
+    const input = screen.getByLabelText(/Renewal date for Employer taxes/);
+    const row = input.closest('tr');
+    expect(within(row).queryByRole('button', { name: 'Save' })).toBeNull(); // nothing to save yet
+    fireEvent.change(input, { target: { value: '2026-11-27' } });
+    expect(onSave).not.toHaveBeenCalled(); // picking alone never saves
+    const save = within(row).getByRole('button', { name: 'Save' });
+    expect(save).toBeEnabled();
+    fireEvent.click(save);
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(onSave).toHaveBeenCalledWith('esd', '2026-11-27');
+  });
+  it('never saves a half-typed year', async () => {
     const onSave = vi.fn();
     const { fireEvent } = await import('@testing-library/react');
     render(<DashRenewals data={data} onSave={onSave} />);
     const input = screen.getByLabelText(/Renewal date for Employer taxes/);
     fireEvent.change(input, { target: { value: '0002-11-27' } });
-    vi.advanceTimersByTime(700);
-    expect(onSave).not.toHaveBeenCalled();
-    fireEvent.change(input, { target: { value: '2026-11-27' } });
-    vi.advanceTimersByTime(700);
-    expect(onSave).toHaveBeenCalledTimes(1);
-    expect(onSave).toHaveBeenCalledWith('esd', '2026-11-27');
-    fireEvent.blur(input);
-    expect(onSave).toHaveBeenCalledTimes(1);
-    vi.useRealTimers();
+    expect(within(input.closest('tr')).getByRole('button', { name: 'Save' })).toBeDisabled();
   });
-  it('saves a cleared date', async () => {
-    vi.useFakeTimers();
+  it('a cleared date can be saved', async () => {
     const onSave = vi.fn();
     const { fireEvent } = await import('@testing-library/react');
     render(<DashRenewals data={data} onSave={onSave} />);
-    fireEvent.change(screen.getByLabelText(/Renewal date for Apply for your license/), { target: { value: '' } });
-    vi.advanceTimersByTime(700);
+    const input = screen.getByLabelText(/Renewal date for Apply for your license/);
+    fireEvent.change(input, { target: { value: '' } });
+    fireEvent.click(within(input.closest('tr')).getByRole('button', { name: 'Save' }));
     expect(onSave).toHaveBeenCalledWith('dor', '');
-    vi.useRealTimers();
   });
 });

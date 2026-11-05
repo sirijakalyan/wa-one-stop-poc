@@ -65,28 +65,29 @@ export function DashSummary({ data }) {
   );
 }
 
-// A date saves as soon as it is picked or typed in full, and when the field is left. Typing a year one digit at a time
-// passes through odd years like 0002, so a typed date waits a moment and only a sensible year (2000 to 2100) is saved.
+// A date is saved only when the owner presses Save (or Enter). Picking or typing a date just prepares it, and the Save button
+// lights up. Only a sensible year (2000 to 2100) can be saved, so a half-typed year like 0002 is never stored.
 const sensible = (v) => v === '' || (/^\d{4}-\d{2}-\d{2}$/.test(v) && Number(v.slice(0, 4)) >= 2000 && Number(v.slice(0, 4)) <= 2100);
+
 export function RenewalInput({ id, value, onSave }) {
-  const timer = useRef(null);
-  const last = useRef(value);
-  const save = (v) => {
-    clearTimeout(timer.current);
-    if (v === last.current || !sensible(v)) return;
-    last.current = v;
-    onSave(v);
-  };
-  useEffect(() => () => clearTimeout(timer.current), []);
+  const t = useT();
+  const [draft, setDraft] = useState(value);
+  useEffect(() => { setDraft(value); }, [value]); // a saved date coming back from the server is the new starting point
+  const changed = draft !== value;
+  const ok = sensible(draft);
+  const submit = (e) => { e.preventDefault(); if (changed && ok) onSave(draft); };
   return (
-    <input
-      id={id}
-      type="date"
-      className="date"
-      defaultValue={value}
-      onChange={(e) => { const v = e.target.value; clearTimeout(timer.current); timer.current = setTimeout(() => save(v), 600); }}
-      onBlur={(e) => save(e.target.value)}
-    />
+    <>
+      <form className="renew-form" onSubmit={submit}>
+        <input id={id} type="date" className="date" value={draft} onChange={(e) => setDraft(e.target.value)} />
+        {changed && (
+          <button type="submit" className="btn btn-primary btn-sm renew-save" disabled={!ok}>
+            <Icon name="check" size={16} /> {t('pr.saveDate')}
+          </button>
+        )}
+      </form>
+      {changed && ok && <p className="hint renew-unsaved" role="status">{t('pr.unsaved')}</p>}
+    </>
   );
 }
 
