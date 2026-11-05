@@ -336,16 +336,17 @@ describe('voice', () => {
     await waitFor(() => expect(FakeRec.last?.started).toBe(true)); // Unmute brings the microphone back in Talk mode, even after leaving the page
   });
 
-  it('the microphone pauses by itself when the tab is hidden, so it never listens while the owner is away', async () => {
+  it('the microphone stays on when the tab is hidden and shown again, and only Mute turns it off', async () => {
     const user = userEvent.setup();
     renderAt({ pathname: '/guide', state: { mode: 'type' } });
     await user.click(await screen.findByRole('button', { name: /Microphone off/ }));
     await waitFor(() => expect(FakeRec.last?.started).toBe(true));
     Object.defineProperty(document, 'hidden', { value: true, configurable: true });
     document.dispatchEvent(new Event('visibilitychange'));
-    await waitFor(() => expect(FakeRec.last.started).toBe(false));
-    expect(await screen.findByText(/paused because you left this tab/)).toBeInTheDocument();
     Object.defineProperty(document, 'hidden', { value: false, configurable: true });
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(FakeRec.last.started).toBe(true);
+    expect(screen.queryByText(/paused because you left this tab/)).toBeNull();
   });
 
   it('the microphone turns spoken words into a message the guide answers, and Stop turns it off', async () => {
