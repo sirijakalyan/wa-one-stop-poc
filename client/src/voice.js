@@ -165,6 +165,11 @@ const ERRORS_ES = {
 export const listenErrorText = (code, lang = 'en') => (lang === 'es' ? ERRORS_ES : ERRORS)[code] || '';
 
 // One listener. start() begins one round of listening and ends by itself after the owner pauses.
+// How long the owner can pause mid-answer before the sentence is sent. The browser closes the microphone after about a second of quiet,
+// so the words heard so far are kept, the microphone is reopened, and the answer is sent only after this much silence.
+let pauseMs = 2500;
+export const setPauseMs = (ms) => { pauseMs = Math.max(0, Number(ms) || 0); };
+
 export function createListener({ onInterim, onFinal, onEnd, onError, getLang = () => 'en-US' }) {
   const Rec = recognitionClass();
   if (!Rec) return null;
@@ -174,44 +179,70 @@ export function createListener({ onInterim, onFinal, onEnd, onError, getLang = (
   rec.continuous = false;
   rec.maxAlternatives = 1;
   let running = false;
-  let finalText = '';
+  let wanted = false; // the owner has not stopped the microphone
+  let buffer = ''; // words already heard in this answer
+  let timer = null;
   let delivered = false;
+
+  const clear = () => { clearTimeout(timer); timer = null; };
+  const flush = () => {
+    clear();
+    const t = buffer.trim();
+    buffer = '';
+    if (!t) return;
+    delivered = true;
+    onFinal?.(t);
+    if (running) { try { rec.stop(); } catch { /* already stopped */ } }
+    else { delivered = false; onEnd?.(true); }
+  };
+  const reopen = () => {
+    if (!wanted || running) return;
+    rec.lang = getLang();
+    try { rec.start(); running = true; } catch { setTimeout(() => { if (wanted && !running && buffer) { try { rec.start(); running = true; } catch { flush(); } } }, 80); }
+  };
+
   rec.onresult = (e) => {
     let interim = '';
     for (let i = e.resultIndex; i < e.results.length; i += 1) {
       const r = e.results[i];
-      if (r.isFinal) finalText += r[0].transcript;
+      if (r.isFinal) buffer += `${buffer ? ' ' : ''}${r[0].transcript.trim()}`;
       else interim += r[0].transcript;
     }
-    if (interim) onInterim?.(interim);
-    // Hand the sentence over as soon as the browser is sure of it, instead of waiting for it to close the microphone.
-    const t = finalText.trim();
-    if (t && !delivered) {
-      delivered = true;
-      finalText = '';
-      onFinal?.(t);
-      try { rec.stop(); } catch { /* already stopped */ }
-    }
+    if (interim || buffer) onInterim?.(`${buffer}${buffer && interim ? ' ' : ''}${interim}`.trim());
+    clear();
+    // New words arrived: wait for the owner to finish. Once there has been enough silence, the whole answer goes out as one.
+    if (buffer.trim() && !interim) timer = setTimeout(flush, pauseMs);
   };
-  rec.onerror = (e) => { onError?.(e.error); };
+  rec.onerror = (e) => {
+    if (buffer && (e.error === 'no-speech' || e.error === 'aborted')) return; // quiet while waiting for the rest: the timer sends what we have
+    onError?.(e.error);
+  };
   rec.onend = () => {
     running = false;
-    const t = finalText.trim();
-    finalText = '';
-    if (t && !delivered) onFinal?.(t);
-    const had = delivered || Boolean(t);
-    delivered = false;
-    onEnd?.(had);
+    if (delivered) { delivered = false; buffer = ''; clear(); onEnd?.(true); return; }
+    if (buffer.trim() && wanted) {
+      if (pauseMs === 0) { flush(); return; }
+      reopen(); // keep listening until the silence is long enough
+      return;
+    }
+    clear();
+    buffer = '';
+    onEnd?.(false);
   };
   return {
     start() {
       if (running) return;
-      finalText = '';
+      buffer = '';
       delivered = false;
+      wanted = true;
+      clear();
       rec.lang = getLang();
       try { rec.start(); running = true; } catch { running = false; }
     },
     stop() {
+      wanted = false;
+      clear();
+      buffer = '';
       if (!running) return;
       try { rec.abort(); } catch { /* already stopped */ }
       running = false;
