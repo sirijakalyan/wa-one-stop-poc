@@ -131,17 +131,6 @@ export async function buildPlanPdf({ data, label, t, today }) {
     y += 6;
   }
 
-  const left = (data.skipped || []).filter((s) => s.title);
-  if (left.length) {
-    if (y + 60 > H - 46) { doc.addPage(); y = M; }
-    set(13, 'bold', NAVY); doc.text(t('save.pdfSkipped'), M, y); y += 18;
-    for (const s of left) {
-      const rows = wrap(`${s.title}: ${s.reason || ''}`, CW, 9.5);
-      if (y + rows.length * 13 > H - 46) { doc.addPage(); y = M; }
-      set(9.5, 'normal', MUTED); rows.forEach((r) => { doc.text(r, M, y); y += 13; }); y += 4;
-    }
-  }
-
   const pages = doc.getNumberOfPages();
   for (let i = 1; i <= pages; i += 1) {
     doc.setPage(i);
