@@ -57,9 +57,11 @@ export default function Landing() {
     const text = sentence.trim();
     if (text) { send(text, mode === 'talk' ? 'talk' : 'type'); setSentence(''); }
   }
-  const firstMode = useRef(true);
+  const shownMode = useRef(mode);
   useEffect(() => {
-    if (firstMode.current) { firstMode.current = false; return; } // opening the page must not scroll or steal focus
+    // Opening the page must not scroll or steal focus. React's development mode runs effects twice on open, so compare with the mode already shown instead of counting runs.
+    if (shownMode.current === mode) return;
+    shownMode.current = mode;
     if (mode) workRef.current?.focus({ preventScroll: false });
   }, [mode]);
 
