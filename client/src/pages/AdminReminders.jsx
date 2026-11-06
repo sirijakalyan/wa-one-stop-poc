@@ -82,6 +82,8 @@ export default function AdminReminders() {
     setBusy(true); setErr(''); setNote('');
     try { const r = await api.testReminderEmail(); setNote(r.message); } catch (e) { setErr(e.message); } finally { setBusy(false); }
   }
+  // The history lines are saved in English by the server, so Spanish pages translate the fixed words.
+  const said = (t) => (a.locale && String(a.locale).startsWith('es') ? String(t).replace(/\bdays\b/g, 'días').replace(/\bsend time\b/g, 'hora de envío').replace(/\btime zone\b/g, 'zona horaria').replace(/ to /g, ' a ') : t);
   const last = data.history?.[0];
   const zoneLabel = data.zones.find((z) => z.id === zone)?.label || zone;
 
@@ -149,12 +151,12 @@ export default function AdminReminders() {
       {note && <p className="saved" role="status">{note}</p>}
 
       {last ? (
-        <p className="hint rem-last">{a('Last changed by', 'Último cambio de')} {last.by} {a('on', 'el')} {new Date(last.at).toLocaleString(a.locale)}: {last.summary}.</p>
+        <p className="hint rem-last">{a('Last changed by', 'Último cambio de')} {last.by} {a('on', 'el')} {new Date(last.at).toLocaleString(a.locale)}: {said(last.summary)}.</p>
       ) : <p className="hint rem-last">{a('Not changed yet. These are the starting values.', 'Aún sin cambios. Estos son los valores iniciales.')}</p>}
       {data.history?.length > 1 && (
         <details className="rem-history">
           <summary>{a('Change history', 'Historial de cambios')}</summary>
-          <ul>{data.history.map((h) => <li key={h.at}>{new Date(h.at).toLocaleString(a.locale)}, {h.by}: {h.summary}</li>)}</ul>
+          <ul>{data.history.map((h) => <li key={h.at}>{new Date(h.at).toLocaleString(a.locale)}, {h.by}: {said(h.summary)}</li>)}</ul>
         </details>
       )}
     </section>
