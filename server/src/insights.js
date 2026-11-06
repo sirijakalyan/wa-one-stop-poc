@@ -1,7 +1,10 @@
 // Insights: counts only. No names, emails, answers, free text, visitor IDs or IP addresses are ever stored.
 // Every event becomes a tick on a per-day counter, for example "plan_started|voice|en". Counters older than 90 days are dropped.
 const KEEP_DAYS = 90;
-export const MIN_GROUP = 5; // a group smaller than this is hidden, so no one can be picked out
+// A group smaller than this is hidden, so no one can be picked out. Default 5.
+// For a demo only, set INSIGHTS_MIN_GROUP=1 on the server (whole number 1 to 50), and set it back to 5 after.
+const fromEnv = Number(process.env.INSIGHTS_MIN_GROUP);
+export const MIN_GROUP = Number.isInteger(fromEnv) && fromEnv >= 1 && fromEnv <= 50 ? fromEnv : 5;
 const MODES = ['voice', 'typing', 'form', 'sample'];
 const LANGS = ['en', 'es'];
 const STORAGE = ['device', 'link', 'account'];

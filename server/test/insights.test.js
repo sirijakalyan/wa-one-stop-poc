@@ -51,3 +51,14 @@ test('admin and test traffic is not counted, and marking a step done is', async 
   for (let i = 0; i < 5; i += 1) await app.call('PATCH', '/api/checklist/done', { ruleId: saved.body.items[0].id, done: true }, { 'x-visitor-id': `ins-visitor-0000010${i}` }).catch(() => {});
   assert.ok(median({ 'plan_shown_sec|8': 6 }).seconds === 255);
 });
+
+test('the minimum group size is 5 unless INSIGHTS_MIN_GROUP sets a whole number from 1 to 50', async () => {
+  const load = async (v) => { if (v === undefined) delete process.env.INSIGHTS_MIN_GROUP; else process.env.INSIGHTS_MIN_GROUP = v; return (await import(`../src/insights.js?v=${Math.random()}`)).MIN_GROUP; };
+  try {
+    assert.equal(await load(undefined), 5);
+    assert.equal(await load('1'), 1);
+    assert.equal(await load('0'), 5);
+    assert.equal(await load('abc'), 5);
+    assert.equal(await load('99'), 5);
+  } finally { delete process.env.INSIGHTS_MIN_GROUP; }
+});

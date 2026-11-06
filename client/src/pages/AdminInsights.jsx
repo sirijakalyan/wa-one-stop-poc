@@ -55,7 +55,7 @@ export default function AdminInsights() {
   return (
     <>
       <h1 tabIndex={-1}>Insights</h1>
-      <p className="lead">{tr('How owners use the guide. These are counts only: no names, emails, answers or typed text are stored, and any group smaller than 5 is hidden. Targets are estimates to be validated during discovery.', 'Cómo usan la guía los propietarios. Solo son conteos: no se guardan nombres, correos, respuestas ni texto escrito, y cualquier grupo menor de 5 se oculta. Las metas son estimaciones por validar durante el descubrimiento.')}</p>
+      <p className="lead">{tr(`How owners use the guide. These are counts only: no names, emails, answers or typed text are stored, and any group smaller than ${min} is hidden. Targets are estimates to be validated during discovery.`, `Cómo usan la guía los propietarios. Solo son conteos: no se guardan nombres, correos, respuestas ni texto escrito, y cualquier grupo menor de ${min} se oculta. Las metas son estimaciones por validar durante el descubrimiento.`)}</p>
       <div className="ins-bar">
         <div className="ins-range" role="group" aria-label={tr('Time range', 'Periodo')}>
           {[7, 30, 90].map((d) => <button key={d} type="button" className={`btn btn-quiet btn-sm${days === d ? ' is-current' : ''}`} aria-pressed={days === d} onClick={() => setDays(d)}>{tr(`${d} days`, `${d} días`)}</button>)}
