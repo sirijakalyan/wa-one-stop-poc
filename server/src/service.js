@@ -584,8 +584,8 @@ export function createService(store, options = {}) {
     const url = base ? `${base}/my-business?plan=${code}` : '';
     const es = lang === 'es';
     const L = es
-      ? { applies: 'Le corresponde', maybe: 'Puede corresponder, confirme', pending: 'Verificación pendiente', checked: 'Fuente revisada', agency: 'Agencia', means: 'Qué significa', need: 'Lo que necesitará', steps: 'Pasos', noLink: 'Sin enlace. Comuníquese con su oficina local.', source: 'Fuente', last: 'Última verificación' }
-      : { applies: 'Applies to you', maybe: 'May apply, confirm', pending: 'Pending verification', checked: 'Source checked', agency: 'Agency', means: 'What it means', need: "What you'll need", steps: 'Steps', noLink: 'No link. Contact your local office.', source: 'Source', last: 'Last verified' };
+      ? { applies: 'Le corresponde', maybe: 'Puede corresponder, confirme', pending: 'Verificación pendiente', checked: 'Fuente revisada', agency: 'Agencia', means: 'Qué significa', need: 'Lo que necesitará', steps: 'Pasos', noLink: 'Sin enlace. Comuníquese con su oficina local.', source: 'Fuente', last: 'Última verificación', skipped: 'Fuera de su lista' }
+      : { applies: 'Applies to you', maybe: 'May apply, confirm', pending: 'Pending verification', checked: 'Source checked', agency: 'Agency', means: 'What it means', need: "What you'll need", steps: 'Steps', noLink: 'No link. Contact your local office.', source: 'Source', last: 'Last verified', skipped: 'Left off your list' };
     const sections = Object.entries(built.phases || {}).map(([p, name]) => ({
       heading: name,
       steps: built.items.filter((i) => String(i.phase) === p).map((i) => {
@@ -609,6 +609,8 @@ export function createService(store, options = {}) {
         };
       }),
     })).filter((sec) => sec.steps.length);
+    const left = (built.skipped || []).filter((x) => x.title);
+    if (left.length) sections.push({ heading: L.skipped, steps: left.map((x) => ({ title: x.title, tone: 'pending', reason: x.reason || '' })) });
     const { html, text } = renderEmail({
       heading: es ? `Su plan${label ? `: ${label}` : ''}` : `Your plan${label ? `: ${label}` : ''}`,
       paragraphs: [

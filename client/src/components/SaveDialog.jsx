@@ -49,7 +49,7 @@ export default function SaveDialog({ items, label, answers, user, busy, error, o
     setNote('');
     try {
       // The full plan, the same as My business shows, worked out from the answers. Nothing is saved by this.
-      const { items: full, phases } = await api.evaluate(answers);
+      const { items: full, phases, skipped } = await api.evaluate(answers);
       const a = answers;
       const answerLabels = [
         t.card.structure[a.structure] || t('cl.structNo'),
@@ -62,7 +62,7 @@ export default function SaveDialog({ items, label, answers, user, busy, error, o
         `${t('cl.name')}: ${t.card.yn[a.tradename] || t('cl.notAnswered')}`,
       ];
       const today = new Date().toLocaleDateString(dateLocale(t.lang), { year: 'numeric', month: 'long', day: 'numeric' });
-      const doc = await buildPlanPdf({ data: { items: full, phases, answerLabels }, label, t, today });
+      const doc = await buildPlanPdf({ data: { items: full, phases, skipped, answerLabels }, label, t, today });
       doc.save('my-washington-business-plan.pdf');
     } catch {
       setNote(t('save.pdfFail'));
