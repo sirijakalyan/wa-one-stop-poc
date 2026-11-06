@@ -61,7 +61,7 @@
 }
 
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; scrollbar-gutter: stable; } /* the scroll bar's room is always kept, so a page that grows past the screen never slides everything sideways */
 body {
   margin: 0;
   background: var(--bg);
