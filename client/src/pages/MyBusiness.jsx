@@ -17,7 +17,7 @@ export default function MyBusiness() {
   const { setGuide } = useApp();
   const [biz, setBiz] = useState(getBusiness());
   const fetchList = useCallback(() => api.businesses(), []);
-  const { data: list, reload: reloadList } = useLoad(fetchList);
+  const { data: list, error: listError, reload: reloadList } = useLoad(fetchList);
   const fetchDash = useCallback(() => api.dashboard(), [t.lang, biz]); // eslint-disable-line react-hooks/exhaustive-deps
   const { data, error, loading, reload } = useLoad(fetchDash);
   const businesses = list?.businesses || [];
@@ -76,7 +76,7 @@ export default function MyBusiness() {
     </nav>
   );
 
-  if (loading && !data) return <Loading what={t('load.progress')} />;
+  if (loading && !data) return <div className="mb-wait"><Loading what={t('load.progress')} /></div>; // keeps the page height steady while it loads, so the footer does not jump
   if (error) return <ErrorNote message={error} />;
 
   if (!data?.saved) {
@@ -97,7 +97,7 @@ export default function MyBusiness() {
 
   return (
     <>
-      {switcher}
+      {list || listError ? switcher : <div className="biz-switch biz-switch-wait" aria-hidden="true" />}
       <header className="mb-banner">
         <div>
           <h1 tabIndex={-1}>{t('mb.title')} <Simulated /></h1>
@@ -114,7 +114,9 @@ export default function MyBusiness() {
 
       <div className="mb-split">
         <div className="mb-main">
-          <Checklist key={biz} embedded onRemoved={removed} onChanged={() => { reload(); reloadList(); }} onData={setCl} />
+          <div className={cl ? 'mb-check' : 'mb-check is-loading'}>
+            <Checklist key={biz} embedded onRemoved={removed} onChanged={() => { reload(); reloadList(); }} onData={setCl} />
+          </div>
           <DashRenewals data={data} onSave={saveRenewal} savedId={savedId} actionError={actionError} />
         </div>
         <aside className="mb-side" aria-label={t('mb.stats')}>

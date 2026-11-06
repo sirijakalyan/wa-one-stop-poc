@@ -1117,6 +1117,10 @@ body { background: radial-gradient(900px 380px at 85% -140px, rgba(25,167,160,.1
 .next-card .why { color: var(--muted); max-width: 60ch; margin: 0 0 .9rem; }
 .next-card .hint { margin: .9rem 0 0; }
 .mb-main .cl-head { margin: 0; padding: 1rem 0 0; }
+/* My business loads in steps (businesses, summary, checklist). These reserve the room each step will fill, so nothing already on screen is pushed down when the next one arrives. */
+.mb-wait { min-height: 70vh; }
+.biz-switch-wait { min-height: 70px; margin-bottom: 1.1rem; visibility: hidden; }
+.mb-check.is-loading { min-height: 70vh; }
 .mb-main .phase:first-of-type { margin-top: 1.25rem; }
 
 @media (max-width: 63.99rem) {
