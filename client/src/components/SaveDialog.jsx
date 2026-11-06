@@ -107,15 +107,13 @@ export default function SaveDialog({ items, label, answers, user, busy, error, o
                   </button>
                 </li>
               )}
-              {!user ? (
-                <li>
-                  <button type="button" className="save-opt" onClick={onDevice} disabled={busy}>
-                    <span className="icon-tile tone-device"><Icon name="home" size={22} /></span>
-                    <span className="save-opt-text"><strong>{t('save.device')}</strong><span>{t('save.deviceText')}</span></span>
-                    <span className="save-go" aria-hidden="true">›</span>
-                  </button>
-                </li>
-              ) : null}
+              <li>
+                <button type="button" className="save-opt" onClick={onDevice} disabled={busy}>
+                  <span className="icon-tile tone-device"><Icon name="home" size={22} /></span>
+                  <span className="save-opt-text"><strong>{t('save.device')}</strong><span>{t('save.deviceText')}</span></span>
+                  <span className="save-go" aria-hidden="true">›</span>
+                </button>
+              </li>
               <li>
                 <button type="button" className="save-opt" onClick={() => setView('email')} disabled={busy}>
                   <span className="icon-tile tone-mail"><Icon name="chat" size={22} /></span>
