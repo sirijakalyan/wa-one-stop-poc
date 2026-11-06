@@ -1643,3 +1643,12 @@ details.fold { border: 0; padding: 0; background: transparent; }
 .save-dialog input[type="email"] { width: 100%; min-height: 48px; padding: 0 .9rem; border: 1.5px solid var(--line-strong, #cfd9e3); border-radius: 12px; font: inherit; background: var(--surface, #fff); color: var(--ink); }
 .save-row { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1rem; }
 @media (max-width: 40rem) { .save-backdrop { align-items: end; padding: 0; } .save-dialog { border-radius: 22px 22px 0 0; max-height: 92vh; padding-bottom: calc(1.3rem + env(safe-area-inset-bottom, 0px)); } }
+
+/* Admin People: three group boxes */
+.people-groups { list-style: none; margin: 1rem 0 1.25rem; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .8rem; }
+.people-box { width: 100%; display: grid; gap: .1rem; text-align: left; padding: 1rem 1.1rem; border: 1.5px solid var(--line-strong, #d3dde7); border-radius: 16px; background: var(--surface, #fff); color: var(--ink); font: inherit; cursor: pointer; min-height: 96px; transition: border-color .15s, box-shadow .15s; }
+.people-box strong { font-size: 2rem; line-height: 1.1; color: var(--navy, #0f2a43); }
+.people-box-name { font-weight: 700; }
+.people-box:hover { border-color: var(--teal-600, #0e7c86); }
+.people-box.is-on { background: #e9f6f6; border-color: var(--teal-600, #0e7c86); box-shadow: 0 0 0 3px rgba(25,167,160,.18); }
+@media (max-width: 40rem) { .people-groups { grid-template-columns: 1fr; } .people-box { min-height: 0; } }

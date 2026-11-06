@@ -35,16 +35,17 @@ const YN_ES = { yes: 'Sí', no: 'No', unsure: 'No estoy seguro' };
 const STRUCT_ES = { sole: 'Propietario único', gp: 'Sociedad colectiva', lp: 'Sociedad en comandita (LP)', lllp: 'LLLP', llp: 'LLP', llc: 'LLC', plc: 'LLC profesional (PLLC)', corp: 'Corporación', psc: 'Corporación de servicios profesionales', benefit: 'Corporación de beneficio social', spc: 'Corporación con propósito social', nonprofit: 'Corporación sin fines de lucro', coop: 'Cooperativa', partnership: 'Sociedad o LLP', unsure: 'Estructura aún sin decidir' };
 const CAT_ES = { food: 'Servicio de comida', construction: 'Contratación de construcción', other: 'Otro servicio o venta' };
 
-function UserDetail({ id, onBack }) {
+function UserDetail({ id, onBack, visitor = false }) {
   const tr = useA();
   const EVENT = eventLabels(tr);
-  const fetchOne = useCallback(() => api.adminUser(id, tr.lang), [id, tr.lang]);
+  const fetchOne = useCallback(() => (visitor ? api.adminVisitor(id, tr.lang) : api.adminUser(id, tr.lang)), [id, tr.lang, visitor]);
   const { data, error, loading, reload } = useLoad(fetchOne);
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
   if (loading && !data) return <Loading what={tr('Loading this user', 'Cargando a esta persona')} />;
-  if (error) return <><button type="button" className="btn btn-quiet btn-sm" onClick={onBack}>{tr('Back to users', 'Volver a Personas')}</button><ErrorNote message={error} /></>;
-  const { user, events } = data;
+  if (error) return <><button type="button" className="btn btn-quiet btn-sm" onClick={onBack}>{tr('Back to the list', 'Volver a la lista')}</button><ErrorNote message={error} /></>;
+  const user = visitor ? { id, name: `${tr('Visitor', 'Visitante')} ${data.visitor.shortId}`, email: '', role: 'visitor' } : data.user;
+  const events = data.events || [];
   const lists = data.checklists || (data.checklist ? [data.checklist] : []);
   // Event details start with a step title in English. Show the title in the page language.
   const titles = lists.flatMap((l) => l.items).filter((i) => i.titleEn && i.titleEn !== i.title);
@@ -60,20 +61,20 @@ function UserDetail({ id, onBack }) {
 
   return (
     <>
-      <p><button type="button" className="btn btn-quiet btn-sm" onClick={onBack}><Icon name="chevron" size={14} className="rot" /> {tr('Back to users', 'Volver a Personas')}</button></p>
+      <p><button type="button" className="btn btn-quiet btn-sm" onClick={onBack}><Icon name="chevron" size={14} className="rot" /> {tr('Back to the list', 'Volver a la lista')}</button></p>
       <header className="user-head">
-        <span className="acct-initial big" aria-hidden="true">{(user.name || '?').charAt(0).toUpperCase()}</span>
+        <span className="acct-initial big" aria-hidden="true">{visitor ? '#' : (user.name || '?').charAt(0).toUpperCase()}</span>
         <div>
           <h2 tabIndex={-1}>{user.name}</h2>
-          <p className="hint">{user.email} · {tr('Signed up', 'Se registró')} {day(user.createdAt, tr)} · {tr('Last sign-in', 'Último inicio de sesión')} {when(user.lastLoginAt, tr)}</p>
+          <p className="hint">{visitor ? tr('No account. This is a plan saved on a device, identified only by a random ID. There is no name or email.', 'Sin cuenta. Es un plan guardado en un dispositivo, identificado solo por un ID al azar. No hay nombre ni correo.') : <>{user.email} · {tr('Signed up', 'Se registró')} {day(user.createdAt, tr)} · {tr('Last sign-in', 'Último inicio de sesión')} {when(user.lastLoginAt, tr)}</>}</p>
         </div>
-        <div className="user-role">
+        {!visitor && <div className="user-role">
           <label htmlFor="role">{tr('Role', 'Rol')}</label>
           <select id="role" value={user.role} onChange={(e) => setRole(e.target.value)}>
             <option value="user">{tr('Owner (user)', 'Propietario (usuario)')}</option>
             <option value="admin">{tr('Admin', 'Administrador')}</option>
           </select>
-        </div>
+        </div>}
       </header>
       <ErrorNote message={err} />
       {msg && <p className="ok" role="status">{msg}</p>}
@@ -129,7 +130,7 @@ function UserDetail({ id, onBack }) {
         );
       })}
 
-      <section className="panel wide ud-activity-panel" aria-labelledby="ud-activity">
+      {!visitor && <section className="panel wide ud-activity-panel" aria-labelledby="ud-activity">
         <details className="fold">
           <summary>
             <span id="ud-activity" className="fold-title">{tr('Activity of', 'Actividad de')} {user.name} ({events.length})</span>
@@ -146,7 +147,7 @@ function UserDetail({ id, onBack }) {
             </ol>
           )}
         </details>
-      </section>
+      </section>}
     </>
   );
 }
@@ -155,13 +156,21 @@ export default function AdminUsers() {
   const tr = useA();
   const fetchUsers = useCallback(() => api.adminUsers(), []);
   const { data, error, loading } = useLoad(fetchUsers);
+  const fetchVisitors = useCallback(() => api.adminVisitors(), []);
+  const { data: vdata } = useLoad(fetchVisitors);
   const [q, setQ] = useState('');
-  const [open, setOpen] = useState('');
-  const users = data?.users ?? [];
+  const [group, setGroup] = useState('users'); // admins | users | visitors
+  const [open, setOpen] = useState(null); // { id, visitor }
+  const people = data?.users ?? [];
+  const visitors = vdata?.visitors ?? [];
+  const admins = people.filter((u) => u.role === 'admin');
+  const owners = people.filter((u) => u.role !== 'admin');
+  const rows = group === 'admins' ? admins : group === 'visitors' ? visitors : owners;
   const shown = useMemo(() => {
     const s = q.trim().toLowerCase();
-    return s ? users.filter((u) => `${u.name} ${u.email}`.toLowerCase().includes(s)) : users;
-  }, [users, q]);
+    if (!s) return rows;
+    return rows.filter((u) => (group === 'visitors' ? u.id : `${u.name} ${u.email}`).toLowerCase().includes(s));
+  }, [rows, q, group]);
 
   if (loading && !data) return <Loading what={tr('Loading people', 'Cargando personas')} />;
   if (error) {
@@ -173,42 +182,57 @@ export default function AdminUsers() {
       </>
     );
   }
-  if (open) return <UserDetail id={open} onBack={() => setOpen('')} />;
-  const savedCount = users.filter((u) => u.saved).length;
+  if (open) return <UserDetail id={open.id} visitor={open.visitor} onBack={() => setOpen(null)} />;
+  const boxes = [
+    { key: 'admins', n: admins.length, label: tr('Admins', 'Administradores'), hint: tr('Staff who edit the rules', 'Personal que edita las reglas') },
+    { key: 'users', n: owners.length, label: tr('Users', 'Usuarios'), hint: tr('Owners with an account', 'Propietarios con cuenta') },
+    { key: 'visitors', n: visitors.length, label: tr('Visitors', 'Visitantes'), hint: tr('Plans saved with no account', 'Planes guardados sin cuenta') },
+  ];
+  const empty = group === 'visitors'
+    ? tr('No visitors yet. They appear here when someone saves a plan on a device without an account.', 'Aún no hay visitantes. Aparecen aquí cuando alguien guarda un plan en un dispositivo sin cuenta.')
+    : tr('No one here yet. People appear when they sign up.', 'Aún no hay nadie. Las personas aparecen cuando se registran.');
+  const planCell = (u) => (!u.saved && group !== 'visitors' ? tr('No plan yet', 'Sin plan aún') : (u.businesses?.length || 0) > 1 ? <>{u.businesses.length} {tr('businesses', 'negocios')}<br /><span className="hint">{u.businesses.map((b) => b.label || tr('Untitled', 'Sin título')).join(', ')}</span></> : (u.label || u.businesses?.[0]?.label || tr('Saved', 'Guardado')));
   return (
     <>
       <h1 tabIndex={-1}>{tr('People', 'Personas')}</h1>
-      <p className="lead">{tr('Everyone with an account, what they saved and how far they have got. Open a person to see their answers, their checklist and a dated activity log.', 'Todas las personas con cuenta, lo que guardaron y cuánto han avanzado. Abra a una persona para ver sus respuestas, su lista y un registro de actividad con fechas.')}</p>
-      <ul className="stat-chips" aria-label={tr('Summary', 'Resumen')}>
-        <li><strong>{users.length}</strong> {tr('accounts', 'cuentas')}</li>
-        <li><strong>{savedCount}</strong> {tr('with a saved plan', 'con un plan guardado')}</li>
-        <li><strong>{users.reduce((n, u) => n + (u.businesses?.length || 0), 0)}</strong> {tr('businesses saved', 'negocios guardados')}</li>
-        <li><strong>{users.filter((u) => u.role === 'admin').length}</strong> {tr('admins', 'administradores')}</li>
+      <p className="lead">{tr('Pick a group. Admins and users have an account. Visitors saved a plan on a device with no account, so they show only as a random ID. Open one to see the answers and the checklist.', 'Elija un grupo. Administradores y usuarios tienen cuenta. Los visitantes guardaron un plan en un dispositivo sin cuenta, por eso solo aparecen como un ID al azar. Abra uno para ver las respuestas y la lista.')}</p>
+      <ul className="people-groups" aria-label={tr('Groups', 'Grupos')}>
+        {boxes.map((b) => (
+          <li key={b.key}>
+            <button type="button" className={`people-box${group === b.key ? ' is-on' : ''}`} aria-pressed={group === b.key} onClick={() => { setGroup(b.key); setQ(''); }}>
+              <strong>{b.n}</strong>
+              <span className="people-box-name">{b.label}</span>
+              <span className="hint">{b.hint}</span>
+            </button>
+          </li>
+        ))}
       </ul>
       <div className="field user-search">
-        <label htmlFor="user-q">{tr('Search by name or email', 'Buscar por nombre o correo')}</label>
+        <label htmlFor="user-q">{group === 'visitors' ? tr('Search by visitor ID', 'Buscar por ID de visitante') : tr('Search by name or email', 'Buscar por nombre o correo')}</label>
         <input id="user-q" type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder={tr('Type to filter', 'Escriba para filtrar')} />
       </div>
-      {users.length === 0 ? <p className="hint">{tr('No accounts yet. They appear here when someone signs up.', 'Aún no hay cuentas. Aparecen aquí cuando alguien se registra.')}</p> : (
+      {rows.length === 0 ? <p className="hint">{empty}</p> : (
         <div className="table-scroll">
           <table className="stack users-table">
-            <thead><tr><th scope="col">{tr('Person', 'Persona')}</th><th scope="col">{tr('Role', 'Rol')}</th><th scope="col">{tr('Plan', 'Plan')}</th><th scope="col">{tr('Progress', 'Avance')}</th><th scope="col">{tr('Last active', 'Última actividad')}</th><th scope="col"><span className="sr-only">{tr('Open', 'Abrir')}</span></th></tr></thead>
+            <thead><tr><th scope="col">{group === 'visitors' ? tr('Visitor', 'Visitante') : tr('Person', 'Persona')}</th>{group !== 'visitors' && <th scope="col">{tr('Role', 'Rol')}</th>}<th scope="col">{tr('Plan', 'Plan')}</th><th scope="col">{tr('Progress', 'Avance')}</th><th scope="col">{group === 'visitors' ? tr('Last saved', 'Último guardado') : tr('Last active', 'Última actividad')}</th><th scope="col"><span className="sr-only">{tr('Open', 'Abrir')}</span></th></tr></thead>
             <tbody>
               {shown.map((u) => (
                 <tr key={u.id}>
-                  <td><strong>{u.name}</strong><br /><span className="hint">{u.email}</span></td>
-                  <td data-label={tr('Role', 'Rol')}><span className={`pill ${u.role === 'admin' ? 'applies' : 'maybe'}`}>{u.role === 'admin' ? tr('Admin', 'Administrador') : tr('Owner', 'Propietario')}</span></td>
-                  <td data-label={tr('Plan', 'Plan')}>{!u.saved ? tr('No plan yet', 'Sin plan aún') : (u.businesses?.length || 0) > 1 ? <>{u.businesses.length} {tr('businesses', 'negocios')}<br /><span className="hint">{u.businesses.map((b) => b.label || tr('Untitled', 'Sin título')).join(', ')}</span></> : (u.label || tr('Saved', 'Guardado'))}</td>
-                  <td data-label={tr('Progress', 'Avance')}>{u.saved ? <><Bar done={u.done} total={u.total} /> <span className="hint">{u.done} {tr('of', 'de')} {u.total}</span></> : tr('None', 'Ninguno')}</td>
-                  <td data-label={tr('Last active', 'Última actividad')}>{when(u.lastActivity || u.lastLoginAt || u.createdAt, tr)}</td>
-                  <td><button type="button" className="btn btn-quiet btn-sm" onClick={() => setOpen(u.id)}>{tr('View', 'Ver')}<span className="sr-only"> {u.name}</span></button></td>
+                  {group === 'visitors'
+                    ? <td><strong>{tr('Visitor', 'Visitante')} {u.shortId}</strong><br /><span className="hint">{tr('No account', 'Sin cuenta')}</span></td>
+                    : <td><strong>{u.name}</strong><br /><span className="hint">{u.email}</span></td>}
+                  {group !== 'visitors' && <td data-label={tr('Role', 'Rol')}><span className={`pill ${u.role === 'admin' ? 'applies' : 'maybe'}`}>{u.role === 'admin' ? tr('Admin', 'Administrador') : tr('Owner', 'Propietario')}</span></td>}
+                  <td data-label={tr('Plan', 'Plan')}>{planCell(u)}</td>
+                  <td data-label={tr('Progress', 'Avance')}>{u.saved || group === 'visitors' ? <><Bar done={u.done} total={u.total} /> <span className="hint">{u.done} {tr('of', 'de')} {u.total}</span></> : tr('None', 'Ninguno')}</td>
+                  <td data-label={group === 'visitors' ? tr('Last saved', 'Último guardado') : tr('Last active', 'Última actividad')}>{group === 'visitors' ? when(u.lastSaved, tr) : when(u.lastActivity || u.lastLoginAt || u.createdAt, tr)}</td>
+                  <td><button type="button" className="btn btn-quiet btn-sm" onClick={() => setOpen({ id: u.id, visitor: group === 'visitors' })}>{tr('View', 'Ver')}<span className="sr-only"> {group === 'visitors' ? u.shortId : u.name}</span></button></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       )}
-      {users.length > 0 && shown.length === 0 && <p className="hint">{tr('No one matches that search.', 'Nadie coincide con esa búsqueda.')}</p>}
+      {rows.length > 0 && shown.length === 0 && <p className="hint">{tr('No one matches that search.', 'Nadie coincide con esa búsqueda.')}</p>}
     </>
   );
 }

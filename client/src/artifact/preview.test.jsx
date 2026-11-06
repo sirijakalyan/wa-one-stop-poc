@@ -455,7 +455,15 @@ describe('accounts and the admin users area', () => {
     expect(screen.getAllByText(/Marked a step done/).length).toBeGreaterThan(0);
     expect(screen.getByText(/Saved a plan/)).toBeInTheDocument();
     expect(screen.getByText(/Created the account/)).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /Back to users/ }));
+    await user.click(screen.getByRole('button', { name: /Back to the list/ }));
+    // three groups: Users (default), Admins and Visitors
+    expect(screen.getByRole('button', { name: /Users/ })).toHaveAttribute('aria-pressed', 'true');
+    await user.click(screen.getByRole('button', { name: /Admins/ }));
+    expect(await screen.findByText('admin@example.com')).toBeInTheDocument();
+    expect(screen.queryByText('ana@example.com')).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Visitors/ }));
+    expect(screen.getByRole('button', { name: /Visitors/ })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByText('admin@example.com')).not.toBeInTheDocument();
     // the Rules room is one click away and holds the board, with the former Sources page folded into it
     await user.click(screen.getByRole('tab', { name: 'Steps' }));
     expect(await screen.findByRole('heading', { name: 'Steps desk' })).toBeInTheDocument();

@@ -35,3 +35,20 @@ test('a bad email address is refused, and too many requests are slowed down', as
   for (let i = 0; i < 6; i += 1) last = await app.call('POST', '/api/plan/email', { email: 'a@example.com', answers: ANSWERS }, other);
   assert.equal(last.status, 429);
 });
+
+test('admins see visitors who saved a plan with no account, by short ID, and not the account plans', async () => {
+  const adm = await startApp({ adminKey: 'k-vis' });
+  try {
+    const hdr = { 'x-admin-key': 'k-vis' };
+    await adm.call('POST', '/api/checklist', { answers: ANSWERS, label: 'Visitor food truck' }, { 'x-visitor-id': 'anon-visitor-abcdef123456' });
+    await adm.call('POST', '/api/checklist?biz=new', { answers: ANSWERS, label: 'Second' }, { 'x-visitor-id': 'anon-visitor-abcdef123456' });
+    const list = await adm.call('GET', '/api/admin/visitors', undefined, hdr);
+    assert.equal(list.status, 200);
+    const v = list.body.visitors.find((x) => x.id === 'anon-visitor-abcdef123456');
+    assert.equal(v.shortId, 'anon-vis');
+    assert.equal(v.businesses.length, 2);
+    const one = await adm.call('GET', '/api/admin/visitors/anon-visitor-abcdef123456', undefined, hdr);
+    assert.equal(one.body.checklists.length, 2);
+    assert.equal((await adm.call('GET', '/api/admin/visitors', undefined, {})).status >= 400, true, 'owners cannot list visitors');
+  } finally { await adm.stop(); }
+});

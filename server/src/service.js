@@ -458,6 +458,45 @@ export function createService(store, options = {}) {
       events: await store.listEvents(acctVisitor(a), 200),
     };
   });
+  // Visitors: people who saved a plan without an account. Listed by a short random ID only: there is no name or email to show.
+  const anonymousIds = async () => {
+    const seen = new Map();
+    for (const cl of await store.listChecklists()) {
+      const base = baseOf(cl.id);
+      if (String(base).startsWith('acct-')) continue; // account plans are listed under Users and Admins
+      seen.set(base, [...(seen.get(base) || []), cl]);
+    }
+    return seen;
+  };
+  route('GET', '/api/admin/visitors', async ({ ctx }) => {
+    requireStrictAdmin(ctx);
+    const rulesDoc = await loadRules();
+    const visitors = [];
+    for (const [id, cls] of [...(await anonymousIds())].slice(0, 500)) {
+      const businesses = [];
+      for (const cl of cls) {
+        const built = await buildChecklist(cl, rulesDoc, 'en');
+        businesses.push({ id: bizIdOf(cl.id), label: cl.label || '', done: built.items.filter((i) => i.done).length, total: built.items.length });
+      }
+      const done = businesses.reduce((n, x) => n + x.done, 0);
+      const total = businesses.reduce((n, x) => n + x.total, 0);
+      visitors.push({ id, shortId: id.slice(0, 8), businesses, done, total, lastSaved: cls.map((c) => c.savedAt || '').sort().pop() || '' });
+    }
+    visitors.sort((a, b) => String(b.lastSaved).localeCompare(String(a.lastSaved)));
+    return { ok: true, visitors, total: visitors.length };
+  });
+  route('GET', '/api/admin/visitors/:id', async ({ params, ctx, query }) => {
+    requireStrictAdmin(ctx);
+    const cls = (await anonymousIds()).get(params.id);
+    if (!cls) fail('Visitor not found.', 404);
+    const rulesDoc = await loadRules();
+    const checklists = [];
+    for (const cl of [...cls].sort((a, b) => (b.id === params.id) - (a.id === params.id) || String(a.savedAt || '').localeCompare(String(b.savedAt || '')))) {
+      const built = await buildChecklist(cl, rulesDoc, langIn(query));
+      checklists.push({ id: bizIdOf(cl.id), label: cl.label || '', answers: cl.answers, savedAt: cl.savedAt || '', items: built.items.map((i) => ({ id: i.id, title: i.title, titleEn: i.title, status: i.status, done: i.done, renewal: i.renewal || '', agency: i.agency || '' })) });
+    }
+    return { ok: true, visitor: { id: params.id, shortId: params.id.slice(0, 8) }, checklists, events: [] };
+  });
   route('POST', '/api/admin/users/:id/role', async ({ params, body, ctx }) => {
     requireStrictAdmin(ctx);
     const role = body?.role;
