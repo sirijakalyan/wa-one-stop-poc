@@ -15,6 +15,10 @@ test('Email me a link sends the steps and a My business link that rebuilds the p
   assert.equal(sent.length, 1);
   assert.equal(sent[0].to, 'owner@example.com');
   assert.match(sent[0].text, /1\. /);
+  assert.match(sent[0].text, /== .+ ==/, 'steps are grouped by phase like My business');
+  assert.match(sent[0].text, /Applies to you|May apply, confirm|Pending verification/);
+  assert.match(sent[0].html, /border-left:5px solid/, 'each step is a card');
+  assert.match(sent[0].text, /Source: /);
   const m = /https:\/\/example\.test\/my-business\?plan=([A-Za-z0-9_-]+)/.exec(sent[0].text);
   assert.ok(m, 'the email has the link');
   const back = JSON.parse(Buffer.from(m[1], 'base64url').toString());

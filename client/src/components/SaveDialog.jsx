@@ -1,34 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api.js';
-import { useT } from '../i18n.js';
+import { dateLocale, useT } from '../i18n.js';
+import { buildPlanPdf } from '../planPdf.js';
 import Icon from './Icon.jsx';
-
-// Builds the steps as a PDF in the browser. Nothing is uploaded. The library loads only when someone asks for the file.
-async function downloadPlanPdf({ items, label, title, intro, agencyLabel }) {
-  const { jsPDF } = await import('jspdf');
-  const doc = new jsPDF({ unit: 'pt', format: 'letter' });
-  const W = doc.internal.pageSize.getWidth();
-  const H = doc.internal.pageSize.getHeight();
-  const M = 54;
-  let y = M;
-  const need = (h) => { if (y + h > H - M) { doc.addPage(); y = M; } };
-  doc.setFont('helvetica', 'bold').setFontSize(18).setTextColor(15, 42, 67);
-  for (const line of doc.splitTextToSize(label ? `${title}: ${label}` : title, W - 2 * M)) { need(24); doc.text(line, M, y); y += 24; }
-  doc.setFont('helvetica', 'normal').setFontSize(11).setTextColor(70, 80, 95);
-  for (const line of doc.splitTextToSize(intro, W - 2 * M)) { need(16); doc.text(line, M, y); y += 16; }
-  y += 8;
-  items.forEach((it, n) => {
-    doc.setFont('helvetica', 'bold').setFontSize(12).setTextColor(15, 42, 67);
-    const head = doc.splitTextToSize(`${n + 1}. ${it.title}`, W - 2 * M);
-    need(head.length * 15 + 18);
-    doc.text(head, M, y); y += head.length * 15;
-    doc.setFont('helvetica', 'normal').setFontSize(10.5).setTextColor(70, 80, 95);
-    const sub = [it.agency ? `${agencyLabel}: ${it.agency}` : '', it.trigger || ''].filter(Boolean).join('. ');
-    if (sub) { const rows = doc.splitTextToSize(sub, W - 2 * M - 14); need(rows.length * 13 + 8); doc.text(rows, M + 14, y); y += rows.length * 13; }
-    y += 10;
-  });
-  doc.save('my-washington-business-plan.pdf');
-}
 
 // "Keep your plan": three ways to keep it (this device, an emailed link, an account), plus the steps as a PDF.
 export default function SaveDialog({ items, label, answers, user, busy, error, onClose, onDevice, onAccount }) {
@@ -74,7 +48,22 @@ export default function SaveDialog({ items, label, answers, user, busy, error, o
   async function pdf() {
     setNote('');
     try {
-      await downloadPlanPdf({ items, label, title: t('save.pdfTitle'), intro: t('save.pdfIntro'), agencyLabel: t('save.pdfAgency') });
+      // The full plan, the same as My business shows, worked out from the answers. Nothing is saved by this.
+      const { items: full, phases, skipped } = await api.evaluate(answers);
+      const a = answers;
+      const answerLabels = [
+        t.card.structure[a.structure] || t('cl.structNo'),
+        ...(a.cats || []).map((c) => t.card.cat[c]),
+        ...(a.city ? [`${t('cl.city')}: ${a.city}`] : []),
+        ...(a.county ? [`${t('cl.county')}: ${t.countyLabel(a.county)}`] : []),
+        `${t('cl.hiring')}: ${t.card.yn[a.hiring] || t('cl.notAnswered')}`,
+        `${t('cl.sales')}: ${t.card.yn[a.salestax] || t('cl.notAnswered')}`,
+        `${t('cl.income')}: ${t.card.yn[a.income] || t('cl.notAnswered')}`,
+        `${t('cl.name')}: ${t.card.yn[a.tradename] || t('cl.notAnswered')}`,
+      ];
+      const today = new Date().toLocaleDateString(dateLocale(t.lang), { year: 'numeric', month: 'long', day: 'numeric' });
+      const doc = await buildPlanPdf({ data: { items: full, phases, skipped, answerLabels }, label, t, today });
+      doc.save('my-washington-business-plan.pdf');
     } catch {
       setNote(t('save.pdfFail'));
     }

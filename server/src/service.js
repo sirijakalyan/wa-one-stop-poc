@@ -544,16 +544,42 @@ export function createService(store, options = {}) {
     const code = Buffer.from(JSON.stringify({ a: answers, l: label })).toString('base64url');
     const url = base ? `${base}/my-business?plan=${code}` : '';
     const es = lang === 'es';
-    const steps = built.items.map((i, n) => `${n + 1}. ${i.title}${i.agency ? ` (${i.agency})` : ''}`);
+    const L = es
+      ? { applies: 'Le corresponde', maybe: 'Puede corresponder, confirme', pending: 'Verificación pendiente', checked: 'Fuente revisada', agency: 'Agencia', means: 'Qué significa', need: 'Lo que necesitará', steps: 'Pasos', noLink: 'Sin enlace. Comuníquese con su oficina local.', source: 'Fuente', last: 'Última verificación', skipped: 'Fuera de su lista' }
+      : { applies: 'Applies to you', maybe: 'May apply, confirm', pending: 'Pending verification', checked: 'Source checked', agency: 'Agency', means: 'What it means', need: "What you'll need", steps: 'Steps', noLink: 'No link. Contact your local office.', source: 'Source', last: 'Last verified', skipped: 'Left off your list' };
+    const sections = Object.entries(built.phases || {}).map(([p, name]) => ({
+      heading: name,
+      steps: built.items.filter((i) => String(i.phase) === p).map((i) => {
+        const pending = i.verification?.status === 'pending';
+        const g = i.guide || {};
+        return {
+          title: i.title,
+          tone: pending ? 'pending' : i.status === 'applies' ? 'applies' : 'maybe',
+          pills: [
+            { kind: pending ? 'pending' : i.status === 'applies' ? 'applies' : 'maybe', text: pending ? L.pending : i.status === 'applies' ? L.applies : L.maybe },
+            ...(i.verification?.status === 'checked' ? [{ kind: 'checked', text: `${L.checked}${i.lastVerified ? ` ${i.lastVerified}` : ''}` }] : []),
+          ],
+          reason: i.reason, agency: i.agency, agencyLabel: L.agency,
+          meaning: g.meaning || i.detail || '', meaningTitle: L.means,
+          need: (g.prepare || []).map((x) => (typeof x === 'string' ? x : x?.text)).filter(Boolean), needTitle: L.need,
+          steps: (g.steps || []).map((x) => String(x.text || '').replace(/\s+/g, ' ').trim()).filter(Boolean), stepsTitle: L.steps,
+          link: i.apply?.url ? { label: i.apply.label || (es ? 'Abrir' : 'Open'), url: i.apply.url } : null,
+          noLink: i.apply?.url ? '' : i.noLink || L.noLink,
+          source: [i.source?.label ? `${L.source}: ${i.source.label}` : '', i.lastVerified ? `${L.last}: ${i.lastVerified}` : ''].filter(Boolean).join('  |  '),
+          sourceUrl: i.source?.url || '',
+        };
+      }),
+    })).filter((sec) => sec.steps.length);
+    const left = (built.skipped || []).filter((x) => x.title);
+    if (left.length) sections.push({ heading: L.skipped, steps: left.map((x) => ({ title: x.title, tone: 'pending', reason: x.reason || '' })) });
     const { html, text } = renderEmail({
       heading: es ? `Su plan${label ? `: ${label}` : ''}` : `Your plan${label ? `: ${label}` : ''}`,
       paragraphs: [
-        es ? `Estos son los ${steps.length} pasos de su plan.` : `Here are the ${steps.length} steps in your plan.`,
-        ...steps,
-        es ? 'Abra el enlace para ver su plan en Mi negocio y marcar los pasos que ya hizo.' : 'Open the link to see your plan on My business and mark the steps you have done.',
+        es ? `Estos son los ${built.items.length} pasos de su plan, con lo mismo que verá en Mi negocio. Abra el botón para marcar los pasos que ya hizo.` : `Here are the ${built.items.length} steps in your plan, with the same detail you will see on My business. Use the button to open it and mark the steps you have done.`,
       ],
+      sections,
       button: url ? { label: es ? 'Abrir Mi negocio' : 'Open My business', url } : undefined,
-      note: es ? 'Usamos su correo solo para enviar este mensaje. No guardamos su correo.' : 'We use your email only to send this message. We do not keep it.',
+      note: (es ? 'Usamos su correo solo para enviar este mensaje. No guardamos su correo. Una guía, no asesoría legal: confirme cada paso con la agencia indicada.' : 'We use your email only to send this message. We do not keep it. A guide, not legal advice: check each step with the agency named.'),
     });
     if (mailer) await mailer.send({ to, subject: es ? 'Su plan para abrir su negocio en Washington' : 'Your plan to start your Washington business', text, html });
     planMailLog.set(visitorOf(ctx), [...recent, now]);
