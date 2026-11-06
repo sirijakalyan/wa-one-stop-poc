@@ -1,4 +1,4 @@
-import { ruleTextMap, toSpanish, linkToSpanish, esChatToEn } from './chatEs.js';
+import { ruleTextMap, toSpanish, linkToSpanish, esChatToEn, suggestionToSpanish } from './chatEs.js';
 import { renderEmail, renderMessagePage, longDate } from './emailTemplate.js';
 import { normalizeEmail, AuthError } from './auth.js';
 import { createLocalIdp } from './localIdp.js';
@@ -1503,7 +1503,7 @@ export function createService(store, options = {}) {
     // the sentences around it from a table). The friendly rewrite is skipped so the answer stays exactly what the records say.
     const result = await answerQuestion({ message: es ? esChatToEn(message, esToEn) : message, conversation: es ? [] : conversation, rules: rulesDoc.rules, checklist, llm: es ? null : options.llm, generalLlm: options.generalLlm, lang: es ? 'es' : 'en' });
     if (es) {
-      if (result.mode === 'general') return { ok: true, ...result };
+      if (result.mode === 'general') return { ok: true, ...result, suggestions: (result.suggestions || []).map((x) => suggestionToSpanish(x, new Map())) };
       if (result.mode === 'fallback') return { ok: true, ...result, answer: ES.noMatch, links: [], suggestions: [] };
       const map = ruleTextMap(rulesDoc.rules, localizeRules(rulesDoc, 'es').rules);
       const titles = new Map((result.matched || []).map((m) => [m.id, map.get(m.title) || m.title]));

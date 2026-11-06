@@ -72,3 +72,8 @@ test('error messages come back in Spanish when the site asks for Spanish, on any
   const adminEs = await app.call('GET', '/api/admin/visitors/zzzz-not-here-0000?ui=es', undefined, hdr);
   assert.match(adminEs.body.error, /No se encontr/);
 });
+
+test('Spanish chat: the suggestion buttons under an AI answer come back in Spanish', async () => {
+  const r = await app.call('POST', '/api/chat', { message: 'hola, quiero empezar un negocio de cosas raras', lang: 'es' });
+  for (const s of r.body.suggestions || []) assert.doesNotMatch(s, /^(How|Do I|What)\b/);
+});
