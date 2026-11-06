@@ -1084,7 +1084,7 @@ body { background: radial-gradient(900px 380px at 85% -140px, rgba(25,167,160,.1
 .is-embedded .bubble p { margin: 0; font-size: .98rem; line-height: 1.5; }
 .is-embedded .captions { display: none; }
 .is-embedded .tap-chip { border-radius: 10px; border: 1px solid var(--line-strong); background: #fff; color: var(--teal-700); font-weight: 650; padding: .45rem .9rem; min-height: 42px; transition: background .15s, border-color .15s; }
-.is-embedded .tap-chip:hover { background: var(--teal-50); border-color: var(--teal-600); }
+.is-embedded .tap-chip:hover { background: var(--brand-soft); border-color: var(--brand); }
 .is-embedded .tap-chip.primary { background: var(--teal-600); border-color: var(--teal-600); color: #fff; }
 .is-embedded .mic-bar { gap: .4rem; padding: .35rem; border: 1px solid var(--line-strong); border-radius: 14px; background: #fff; transition: border-color .15s, box-shadow .15s; }
 .is-embedded .mic-bar:focus-within { border-color: var(--teal-600); box-shadow: 0 0 0 3px rgba(25,167,160,.2); }
@@ -1171,7 +1171,7 @@ body { background: radial-gradient(900px 380px at 85% -140px, rgba(25,167,160,.1
 .renewals-head .hint { margin: 0; max-width: 60ch; }
 .chip-count { font-family: var(--font-body, inherit); font-size: .78rem; font-weight: 700; color: var(--teal-700); background: var(--teal-50); border: 1px solid rgba(15,132,144,.3); border-radius: 999px; padding: .15rem .6rem; }
 .renewals-card table { margin: 0; }
-.renewals-card tbody tr:hover { background: #f6fafb; }
+.renewals-card tbody tr:hover { background: var(--surface-2); }
 .renewals-card input.date { max-width: 14rem; }
 
 /* ---- Sign in, sign up, reset ---- */
@@ -1210,7 +1210,7 @@ body { background: radial-gradient(900px 380px at 85% -140px, rgba(25,167,160,.1
 .acct-name { max-width: 9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .92rem; }
 .acct-pop { position: absolute; right: 0; top: calc(100% + 8px); min-width: 15rem; z-index: 60; background: #fff; color: var(--ink); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 24px 48px -20px rgba(11,31,58,.5); padding: .4rem; display: grid; }
 .acct-pop > * { text-align: left; padding: .6rem .75rem; border-radius: 9px; text-decoration: none; color: var(--ink); background: none; border: 0; font: inherit; cursor: pointer; }
-.acct-pop a:hover, .acct-pop button:hover { background: var(--teal-50); }
+.acct-pop a:hover, .acct-pop button:hover, .acct-pop a:focus-visible, .acct-pop button:focus-visible { background: var(--brand-soft); color: var(--ink); }
 .acct-id { display: grid; gap: .1rem; border-bottom: 1px solid var(--line); border-radius: 0 !important; margin-bottom: .25rem; }
 .acct-id span { color: var(--muted); font-size: .85rem; overflow: hidden; text-overflow: ellipsis; }
 .nav-auth { display: none; }
@@ -1610,7 +1610,7 @@ details.fold { border: 0; padding: 0; background: transparent; }
 @media (max-width: 40rem) { .rem-time select { flex: 1 1 100%; } }
 
 /* Pointer to the typing box for a first-time visitor */
-.type-here { display: flex; align-items: center; justify-content: center; gap: .45rem; margin: .5rem 0 .4rem; color: var(--teal-700, #0d6b73); font-size: 1rem; }
+.type-here { display: flex; align-items: center; justify-content: center; gap: .45rem; margin: .5rem 0 .4rem; color: var(--brand-strong, #0d6b73); font-size: 1rem; }
 .type-here svg { animation: type-nudge 1.4s ease-in-out infinite; }
 .is-embedded .mic-bar.is-pointed { border-color: var(--teal-600); box-shadow: 0 0 0 3px rgba(25,167,160,.2); }
 @keyframes type-nudge { 0%,100% { transform: translateY(-2px); } 50% { transform: translateY(3px); } }
@@ -1688,3 +1688,5 @@ details.fold { border: 0; padding: 0; background: transparent; }
 :root[data-theme="dark"] .save-opt .tone-pdf { background: #3d2f0b; color: #ffd98a; }
 :root[data-theme="dark"] .save-note { color: var(--danger); }
 :root[data-theme="dark"] .people-box.is-on strong, :root[data-theme="dark"] .people-box.is-on .people-box-name { color: var(--ink); }
+
+:root[data-theme="dark"] .is-embedded .bubble:not(.you):not(.owner) .bubble-who { color: var(--muted); }
