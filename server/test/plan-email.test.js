@@ -19,11 +19,7 @@ test('Email me a link sends the steps and a My business link that rebuilds the p
   assert.match(sent[0].text, /Applies to you|May apply, confirm|Pending verification/);
   assert.match(sent[0].html, /border-left:5px solid/, 'each step is a card');
   assert.match(sent[0].text, /Source: /);
-  const m = /https:\/\/example\.test\/my-business\?plan=([A-Za-z0-9_-]+)/.exec(sent[0].text);
-  assert.ok(m, 'the email has the link');
-  const back = JSON.parse(Buffer.from(m[1], 'base64url').toString());
-  assert.equal(back.a.structure, ANSWERS.structure);
-  assert.equal(back.l, 'Food truck');
+  assert.doesNotMatch(sent[0].text, /my-business\?plan=/, 'the email has no Open My business link');
   assert.equal((await app.call('GET', '/api/businesses', undefined, vis)).body.businesses.length, 0);
 });
 

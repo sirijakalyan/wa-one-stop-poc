@@ -612,10 +612,9 @@ export function createService(store, options = {}) {
     const { html, text } = renderEmail({
       heading: es ? `Su plan${label ? `: ${label}` : ''}` : `Your plan${label ? `: ${label}` : ''}`,
       paragraphs: [
-        es ? `Estos son los ${built.items.length} pasos de su plan, con lo mismo que verá en Mi negocio. Abra el botón para marcar los pasos que ya hizo.` : `Here are the ${built.items.length} steps in your plan, with the same detail you will see on My business. Use the button to open it and mark the steps you have done.`,
+        es ? `Estos son los ${built.items.length} pasos de su plan, con el mismo detalle que verá en Mi negocio.` : `Here are the ${built.items.length} steps in your plan, with the same detail you will see on My business.`,
       ],
       sections,
-      button: url ? { label: es ? 'Abrir Mi negocio' : 'Open My business', url } : undefined,
       note: (es ? 'Usamos su correo solo para enviar este mensaje. No guardamos su correo. Una guía, no asesoría legal: confirme cada paso con la agencia indicada.' : 'We use your email only to send this message. We do not keep it. A guide, not legal advice: check each step with the agency named.'),
     });
     if (mailer) await mailer.send({ to, subject: es ? 'Su plan para abrir su negocio en Washington' : 'Your plan to start your Washington business', text, html });
