@@ -1055,7 +1055,7 @@ body { background: radial-gradient(900px 380px at 85% -140px, rgba(25,167,160,.1
 .trail-cloud { animation: trail-drift 8s ease-in-out infinite; }
 .trail-flag-svg { transform-origin: 8px 40px; animation: trail-wave 2s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .trail-route, .trail-step, .trail-cloud, .trail-flag-svg { animation: none; } .trail-route { stroke-dashoffset: 0; } }
-.home-hero-guide .guide-bubble { order: -1; max-width: none; width: auto; padding: .45rem .9rem; border-radius: 999px; box-shadow: 0 10px 24px -10px rgba(0,0,0,.6); }
+.home-hero-guide .guide-bubble { position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 2; white-space: nowrap; max-width: none; width: auto; padding: .45rem .9rem; border-radius: 999px; box-shadow: 0 10px 24px -10px rgba(0,0,0,.6); }
 .home-hero-guide .guide-bubble::after { content: none; }
 .home-hero-guide .guide-bubble .greeting-text { display: none; }
 .home-hero-guide .guide-bubble:not(.is-speaking):not(.is-listening) { display: none; }

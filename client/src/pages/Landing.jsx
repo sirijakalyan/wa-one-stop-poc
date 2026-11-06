@@ -62,7 +62,10 @@ export default function Landing() {
     // Opening the page must not scroll or steal focus. React's development mode runs effects twice on open, so compare with the mode already shown instead of counting runs.
     if (shownMode.current === mode) return;
     shownMode.current = mode;
-    if (mode) workRef.current?.focus({ preventScroll: false });
+    if (!mode || !workRef.current) return;
+    workRef.current.focus({ preventScroll: true }); // keyboard focus moves to the guide; the page then glides there, never jumps
+    const still = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    workRef.current.scrollIntoView?.({ behavior: still ? 'auto' : 'smooth', block: 'nearest' });
   }, [mode]);
 
   return (
