@@ -132,3 +132,16 @@ test('Spanish: after an admin edits one field, the fields nobody touched stay in
   r.title = 'Edited English title';
   assert.equal(localizeRules(doc, 'es').rules.find((x) => x.id === 'sos').title, 'Edited English title');
 });
+
+test('Spanish: in an edited "What you\'ll need" list, unchanged lines stay Spanish and the admin\'s new line stays as written', async () => {
+  const { localizeRules } = await import('../src/localize.js');
+  const doc = JSON.parse((await import('node:fs')).readFileSync(new URL('../seed/rules.json', import.meta.url), 'utf8'));
+  const r = doc.rules.find((x) => x.id === 'lni-wc');
+  const first = r.guide.prepare[0];
+  r.version = 2; r.guide.prepare = [...r.guide.prepare, 'A line the admin wrote'];
+  doc.changes = [{ id: 'c3', ruleId: 'lni-wc', version: 2, fields: [{ field: 'guide.prepare', from: '', to: 'x' }] }];
+  const es = localizeRules(doc, 'es').rules.find((x) => x.id === 'lni-wc');
+  assert.notEqual(es.guide.prepare[0], first);
+  assert.match(es.guide.prepare[0], /Su |Su$|[áéíóú]/);
+  assert.equal(es.guide.prepare.at(-1), 'A line the admin wrote');
+});

@@ -2,7 +2,23 @@
 // only while the rule is still at the version it was written for, and any field it lacks stays in English.
 import { SOURCE_LABEL_ES, RULES_ES, PHASES_ES, COND_ES, AGENCY_ES, FOUND_ES, COUNTY_NOTE_ES, TIMES_ES, SIMULATION_ES, TIMELINE_ES } from './ruleText.es.js';
 
+import { readFileSync } from 'node:fs';
 const isEs = (lang) => lang === 'es';
+
+// The original English rules, so a list an admin edited can still be translated line by line: a line the admin did not change
+// matches the original line and takes its Spanish; a line the admin wrote stays as written.
+let SEED = null;
+function seedRule(id) {
+  if (!SEED) {
+    try { SEED = new Map(JSON.parse(readFileSync(new URL('../seed/rules.json', import.meta.url), 'utf8')).rules.map((r) => [r.id, r])); } catch { SEED = new Map(); }
+  }
+  return SEED.get(id);
+}
+function prepareLines(rule, esPrepare) {
+  const orig = seedRule(rule.id)?.guide?.prepare;
+  if (!Array.isArray(orig) || !Array.isArray(esPrepare) || orig.length !== esPrepare.length) return rule.guide.prepare;
+  return rule.guide.prepare.map((line) => { const i = orig.indexOf(line); return i >= 0 ? esPrepare[i] : line; });
+}
 
 // A translated list replaces the English one only when it has the same number of entries.
 const sameLen = (en, es) => (Array.isArray(en) && Array.isArray(es) && en.length === es.length ? es : en);
@@ -96,7 +112,7 @@ export function localizeRule(rule, lang, qmap, changes) {
       meaning: eg.meaning || g.meaning,
       who: sameLen(g.who, eg.who),
       conditions: sameLen(g.conditions, eg.conditions),
-      prepare: keepPrepare ? sameLen(g.prepare, eg.prepare) : g.prepare,
+      prepare: keepPrepare ? sameLen(g.prepare, eg.prepare) : prepareLines(rule, eg.prepare),
       prepareNote: eg.prepareNote ?? g.prepareNote,
       steps: Array.isArray(g.steps) && Array.isArray(eg.steps) && g.steps.length === eg.steps.length ? g.steps.map((s, i) => ({ ...s, text: eg.steps[i] })) : g.steps,
       facts: Array.isArray(g.facts) && Array.isArray(eg.facts) && g.facts.length === eg.facts.length ? g.facts.map((f, i) => ({ ...f, label: eg.facts[i][0], text: eg.facts[i][1] })) : g.facts,
