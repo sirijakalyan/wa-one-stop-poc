@@ -21,6 +21,38 @@ import { cleanLang, ES, ES_RX, esToEn } from './i18n.js';
 import { localizeRules, localizeFound, localizeCountyNote, localizeCountyAgency, localizeTimes } from './localize.js';
 import { intakeTurn, isCardComplete, parseDirect, spokenConfirmation, planFromCard, buildTimeline, blankCard, CARD_FIELDS, FIELD_LABELS, ASKS, extractFacts } from './intake.js';
 
+// Text an admin typed in English has no Spanish record. For Spanish pages it is translated once by the model (when one is set up) and
+// remembered; without a model, or if it fails, the admin's English stays as written.
+const AUTO_ES = new Map();
+async function autoTranslateEs(texts, llm) {
+  const todo = [...new Set(texts)].filter((t) => t && !AUTO_ES.has(t));
+  if (todo.length && llm) {
+    try {
+      const out = await llm({ system: 'Translate each numbered line from English to US Spanish for a Washington State business guide. Keep agency names, form names and numbers as they are. Reply with only the numbered lines, same numbers, no notes.', user: todo.map((t, i) => `${i + 1}. ${t}`).join('\n'), numPredict: 900 });
+      const lines = String(out).split('\n').map((l) => /^\s*(\d+)[.)]\s*(.+)$/.exec(l)).filter(Boolean);
+      for (const m of lines) { const t = todo[Number(m[1]) - 1]; if (t) AUTO_ES.set(t, m[2].trim()); }
+    } catch { /* keep English */ }
+  }
+  return (t) => AUTO_ES.get(t) || t;
+}
+async function fillSpanishGaps(en, es, llm) {
+  if (!llm || !es?.rules) return es;
+  const enById = new Map(en.rules.map((r) => [r.id, r]));
+  const need = [];
+  for (const r of es.rules) {
+    const o = enById.get(r.id);
+    if (!r.guide || !o?.guide) continue;
+    (r.guide.prepare || []).forEach((l, i) => { if (l === o.guide.prepare?.[i]) need.push(l); });
+  }
+  if (!need.length) return es;
+  const tr = await autoTranslateEs(need, llm);
+  return { ...es, rules: es.rules.map((r) => {
+    const o = enById.get(r.id);
+    if (!r.guide?.prepare?.length || !o?.guide) return r;
+    return { ...r, guide: { ...r.guide, prepare: r.guide.prepare.map((l, i) => (l === o.guide.prepare?.[i] ? tr(l) : l)) } };
+  }) };
+}
+
 const DEFAULT_VISITOR = 'public-demo';
 const EMAIL_RX = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/;
 // Reminder schedule. An admin can change it (stored under the app config key "reminders"); these are the starting values.
@@ -297,7 +329,9 @@ export function createService(store, options = {}) {
   async function buildChecklist(cl, rawDoc, lang = 'en') {
     // A rule an admin disabled stays on checklists that were already saved when it was disabled, and is hidden from everyone else.
     const full = await loadAll();
-    const rulesDoc = localizeRules({ ...full, rules: full.rules.filter((r) => !r.disabled || (cl.id && r.keepFor?.includes(cl.id))) }, lang);
+    const keptDoc = { ...full, rules: full.rules.filter((r) => !r.disabled || (cl.id && r.keepFor?.includes(cl.id))) };
+    let rulesDoc = localizeRules(keptDoc, lang);
+    if (cleanLang(lang) === 'es') rulesDoc = await fillSpanishGaps(keptDoc, rulesDoc, options.generalLlm);
     const { items, skipped } = evaluate(rulesDoc.rules, cl.answers, lang);
     const countyHealth = items.some((i) => i.rule.id === COUNTY_RULE_ID) ? await resolveCountyHealth(cl.answers.county, lang) : null;
     const ids = new Set(items.map((i) => i.rule.id));

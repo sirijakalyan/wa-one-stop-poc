@@ -145,3 +145,30 @@ test('Spanish: in an edited "What you\'ll need" list, unchanged lines stay Spani
   assert.match(es.guide.prepare[0], /Su |Su$|[áéíóú]/);
   assert.equal(es.guide.prepare.at(-1), 'A line the admin wrote');
 });
+
+test('Spanish: lines an admin typed in English on a step are translated for Spanish pages when a model is set up, and stay English without one', async () => {
+  const { createStore } = await import('../src/store.js');
+  const os = await import('node:os'); const fsp = await import('node:fs/promises'); const path = await import('node:path');
+  const dir = await fsp.mkdtemp(path.join(os.tmpdir(), 'wa-es-'));
+  const store = createStore(dir);
+  const doc = await store.readRules();
+  const sos = doc.rules.find((r) => r.id === 'sos');
+  sos.version = 2; sos.guide.prepare = ['Your business structure.', 'A Secretary of State online account.'];
+  doc.changes = [{ id: 'c9', ruleId: 'sos', version: 2, fields: [{ field: 'guide.prepare', from: '', to: 'x' }] }];
+  await store.writeRules(doc);
+  const stub = async ({ user }) => user.split('\n').map((l) => l.replace(/^(\d+)\. .*/, (_, n) => `${n}. [ES] línea ${n}`)).join('\n');
+  const withModel = await startApp({ store, generalLlm: stub });
+  try {
+    await withModel.call('POST', '/api/checklist', { answers: restaurant });
+    const es = (await withModel.call('GET', '/api/checklist?lang=es')).body.items.find((i) => i.id === 'sos');
+    assert.deepEqual(es.guide.prepare, ['[ES] línea 1', '[ES] línea 2']);
+    const en = (await withModel.call('GET', '/api/checklist')).body.items.find((i) => i.id === 'sos');
+    assert.deepEqual(en.guide.prepare, ['Your business structure.', 'A Secretary of State online account.']);
+  } finally { await withModel.stop(); }
+  const noModel = await startApp({ store, generalLlm: null });
+  try {
+    await noModel.call('POST', '/api/checklist', { answers: restaurant });
+    const es = (await noModel.call('GET', '/api/checklist?lang=es')).body.items.find((i) => i.id === 'sos');
+    assert.deepEqual(es.guide.prepare, ['Your business structure.', 'A Secretary of State online account.']);
+  } finally { await noModel.stop(); }
+});
