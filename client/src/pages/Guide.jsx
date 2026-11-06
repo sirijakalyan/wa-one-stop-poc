@@ -556,7 +556,8 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
           ) : null}
           <ErrorNote message={error} />
           <p className="captions" aria-hidden="true" data-testid="captions"><strong>{last.role === 'guide' ? t('guide.guide') : t('guide.you')}:</strong> {last.text}</p>
-          <form className="mic-bar" onSubmit={submit}>
+          {fresh && mode !== 'talk' ? <p className="type-here" aria-hidden="true"><strong>{t('guide.typeHere')}</strong><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M12 4v15M5 13l7 7 7-7" /></svg></p> : null}
+          <form className={`mic-bar${fresh && mode !== 'talk' ? ' is-pointed' : ''}`} onSubmit={submit}>
             <label htmlFor="guide-input" className="sr-only">{t('guide.inputLabel')}</label>
             <button
               type="button"
