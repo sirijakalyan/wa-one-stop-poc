@@ -233,7 +233,8 @@ describe('voice', () => {
   it('"Talk to me" has the guide speak its greeting aloud, with captions and Stop and Mute visible', async () => {
     const user = userEvent.setup();
     renderAt('/');
-    // Talk is the default way in: the greeting is spoken without a tap.
+    await user.click(await screen.findByRole('button', { name: 'Talk to me' }));
+    // The greeting is spoken once Talk to me is tapped, never before.
     expect(screen.getByRole('button', { name: 'Talk to me' })).toHaveAttribute('aria-pressed', 'true');
     await waitFor(() => expect(spoken[0]).toMatch(/^Hi, I'm here to help you start your Washington business/));
     expect(screen.getByTestId('captions')).toHaveTextContent(/Hi, I'm here to help/);
@@ -242,8 +243,19 @@ describe('voice', () => {
     expect(screen.getByRole('button', { name: /Microphone (on|off)/ })).toBeEnabled();
   });
 
-  it('opening the home page starts the microphone by itself once the greeting is done', async () => {
+  it('opening or reloading the home page is silent: no speech, no microphone, until Talk to me is tapped', async () => {
     renderAt('/');
+    expect(await screen.findByRole('button', { name: 'Talk to me' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('button', { name: 'Type instead' })).toHaveAttribute('aria-pressed', 'true');
+    await new Promise((r) => setTimeout(r, 600));
+    expect(window.speechSynthesis.speak).not.toHaveBeenCalled();
+    expect(FakeRec.last?.started).toBeFalsy();
+  });
+
+  it('Talk to me starts the microphone by itself once the greeting is done', async () => {
+    const user = userEvent.setup();
+    renderAt('/');
+    await user.click(await screen.findByRole('button', { name: 'Talk to me' }));
     await waitFor(() => expect(spoken.length).toBeGreaterThan(0));
     await waitFor(() => expect(FakeRec.last?.started).toBe(true), { timeout: 4000 });
     expect(screen.getByRole('button', { name: /Microphone on/ })).toBeInTheDocument();
@@ -254,6 +266,7 @@ describe('voice', () => {
     // A guide line that keeps playing until it is cancelled.
     window.speechSynthesis.speak = vi.fn((u) => { spoken.push(u.text); setTimeout(() => u.onstart?.(), 0); });
     renderAt('/');
+    await user.click(await screen.findByRole('button', { name: 'Talk to me' }));
     await waitFor(() => expect(screen.getAllByText(/Your microphone is paused/).length).toBeGreaterThan(0));
     expect(FakeRec.last?.started).toBeFalsy();
     await tap(user, 'Skip');
@@ -263,7 +276,9 @@ describe('voice', () => {
   });
 
   it('the microphone waits a moment after the guide finishes before it listens', async () => {
+    const user = userEvent.setup();
     renderAt('/');
+    await user.click(await screen.findByRole('button', { name: 'Talk to me' }));
     await waitFor(() => expect(spoken.length).toBeGreaterThan(0));
     const endedAt = Date.now();
     await waitFor(() => expect(FakeRec.last?.started).toBe(true), { timeout: 4000 });
@@ -273,7 +288,9 @@ describe('voice', () => {
   it('the greeting is read in pieces that get louder', async () => {
     const volumes = [];
     window.speechSynthesis.speak = vi.fn((u) => { spoken.push(u.text); volumes.push(u.volume); setTimeout(() => { u.onstart?.(); u.onend?.(); }, 0); });
+    const user = userEvent.setup();
     renderAt('/');
+    await user.click(await screen.findByRole('button', { name: 'Talk to me' }));
     await waitFor(() => expect(volumes.length).toBeGreaterThan(2));
     expect(volumes[0]).toBeLessThan(0.3);
     expect(volumes[volumes.length - 1]).toBe(1);

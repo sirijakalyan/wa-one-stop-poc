@@ -156,8 +156,9 @@ describe('Spanish', () => {
     it('speaks Spanish with a Spanish voice, and listens for Spanish', async () => {
       const user = userEvent.setup();
       renderAt('/');
+      await user.click(await screen.findByRole('button', { name: 'Talk to me' }));
       await toSpanish(user);
-      // Talk is the default: switching language repeats the greeting in Spanish and the microphone is already on.
+      // Once Talk to me is tapped, switching language repeats the greeting in Spanish and the microphone is on.
       await waitFor(() => expect(uttered.some((u) => /^Hola, estoy aquí para ayudarle/.test(u.text))).toBe(true));
       const es = uttered.find((u) => /^Hola, estoy aquí para ayudarle/.test(u.text));
       expect(es.lang).toBe('es-US');

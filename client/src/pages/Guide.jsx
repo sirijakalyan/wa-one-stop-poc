@@ -96,6 +96,7 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
   const resumeIdx = (msgs) => (msgs.length > 1 ? (msgs[msgs.length - 1].role === 'guide' ? msgs.length - 1 : msgs.length) : 0);
   const spokenIdx = useRef(resync ? guide.messages.length : resumeIdx(guide.messages)); // after the form, the new next question is spoken, not the old one
   const greetHeard = useRef(false);
+  const talkPending = useRef(false); // Talk was just chosen: the lines not yet spoken are read once the voice comes on, not skipped
   const lastSpeechEnd = useRef(0);
   const guideHeard = () => speakingCount.current > 0 || Date.now() - lastSpeechEnd.current < 2500; // the tail of the guide's voice may still be in the air
   const spokenNow = useRef(''); // what the guide is saying now, so its own voice picked up by the microphone is not mistaken for the owner
@@ -168,7 +169,9 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
       // Coming back to Talk part way through: say the question that is waiting (the next unanswered one), not nothing.
       const msgs = guideRef.current.messages;
       if (msgs.length > 1 && msgs[msgs.length - 1].role === 'guide') spokenIdx.current = msgs.length - 1;
-      if (canSpeak()) setVoiceOn(true);
+      // Only the greeting so far (the page opened silent in Type mode): Talk to me is the tap that lets the guide say it.
+      else if (msgs.length <= 1) { spokenIdx.current = 0; greetHeard.current = false; }
+      if (canSpeak()) { if (!voiceOnRef.current) talkPending.current = true; setVoiceOn(true); }
     } else {
       stopSpeaking();
       speakingCount.current = 0;
@@ -220,7 +223,8 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
   }
   // Read each new guide line aloud, in order. Lines the owner typed or older lines are never read.
   useEffect(() => {
-    if (!voiceOn) { spokenIdx.current = messages.length; return; }
+    if (!voiceOn) { if (!talkPending.current) spokenIdx.current = messages.length; return; }
+    talkPending.current = false;
     for (let i = spokenIdx.current; i < messages.length; i += 1) {
       if (messages[i].role !== 'guide') continue;
       speakingCount.current += 1;

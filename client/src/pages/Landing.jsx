@@ -5,7 +5,6 @@ import { ErrorNote } from '../components/Parts.jsx';
 import Icon from '../components/Icon.jsx';
 import RoadArt from '../components/RoadArt.jsx';
 import { SAMPLES_ES, useT } from '../i18n.js';
-import { canSpeak } from '../voice.js';
 import { useApp } from '../AppContext.jsx';
 import { answersFromCard, cardFromForm, confirmedCount } from '../guideCard.js';
 import { blankAnswers } from '../questions.js';
@@ -21,7 +20,7 @@ export default function Landing() {
   const { guide, setGuide, live, answers, setAnswers, setLabel, setStep, setCatsAuto } = useApp();
   const [resync, setResync] = useState(0);
   const location = useLocation();
-  const [mode, setMode] = useState(['form', 'type'].includes(location.state?.mode) ? location.state.mode : (canSpeak() ? 'talk' : 'type')); // 'talk' by default so the guide greets out loud; null | 'talk' | 'type' | 'form': the guide and the form both live on this page
+  const [mode, setMode] = useState(['form', 'type'].includes(location.state?.mode) ? location.state.mode : 'type'); // 'type' by default: opening or reloading the page is silent and never opens the microphone. The guide speaks and listens only after Talk to me is clicked. null | 'talk' | 'type' | 'form'
   const [startReq, setStartReq] = useState(null);
   const workRef = useRef(null);
   const reqId = useRef(0);
