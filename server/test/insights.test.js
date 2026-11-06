@@ -62,3 +62,13 @@ test('the minimum group size is 5 unless INSIGHTS_MIN_GROUP sets a whole number 
     assert.equal(await load('99'), 5);
   } finally { delete process.env.INSIGHTS_MIN_GROUP; }
 });
+
+test('error messages come back in Spanish when the site asks for Spanish, on any route', async () => {
+  const bad = { email: 'nobody@example.test', password: 'wrongpass1' };
+  const en = await app.call('POST', '/api/auth/login', bad);
+  assert.equal(en.body.error, 'The email or password is not right.');
+  const es = await app.call('POST', '/api/auth/login?ui=es', bad);
+  assert.equal(es.body.error, 'El correo o la contraseña no son correctos.');
+  const adminEs = await app.call('GET', '/api/admin/visitors/zzzz-not-here-0000?ui=es', undefined, hdr);
+  assert.match(adminEs.body.error, /No se encontr/);
+});

@@ -102,6 +102,7 @@ async function request(method, url, body, retried = false) {
   const biz = getBusiness();
   if (biz && biz !== 'main' && /^\/api\/(checklist|dashboard|chat)/.test(url) && !/[?&]biz=/.test(url)) url += `${url.includes('?') ? '&' : '?'}biz=${encodeURIComponent(biz)}`;
   if (apiLang === 'es' && !/[?&]lang=/.test(url) && !/^\/api\/(admin|rules|changes|county|source|demo)/.test(url)) url += `${url.includes('?') ? '&' : '?'}lang=es`;
+  if (apiLang === 'es' && !/[?&]ui=/.test(url)) url += `${url.includes('?') ? '&' : '?'}ui=es`; // Spanish messages, even on admin calls
   const headers = { 'content-type': 'application/json', 'x-visitor-id': visitorId() };
   const key = getAdminKey();
   if (key) headers['x-admin-key'] = key;

@@ -1,12 +1,15 @@
 // The guide character: a friendly person and a robot, drawn as flat SVG shapes. It is an invented illustration, not a photo,
 // voice clone or likeness of any real person. A wave and a blink are CSS animations that switch off for people who prefer less motion.
+import { useT } from '../i18n.js';
+
 export default function GuideArt({ small = false }) {
+  const t = useT();
   return (
     <svg
       className={`guide-art${small ? ' is-small' : ''}`}
       viewBox="0 0 320 240"
       role="img"
-      aria-label="Illustration of a friendly person and a small robot waving hello"
+      aria-label={t('art.alt')}
     >
       <ellipse cx="160" cy="224" rx="132" ry="9" fill="rgba(7,26,51,.18)" />
 

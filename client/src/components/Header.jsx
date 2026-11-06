@@ -55,7 +55,7 @@ export default function Header() {
           </button>
         </div>
         <div className="head-auth"><AccountMenu /></div>
-        <nav id="main-nav" aria-label="Main" className={open ? 'is-open' : ''}>
+        <nav id="main-nav" aria-label={t('nav.main')} className={open ? 'is-open' : ''}>
           <ul>
             {!locked && ROUTES.filter((r) => r.nav !== false).map((r) => (
               <li key={r.path}>

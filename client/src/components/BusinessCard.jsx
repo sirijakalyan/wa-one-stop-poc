@@ -84,7 +84,7 @@ function Editor({ field, card, t, labels, xq, onSave, onCancel }) {
     body = (
       <span className="edit-set">
         <input type="text" value={city} maxLength={80} onChange={(e) => setCity(e.target.value)} aria-label={t('card.city')} placeholder={t('card.city')} />
-        <select value={county} onChange={(e) => setCounty(e.target.value)} aria-label="County">
+        <select value={county} onChange={(e) => setCounty(e.target.value)} aria-label={t('card.county')}>
           <option value="">{t('card.county')}</option>
           {WA_COUNTIES.map((c) => <option key={c} value={c}>{t('card.countySuffix', c)}</option>)}
         </select>

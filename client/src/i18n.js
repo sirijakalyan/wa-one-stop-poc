@@ -11,6 +11,7 @@ export const LANGS = [
 
 const en = {
   'lang.switchTo': 'Cambiar a español',
+  'nav.main': 'Main', 'art.alt': 'Illustration of a friendly person and a small robot waving hello', 'card.county': 'County',
   'theme.label': 'Color theme',
   'theme.toDark': 'Switch to dark mode',
   'theme.toLight': 'Switch to light mode',
@@ -158,6 +159,7 @@ const en = {
 
 const es = {
   'lang.switchTo': 'Switch to English',
+  'nav.main': 'Principal', 'art.alt': 'Ilustración de una persona amable y un pequeño robot que saluda', 'card.county': 'Condado',
   'theme.label': 'Tema de color',
   'theme.toDark': 'Cambiar a modo oscuro',
   'theme.toLight': 'Cambiar a modo claro',

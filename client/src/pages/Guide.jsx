@@ -60,6 +60,12 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
   const FIELD_LABELS = t.card.fields;
   const location = useLocation();
   const navigate = useNavigate();
+  // The guide is already a chat, so on a phone the round "Ask a question" button would sit on top of Send.
+  useEffect(() => {
+    if (embedded) return undefined;
+    document.body.classList.add('on-guide');
+    return () => document.body.classList.remove('on-guide');
+  }, [embedded]);
   const [firstMode] = useState(location.state?.mode || 'type');
   const mode = modeProp || firstMode;
   const [text, setText] = useState('');

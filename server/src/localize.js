@@ -45,7 +45,7 @@ const CUSTOM_ES = {
 };
 const customEs = (t) => CUSTOM_ES[t] || t;
 
-export function localizeRule(rule, lang, qmap) {
+export function localizeRule(rule, lang, qmap, changes) {
   if (!isEs(lang)) return rule;
   if (rule.custom) {
     const es = rule.es || {};
@@ -65,18 +65,30 @@ export function localizeRule(rule, lang, qmap) {
   const es = RULES_ES[rule.id];
   const out = { ...rule, agency: AGENCY_ES[rule.agency] || rule.agency, applies: mapCond(rule.applies, qmap) };
   if (rule.source?.label && SOURCE_LABEL_ES[rule.source.label]) out.source = { ...rule.source, label: SOURCE_LABEL_ES[rule.source.label] };
-  if (!es || es.version !== rule.version) return out;
-  out.title = es.title || rule.title;
+  if (!es) return out;
+  // After an admin edits a step its version moves on. The Spanish text is kept for every field the admin did NOT change, so the page
+  // never turns English for words nobody touched. A field that was changed shows what the admin wrote.
+  // When the version moved but no edit is on record, nothing can be vouched for, so the English shows (the safe choice).
+  const edited = new Set();
+  let unexplained = false;
+  if (es.version !== rule.version) {
+    const seen = (changes || []).filter((c) => c.ruleId === rule.id && c.version > es.version);
+    unexplained = seen.length === 0;
+    for (const c of seen) for (const f of c.fields || []) edited.add(f.field);
+  }
+  const keep = (field) => !unexplained && !edited.has(field);
+  out.title = keep('title') ? es.title || rule.title : rule.title;
   out.reason = { ...rule.reason, ...es.reason };
-  if (es.detail) out.detail = es.detail;
+  if (es.detail && keep('detail')) out.detail = es.detail;
   if (es.fallback) out.fallback = es.fallback;
   if (es.supports) out.supports = es.supports;
   if (es.limits) out.limits = es.limits;
   if (es.vnote && rule.verification) out.verification = { ...rule.verification, note: es.vnote };
   if (es.noLink !== undefined) out.noLink = es.noLink;
   if (es.noLinkCounty) out.noLinkCounty = es.noLinkCounty;
-  if (rule.apply && es.apply) out.apply = { ...rule.apply, label: es.apply };
+  if (rule.apply && es.apply && keep('apply.label')) out.apply = { ...rule.apply, label: es.apply };
   if (rule.guide && es.guide) {
+    const keepPrepare = keep('guide.prepare');
     const g = rule.guide;
     const eg = es.guide;
     out.guide = {
@@ -84,7 +96,7 @@ export function localizeRule(rule, lang, qmap) {
       meaning: eg.meaning || g.meaning,
       who: sameLen(g.who, eg.who),
       conditions: sameLen(g.conditions, eg.conditions),
-      prepare: sameLen(g.prepare, eg.prepare),
+      prepare: keepPrepare ? sameLen(g.prepare, eg.prepare) : g.prepare,
       prepareNote: eg.prepareNote ?? g.prepareNote,
       steps: Array.isArray(g.steps) && Array.isArray(eg.steps) && g.steps.length === eg.steps.length ? g.steps.map((s, i) => ({ ...s, text: eg.steps[i] })) : g.steps,
       facts: Array.isArray(g.facts) && Array.isArray(eg.facts) && g.facts.length === eg.facts.length ? g.facts.map((f, i) => ({ ...f, label: eg.facts[i][0], text: eg.facts[i][1] })) : g.facts,
@@ -97,7 +109,7 @@ export function localizeRule(rule, lang, qmap) {
 
 export function localizeRules(doc, lang) {
   if (!isEs(lang) || !doc) return doc;
-  return { ...doc, phases: { ...doc.phases, ...PHASES_ES }, rules: doc.rules.map((r) => localizeRule(r, lang, questionMap(doc.questions))) };
+  return { ...doc, phases: { ...doc.phases, ...PHASES_ES }, rules: doc.rules.map((r) => localizeRule(r, lang, questionMap(doc.questions), doc.changes)) };
 }
 
 export function localizeFound(link, lang) {

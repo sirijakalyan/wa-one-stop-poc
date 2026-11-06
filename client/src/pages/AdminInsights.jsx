@@ -14,7 +14,12 @@ export default function AdminInsights() {
   if (loading && !data) return <Loading what={tr('Loading Insights', 'Cargando Insights')} />;
   if (error) return (<><h1 tabIndex={-1}>Insights</h1><ErrorNote message={error} /></>);
   const min = data.minGroup;
-  const few = tr(`fewer than ${min}`, `menos de ${min}`);
+  const few = min <= 1 ? '0' : tr(`fewer than ${min}`, `menos de ${min}`);
+  const goal = (k) => {
+    const v = `${k.target}${k.unit === '%' ? '%' : ' min'}`;
+    const text = k.goal === 'under' ? tr(`under ${v}`, `menos de ${v}`) : k.target === 100 ? v : tr(`${v} or more`, `${v} o más`);
+    return `${tr('Target', 'Meta')}: ${text} [est.]`;
+  };
   const num = (n) => (n === null || n === undefined ? few : n);
   const KPI = {
     time: { name: tr('Time from first message to a plan', 'Tiempo desde el primer mensaje hasta un plan'), note: tr('Median, in minutes. Counted in 30-second steps.', 'Mediana, en minutos. Contada en pasos de 30 segundos.') },
@@ -34,19 +39,29 @@ export default function AdminInsights() {
   const bar = (n, max) => (n && max ? Math.max(4, Math.round((n / max) * 100)) : 0);
   const fMax = Math.max(data.funnel.started || 0, data.funnel.shown || 0, data.funnel.saved || 0);
 
+  // The file reads like a report: a title row, then Group, Measure, Result, Note. Counts under the limit say "fewer than N".
   function exportCsv() {
-    const rows = [['section', 'name', 'value']];
-    data.kpis.forEach((k) => rows.push(['kpi', KPI[k.id].name, k.value === null ? few : `${k.value}${k.unit === '%' ? '%' : ' min'}`]));
-    rows.push(['funnel', 'started', num(data.funnel.started)], ['funnel', 'plan shown', num(data.funnel.shown)], ['funnel', 'saved', num(data.funnel.saved)]);
-    Object.entries(data.modes).forEach(([k, n]) => rows.push(['how they started', k, num(n)]));
-    Object.entries(data.langs).forEach(([k, n]) => rows.push(['language', k, num(n)]));
-    data.dropoff.forEach((q) => rows.push(['answered', qName(q.id), num(q.answered)], ['left on', qName(q.id), num(q.left)]));
-    ['yes', 'partly', 'no'].forEach((k) => rows.push(['feedback', k, num(data.feedback[k])]));
-    Object.entries(data.feedback.reasons).forEach(([k, n]) => rows.push(['feedback reason', k.replace('|', ' / '), num(n)]));
-    data.steps.forEach((s) => rows.push(['steps marked done', s.title, s.count]));
-    data.daily.forEach((d) => rows.push(['per day', `${d.day} started / shown / saved`, `${num(d.started)} / ${num(d.shown)} / ${num(d.saved)}`]));
-    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n');
-    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    const G = {
+      kpi: tr('Key measures', 'Medidas clave'), funnel: tr('From first message to saved plan', 'Del primer mensaje al plan guardado'), how: tr('How people started', 'Cómo empezaron'),
+      lang: tr('Language', 'Idioma'), answered: tr('Questions answered', 'Preguntas respondidas'), left: tr('Where people stopped', 'Dónde se detuvieron'),
+      fb: tr('Was this plan clear?', '¿Fue claro este plan?'), why: tr('Reasons given', 'Motivos indicados'), steps: tr('Steps marked done', 'Pasos marcados como hechos'), day: tr('Per day', 'Por día'),
+    };
+    const MODE = { voice: tr('Talked', 'Hablaron'), typing: tr('Typed', 'Escribieron'), form: tr('Used the form', 'Usaron el formulario'), sample: tr('Started from a sample', 'Empezaron con un ejemplo') };
+    const LANG = { en: 'English', es: 'Español' };
+    const YES = { yes: tr('Yes', 'Sí'), partly: tr('Partly', 'En parte'), no: tr('No', 'No') };
+    const rows = [[tr('Group', 'Grupo'), tr('Measure', 'Medida'), tr('Result', 'Resultado'), tr('Note', 'Nota')]];
+    rows.push([tr('Period', 'Periodo'), tr(`Last ${data.days} days`, `Últimos ${data.days} días`), `${data.since || ''}`, tr(`Counts below ${min} are hidden`, `Los conteos menores de ${min} se ocultan`)]);
+    data.kpis.forEach((k) => rows.push([G.kpi, KPI[k.id].name, k.value === null ? few : `${k.value}${k.unit === '%' ? '%' : ' min'}`, goal(k)]));
+    rows.push([G.funnel, tr('Started', 'Iniciaron'), num(data.funnel.started), ''], [G.funnel, tr('Plan shown', 'Plan mostrado'), num(data.funnel.shown), ''], [G.funnel, tr('Saved', 'Guardaron'), num(data.funnel.saved), '']);
+    Object.entries(data.modes).forEach(([k, n]) => rows.push([G.how, MODE[k] || k, num(n), '']));
+    Object.entries(data.langs).forEach(([k, n]) => rows.push([G.lang, LANG[k] || k, num(n), '']));
+    data.dropoff.forEach((q) => rows.push([G.answered, qName(q.id), num(q.answered), ''], [G.left, qName(q.id), num(q.left), '']));
+    ['yes', 'partly', 'no'].forEach((k) => rows.push([G.fb, YES[k], num(data.feedback[k]), '']));
+    Object.entries(data.feedback.reasons).forEach(([k, n]) => { const [v, r] = k.split('|'); rows.push([G.why, `${REASON[r] || r} (${YES[v] || v})`, num(n), '']); });
+    data.steps.forEach((st) => rows.push([G.steps, st.title, st.count, '']));
+    data.daily.forEach((d) => rows.push([G.day, d.day, `${num(d.started)} / ${num(d.shown)} / ${num(d.saved)}`, tr('started / plan shown / saved', 'iniciaron / plan mostrado / guardaron')]));
+    const csv = '\ufeff' + rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\r\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     const a = document.createElement('a');
     a.href = url; a.download = `insights-${data.days}-days.csv`; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
@@ -71,7 +86,7 @@ export default function AdminInsights() {
             <li key={k.id} className={`ins-kpi${has ? (ok ? ' is-ok' : ' is-short') : ''}`}>
               <span className="ins-kpi-name">{KPI[k.id].name}</span>
               <strong>{has ? `${k.value}${k.unit === '%' ? '%' : ''}` : '-'}{has && k.unit === 'min' ? <small> min</small> : null}</strong>
-              <span className="hint">{has ? `${tr('Target', 'Meta')}: ${k.target}${k.unit === '%' ? '%' : ' min'} [est.]` : tr(`Not enough data yet (fewer than ${min})`, `Aún no hay datos suficientes (menos de ${min})`)}</span>
+              <span className="hint">{has ? goal(k) : tr(`Not enough data yet (fewer than ${min})`, `Aún no hay datos suficientes (menos de ${min})`)}</span>
               <span className="hint">{KPI[k.id].note}</span>
             </li>
           );

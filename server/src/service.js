@@ -14,6 +14,7 @@ import { createLocalIdp } from './localIdp.js';
 import { DISCLAIMER } from './disclaimer.js';
 import { evaluate, normalizeAnswers, suggestCategories, countyLabel } from './engine.js';
 import { SAMPLES } from './samples.js';
+import { errorEs } from './errorsEs.js';
 import { createInsights, hide, median, MIN_GROUP } from './insights.js';
 import { answerQuestion, classifyAnswer } from './chat.js';
 import { cleanLang, ES, ES_RX, esToEn } from './i18n.js';
@@ -488,11 +489,11 @@ export function createService(store, options = {}) {
     const withDone = recent.filter((c) => Object.values(c.done || {}).some(Boolean)).length;
     const ratio = (a, b) => (b >= MIN_GROUP ? Math.round((a / b) * 100) : null);
     const kpis = [
-      { id: 'time', value: med.seconds === null ? null : Math.round((med.seconds / 60) * 10) / 10, unit: 'min', target: 'under 10', n: hide(med.total) },
-      { id: 'finished', value: ratio(shown, started), unit: '%', target: '60 or more', n: hide(started) },
-      { id: 'clear', value: ratio(fb.yes, fbTotal), unit: '%', target: '80 or more', n: hide(fbTotal) },
-      { id: 'sources', value: rulesDoc.rules.length >= MIN_GROUP ? Math.round((checked / rulesDoc.rules.length) * 100) : null, unit: '%', target: '100', n: rulesDoc.rules.length },
-      { id: 'done', value: ratio(withDone, recent.length), unit: '%', target: '40 or more', n: hide(recent.length) },
+      { id: 'time', value: med.seconds === null ? null : Math.round((med.seconds / 60) * 10) / 10, unit: 'min', target: 10, goal: 'under', n: hide(med.total) },
+      { id: 'finished', value: ratio(shown, started), unit: '%', target: 60, goal: 'atleast', n: hide(started) },
+      { id: 'clear', value: ratio(fb.yes, fbTotal), unit: '%', target: 80, goal: 'atleast', n: hide(fbTotal) },
+      { id: 'sources', value: rulesDoc.rules.length >= MIN_GROUP ? Math.round((checked / rulesDoc.rules.length) * 100) : null, unit: '%', target: 100, goal: 'atleast', n: rulesDoc.rules.length },
+      { id: 'done', value: ratio(withDone, recent.length), unit: '%', target: 40, goal: 'atleast', n: hide(recent.length) },
     ];
     const steps = [];
     const titles = Object.fromEntries(rulesDoc.rules.map((r) => [r.id, r.title]));
@@ -1716,12 +1717,14 @@ export function createService(store, options = {}) {
         const out = await r.handler({ params, body, ctx, query });
         return { status: 200, body: { ...out, disclaimer: DISCLAIMER } };
       } catch (err) {
-        if (err instanceof HttpError) return { status: err.status, body: { ok: false, error: err.message, disclaimer: DISCLAIMER } };
+        // "ui=es" comes from every call the Spanish site makes, so even admin calls (which never ask for Spanish rule text) get Spanish messages.
+        const say = (m) => (query.ui === 'es' || cleanLang(query.lang || body?.lang) === 'es' ? errorEs(m) : m);
+        if (err instanceof HttpError) return { status: err.status, body: { ok: false, error: say(err.message), disclaimer: DISCLAIMER } };
         console.error(err);
-        return { status: 500, body: { ok: false, error: 'Server error', disclaimer: DISCLAIMER } };
+        return { status: 500, body: { ok: false, error: say('Server error'), disclaimer: DISCLAIMER } };
       }
     }
-    return { status: 404, body: { ok: false, error: 'Not found', disclaimer: DISCLAIMER } };
+    return { status: 404, body: { ok: false, error: query.ui === 'es' || cleanLang(query.lang) === 'es' ? errorEs('Not found') : 'Not found', disclaimer: DISCLAIMER } };
   }
 
   return { handle, runReminders };

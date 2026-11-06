@@ -118,3 +118,17 @@ test('Spanish: the rule records table (Sources page) is in Spanish and the admin
     await app.stop();
   }
 });
+
+test('Spanish: after an admin edits one field, the fields nobody touched stay in Spanish', async () => {
+  const { localizeRules } = await import('../src/localize.js');
+  const doc = JSON.parse((await import('node:fs')).readFileSync(new URL('../seed/rules.json', import.meta.url), 'utf8'));
+  const r = doc.rules.find((x) => x.id === 'sos');
+  r.version = 2; r.guide = { ...r.guide, prepare: [...(r.guide?.prepare || []), 'One more item'] };
+  doc.changes = [{ id: 'c1', ruleId: 'sos', version: 2, fields: [{ field: 'guide.prepare', from: '', to: 'x' }] }];
+  const es = localizeRules(doc, 'es').rules.find((x) => x.id === 'sos');
+  assert.match(es.title, /^Presente su entidad/);
+  assert.ok(es.guide.prepare.includes('One more item'));
+  doc.changes = [{ id: 'c2', ruleId: 'sos', version: 2, fields: [{ field: 'title', from: '', to: 'x' }] }];
+  r.title = 'Edited English title';
+  assert.equal(localizeRules(doc, 'es').rules.find((x) => x.id === 'sos').title, 'Edited English title');
+});
