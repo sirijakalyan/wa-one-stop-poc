@@ -1016,7 +1016,7 @@ body { background: radial-gradient(900px 380px at 85% -140px, rgba(25,167,160,.1
     radial-gradient(560px 360px at 90% 10%, rgba(74,136,214,.30), transparent 70%),
     linear-gradient(135deg, #0b1f3a 0%, #102a43 55%, #15406a 100%);
   box-shadow: 0 1px 0 rgba(255,255,255,.08) inset; }
-.home-hero-inner { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, .65fr); gap: 1.5rem 3rem; align-items: center; }
+.home-hero-inner { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .95fr); gap: 1.5rem 3rem; align-items: center; }
 .home-hero h1 { color: #fff; font-size: clamp(2rem, 4vw, 3.1rem); line-height: 1.04; letter-spacing: -.032em; margin: 0 0 .8rem; max-width: 15ch; }
 .home-lead { color: #bfd2e8; font-size: clamp(1rem, 1.35vw, 1.15rem); line-height: 1.55; max-width: 36rem; margin: 0 0 1.4rem; }
 .home-hero .ways-in { display: inline-grid; grid-template-columns: repeat(3, auto); gap: 4px; padding: 4px; margin: 0; list-style: none; border-radius: 15px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); }
@@ -1035,6 +1035,26 @@ body { background: radial-gradient(900px 380px at 85% -140px, rgba(25,167,160,.1
 .home-hero-guide { position: relative; display: grid; justify-items: center; gap: .6rem; }
 .home-hero-guide::before { content: ""; position: absolute; width: 15rem; height: 15rem; border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%, -50%); background: radial-gradient(circle, rgba(255,255,255,.14), rgba(25,167,160,.10) 45%, transparent 70%); z-index: -1; }
 .home-hero-guide .guide-art { width: min(100%, 11.5rem); margin: 0; filter: drop-shadow(0 14px 24px rgba(0,0,0,.35)); }
+.home-hero-guide .trail-art { position: relative; width: min(100%, 34rem); aspect-ratio: 600 / 560; margin: 0; }
+.trail-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.trail-steps { list-style: none; margin: 0; padding: 0; position: absolute; inset: 0; }
+.trail-step { position: absolute; display: flex; align-items: center; gap: .6rem; background: #fff; border-radius: 14px; padding: .55rem .8rem; box-shadow: 0 10px 24px rgba(0,0,0,.25); max-width: 62%; }
+.trail-num { flex: 0 0 1.75rem; width: 1.75rem; height: 1.75rem; border-radius: 50%; background: #127c7c; color: #fff; font-weight: 700; font-size: .85rem; display: flex; align-items: center; justify-content: center; }
+.trail-text { display: flex; flex-direction: column; min-width: 0; }
+.trail-text strong { color: #0b1f3a; font-size: .92rem; line-height: 1.25; }
+.trail-text span { color: #44566b; font-size: .75rem; line-height: 1.3; }
+.trail-flag { left: 78%; top: 4%; flex-direction: column; background: none; box-shadow: none; padding: 0; gap: .25rem; align-items: center; }
+.trail-flag strong { color: #fff; font-size: 1.05rem; white-space: nowrap; }
+@keyframes trail-draw { 0% { stroke-dashoffset: 900; } 55%, 100% { stroke-dashoffset: 0; } }
+@keyframes trail-pop { 0%, 8% { opacity: 0; transform: scale(.6); } 16%, 100% { opacity: 1; transform: scale(1); } }
+@keyframes trail-drift { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(-12px); } }
+@keyframes trail-wave { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-6deg); } }
+.trail-route { stroke-dasharray: 900; animation: trail-draw 4s ease-in-out both; }
+.trail-step { animation: trail-pop 1s ease-out both; }
+.trail-s1 { animation-delay: .3s; } .trail-s2 { animation-delay: 1s; } .trail-s3 { animation-delay: 1.7s; } .trail-s4 { animation-delay: 2.4s; } .trail-s5 { animation-delay: 3.1s; }
+.trail-cloud { animation: trail-drift 8s ease-in-out infinite; }
+.trail-flag-svg { transform-origin: 8px 40px; animation: trail-wave 2s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .trail-route, .trail-step, .trail-cloud, .trail-flag-svg { animation: none; } .trail-route { stroke-dashoffset: 0; } }
 .home-hero-guide .guide-bubble { order: -1; max-width: none; width: auto; padding: .45rem .9rem; border-radius: 999px; box-shadow: 0 10px 24px -10px rgba(0,0,0,.6); }
 .home-hero-guide .guide-bubble::after { content: none; }
 .home-hero-guide .guide-bubble .greeting-text { display: none; }

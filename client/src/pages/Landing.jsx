@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { api, useLoad } from '../api.js';
 import { ErrorNote } from '../components/Parts.jsx';
 import Icon from '../components/Icon.jsx';
-import GuideArt from '../components/GuideArt.jsx';
+import RoadArt from '../components/RoadArt.jsx';
 import { SAMPLES_ES, useT } from '../i18n.js';
 import { canSpeak } from '../voice.js';
 import { useApp } from '../AppContext.jsx';
@@ -117,7 +117,7 @@ export default function Landing() {
                   </p>
                 )}
               </div>
-              <GuideArt />
+              <RoadArt />
             </div>
           </div>
         </section>

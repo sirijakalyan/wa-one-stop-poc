@@ -33,7 +33,7 @@ describe('home page', () => {
   it('greets with the guide, offers three equal ways in and a one-sentence start', async () => {
     renderAt('/');
     expect(screen.getByTestId('greeting')).toHaveTextContent("Hi, I'm here to help you start your Washington business");
-    expect(screen.getByRole('img', { name: /friendly person and a small robot/i })).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Your road to opening day' })).toBeInTheDocument();
     expect(screen.getAllByText(/You're talking to an AI guide/).length).toBeGreaterThan(0);
     const ways = within(screen.getByRole('list', { name: 'Choose how to start' }));
     expect(ways.getByRole('button', { name: 'Talk to me' })).toBeInTheDocument();
