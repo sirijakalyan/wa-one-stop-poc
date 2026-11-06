@@ -140,8 +140,7 @@ export default function SaveDialog({ items, label, answers, user, busy, error, o
           <div>
             <p className="save-lead" role="status">{sentInfo?.live ? t('save.sent').replace('{email}', email.trim()) : t('save.sentDemo')}</p>
             <div className="save-row">
-              <button type="button" className="btn btn-primary" onClick={onDevice} disabled={busy}>{t('save.alsoDevice')}</button>
-              <button type="button" className="btn btn-quiet" onClick={onClose}>{t('save.done')}</button>
+              <button type="button" className="btn btn-primary" onClick={onClose}>{t('save.done')}</button>
             </div>
           </div>
         ) : null}
