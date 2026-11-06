@@ -1118,6 +1118,21 @@ body { background: radial-gradient(900px 380px at 85% -140px, rgba(25,167,160,.1
 .next-card .hint { margin: .9rem 0 0; }
 .mb-main .cl-head { margin: 0; padding: 1rem 0 0; }
 /* My business loads in steps (businesses, summary, checklist). These reserve the room each step will fill, so nothing already on screen is pushed down when the next one arrives. */
+/* "Start here": the bar docked to the bottom for a first-time visitor. Fixed, so it never moves the page. */
+.start-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 55; background: var(--surface); border-top: 1px solid var(--line); box-shadow: 0 -10px 30px rgba(7, 26, 51, .22); padding: .8rem max(1rem, env(safe-area-inset-right, 0px)) max(.8rem, env(safe-area-inset-bottom, 0px)) max(1rem, env(safe-area-inset-left, 0px)); }
+.start-bar-in { max-width: 54rem; margin: 0 auto; display: flex; align-items: center; gap: .75rem; }
+.start-bar-label { display: flex; flex-direction: column; flex: 0 0 auto; line-height: 1.2; color: var(--ink); }
+.start-bar-label strong { font-size: .98rem; }
+.start-bar-label span { font-size: .82rem; color: var(--muted); }
+.start-bar input { flex: 1 1 auto; min-width: 0; min-height: 48px; border: 2px solid var(--teal-600); border-radius: 14px; padding: .55rem 1rem; font-size: 1rem; }
+.start-bar .btn { flex: 0 0 auto; min-height: 48px; border-radius: 14px; gap: .4rem; }
+.has-start-bar .chat-fab { bottom: calc(5.6rem + env(safe-area-inset-bottom, 0px)); }
+@media (max-width: 40rem) {
+  .start-bar-in { flex-wrap: wrap; gap: .45rem .6rem; }
+  .start-bar-label { flex: 1 0 100%; flex-direction: row; align-items: baseline; gap: .5rem; }
+  .start-bar input { flex: 1 1 10rem; }
+  .has-start-bar .chat-fab { bottom: calc(8.2rem + env(safe-area-inset-bottom, 0px)); }
+}
 .mb-wait { min-height: 70vh; }
 .biz-switch-wait { min-height: 70px; margin-bottom: 1.1rem; visibility: hidden; }
 .mb-check.is-loading { min-height: 70vh; }

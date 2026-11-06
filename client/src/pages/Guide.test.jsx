@@ -47,6 +47,26 @@ describe('home page', () => {
     }
   });
 
+  it('shows a "Start here" bar to a first-time visitor, hands their sentence to the guide, then gets out of the way', async () => {
+    const user = userEvent.setup();
+    renderAt('/');
+    const bar = within(await screen.findByRole('form', { name: 'Start here' }));
+    const box = bar.getByPlaceholderText(/^For example: I want to open a food truck in Spokane/);
+    expect(bar.getByRole('button', { name: /^Send$/ })).toBeDisabled();
+    await user.type(box, 'I want to open a food truck in Spokane');
+    await user.click(bar.getByRole('button', { name: /^Send$/ }));
+    expect((await screen.findAllByText('I want to open a food truck in Spokane')).length).toBeGreaterThan(0);
+    await waitFor(() => expect(screen.queryByRole('form', { name: 'Start here' })).not.toBeInTheDocument());
+  });
+
+  it('hides the "Start here" bar when the owner chooses to talk', async () => {
+    const user = userEvent.setup();
+    renderAt('/');
+    expect(await screen.findByRole('form', { name: 'Start here' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Talk to me' }));
+    await waitFor(() => expect(screen.queryByRole('form', { name: 'Start here' })).not.toBeInTheDocument());
+  });
+
   it('keeps what the owner types out of the address bar', async () => {
     const user = userEvent.setup();
     renderAt('/');

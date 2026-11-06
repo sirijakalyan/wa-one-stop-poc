@@ -4,6 +4,7 @@ import { api, useLoad } from '../api.js';
 import { ErrorNote } from '../components/Parts.jsx';
 import Icon from '../components/Icon.jsx';
 import RoadArt from '../components/RoadArt.jsx';
+import StartBar from '../components/StartBar.jsx';
 import { SAMPLES_ES, useT } from '../i18n.js';
 import { useApp } from '../AppContext.jsx';
 import { answersFromCard, cardFromForm, confirmedCount } from '../guideCard.js';
@@ -27,6 +28,7 @@ export default function Landing() {
   const fetchSamples = useCallback(() => api.samples(), []);
   const { data, error } = useLoad(fetchSamples);
   const [sentence, setSentence] = useState('');
+  const [workVisible, setWorkVisible] = useState(false); // the guide's own box is on screen
   const samples = data?.samples ?? [];
 
   // Switching to the form carries over what the guide has heard, on top of the form's own answers.
@@ -67,6 +69,24 @@ export default function Landing() {
     const still = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     workRef.current.scrollIntoView?.({ behavior: still ? 'auto' : 'smooth', block: 'nearest' });
   }, [mode]);
+  // The "Start here" bar is only for a visitor who has not begun: typing mode, no conversation yet, and the guide's own box not yet on screen.
+  useEffect(() => {
+    const el = workRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return undefined;
+    const seen = new IntersectionObserver(([entry]) => setWorkVisible(entry.isIntersecting), { threshold: 0, rootMargin: '0px 0px -45% 0px' });
+    seen.observe(el);
+    return () => seen.disconnect();
+  }, []);
+  const showStartBar = mode === 'type' && !startReq && guide.messages.length <= 1 && !workVisible;
+  useEffect(() => {
+    document.body.classList.toggle('has-start-bar', showStartBar);
+    return () => document.body.classList.remove('has-start-bar');
+  }, [showStartBar]);
+  function startFromBar(text) {
+    send(text, 'type');
+    const still = typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    requestAnimationFrame(() => workRef.current?.scrollIntoView?.({ behavior: still ? 'auto' : 'smooth', block: 'start' }));
+  }
 
   return (
     <>
@@ -132,6 +152,7 @@ export default function Landing() {
         </section>
       </div>
 
+      {showStartBar ? <StartBar onSend={startFromBar} /> : null}
       {t('draft.note') ? <p className="draft-note" role="note">{t('draft.note')}</p> : null}
       <h2 id="samples" tabIndex={-1} style={{ marginTop: 0 }}>{t('home.samplesTitle')}</h2>
       <p className="hint">{t('home.samplesHint')}</p>
