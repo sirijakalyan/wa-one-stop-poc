@@ -23,8 +23,8 @@ function RequireAccount() {
   if (requireLogin === null || !authReady) return <p className="page-loading" role="status">{t('auth.loading')}</p>;
   // An admin account only works in the Admin area: no home page, business pages or alerts.
   if (user?.role === 'admin' && loc.pathname !== '/admin') return <Navigate to="/admin" replace />;
-  // Home, the guide and the form stay open to visitors; the sign in page appears when they save a plan or open a page that needs an account.
-  const open = ['/', '/home', '/guide', '/questionnaire'].includes(loc.pathname);
+  // Home, the guide and the form stay open to visitors; a plan saved on this device opens My business without an account; the sign in page appears for pages that need one.
+  const open = ['/', '/home', '/guide', '/questionnaire', '/my-business'].includes(loc.pathname);
   if (requireLogin && !user && !open) {
     const from = loc.pathname === '/' ? undefined : `${loc.pathname}${loc.search}`;
     return <Navigate to="/login" replace state={from ? { from } : undefined} />;

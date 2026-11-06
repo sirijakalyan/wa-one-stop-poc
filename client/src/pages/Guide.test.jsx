@@ -413,6 +413,8 @@ describe('voice', () => {
     }
     expect(await inLog(/Say or tap Save my plan and open my checklist/)).toBeInTheDocument();
     await user.type(screen.getByLabelText(/Tell the guide about your business/), 'save my plan{Enter}');
+    const dialog = await screen.findByRole('dialog', { name: 'Keep your plan' });
+    await user.click(within(dialog).getByRole('button', { name: /Save on this device/ }));
     expect(await screen.findByRole('heading', { name: /checklist/i })).toBeInTheDocument();
   });
 

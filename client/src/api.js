@@ -134,6 +134,7 @@ export const api = {
   checklist: () => request('GET', '/api/checklist'),
   saveChecklist: (answers, label) => request('POST', '/api/checklist', { answers, label }),
   businesses: () => request('GET', '/api/businesses'),
+  emailPlan: (body) => request('POST', '/api/plan/email', body),
   // Saves the answers as a business. After "Edit answers" it replaces that business. Otherwise it is added next to the ones already saved.
   async saveBusiness(answers, label) {
     let target = editingBiz;

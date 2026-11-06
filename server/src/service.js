@@ -525,6 +525,42 @@ export function createService(store, options = {}) {
     return { ok: true, biz: bizIdOf(key), ...(await buildChecklist({ id: key, ...cl }, await loadRules(), langIn(query, body))) };
   });
 
+  // "Email me a link": sends the plan's steps and a link that opens it on My business. Nothing is saved on the server and no account is needed.
+  // The link carries only the business answers (no name, email or address), so opening it on any device rebuilds the plan.
+  const planMailLog = new Map();
+  route('POST', '/api/plan/email', async ({ body, ctx, query }) => {
+    const to = String(body?.email || '').trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(to) || to.length > 160) fail('Enter an email address like name@example.com.');
+    const now = Date.now();
+    const recent = (planMailLog.get(visitorOf(ctx)) || []).filter((at) => now - at < 3600_000);
+    if (recent.length >= 5) fail('You have asked for several emails. Please wait an hour and try again.', 429);
+    const rulesDoc = await loadRules();
+    const answers = cleanExtra(normalizeAnswers(body?.answers), questionsOf(rulesDoc));
+    if (!answers.structure) fail('Choose a business structure first.');
+    const label = typeof body?.label === 'string' ? body.label.slice(0, 80) : '';
+    const lang = langIn(query, body);
+    const built = await buildChecklist({ answers, label, done: {}, renewals: {} }, rulesDoc, lang);
+    const base = String(options.publicUrl || '').replace(/\/$/, '') || (/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(String(body?.origin || '')) ? String(body.origin) : '');
+    const code = Buffer.from(JSON.stringify({ a: answers, l: label })).toString('base64url');
+    const url = base ? `${base}/my-business?plan=${code}` : '';
+    const es = lang === 'es';
+    const steps = built.items.map((i, n) => `${n + 1}. ${i.title}${i.agency ? ` (${i.agency})` : ''}`);
+    const { html, text } = renderEmail({
+      heading: es ? `Su plan${label ? `: ${label}` : ''}` : `Your plan${label ? `: ${label}` : ''}`,
+      paragraphs: [
+        es ? `Estos son los ${steps.length} pasos de su plan.` : `Here are the ${steps.length} steps in your plan.`,
+        ...steps,
+        es ? 'Abra el enlace para ver su plan en Mi negocio y marcar los pasos que ya hizo.' : 'Open the link to see your plan on My business and mark the steps you have done.',
+      ],
+      button: url ? { label: es ? 'Abrir Mi negocio' : 'Open My business', url } : undefined,
+      note: es ? 'Usamos su correo solo para enviar este mensaje. No guardamos su correo.' : 'We use your email only to send this message. We do not keep it.',
+    });
+    if (mailer) await mailer.send({ to, subject: es ? 'Su plan para abrir su negocio en Washington' : 'Your plan to start your Washington business', text, html });
+    planMailLog.set(visitorOf(ctx), [...recent, now]);
+    await track(ctx, 'plan-emailed', label || 'Plan emailed');
+    return { ok: true, sent: Boolean(mailer), live: mailer?.mode === 'live', hasLink: Boolean(url) };
+  });
+
   route('DELETE', '/api/checklist', async ({ ctx, query }) => {
     const key = chKey(ctx, query);
     const gone = await store.getChecklist(key);

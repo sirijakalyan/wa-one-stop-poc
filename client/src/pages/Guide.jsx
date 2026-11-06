@@ -10,6 +10,7 @@ import GuideArt from '../components/GuideArt.jsx';
 import ExternalLink from '../components/ExternalLink.jsx';
 import Icon from '../components/Icon.jsx';
 import { ErrorNote } from '../components/Parts.jsx';
+import SaveDialog from '../components/SaveDialog.jsx';
 import { canListen, canSpeak, createListener, hasVoice, isMuted, micWasOnAtMute, setMuted, listenErrorText, speak, speakable, stopSpeaking, synthBusy } from '../voice.js';
 import { answersFromCard, confirmedCount, fieldsOf, isComplete } from '../guideCard.js';
 import { speechLang, useT } from '../i18n.js';
@@ -104,6 +105,7 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
   const autoMic = useRef(false);
   const voiceOnRef = useRef(false);
   const saveRef = useRef(() => {});
+  const [saveOpen, setSaveOpen] = useState(false);
   const speakingCount = useRef(0);
   const listenerRef = useRef(null);
   const cond = useRef({});
@@ -199,13 +201,15 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
     else { spokenIdx.current = 0; greetHeard.current = false; setSpeakTick((n) => n + 1); }
   }, [t.lang]);
   saveRef.current = save;
+  const saveNowRef = useRef(() => {});
+  saveNowRef.current = saveNow;
   // Back from sign in with a finished card: save it straight away.
   const resumed = useRef(false);
   useEffect(() => {
     if (location.state?.resume === 'save' && user && guide.complete && !resumed.current) {
       resumed.current = true;
       navigate(location.pathname, { replace: true, state: null });
-      saveRef.current();
+      saveNowRef.current();
     }
   });
   cond.current = { micOn, speaking, busy, hold };
@@ -456,20 +460,30 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
     return turn({ action: 'set', field, value }, t('guide.edited', label || FIELD_LABELS[field] || ''));
   };
 
-  async function save() {
-    // Visitors can try everything first; the account is only needed to keep the plan.
-    if (requireLogin && !user) return navigate('/login', { state: { from: '/guide', resume: 'save' } });
+  // Tapping Save opens the "Keep your plan" choices. The plan is only written when one is chosen.
+  function save() {
+    setError('');
+    setSaveOpen(true);
+  }
+  // Save on this device (or to the account when signed in): works with no account and opens My business.
+  async function saveNow() {
     setBusy(true);
     setError('');
     try {
       const a = view.plan?.answers || answersFromCard(guide.card);
       await api.saveBusiness(a, (guide.card.values.desc || 'My business').slice(0, 80));
+      setSaveOpen(false);
       navigate('/my-business');
       clearDraft();
     } catch (e) {
       setError(e.message);
       setBusy(false);
     }
+  }
+  // Create an account: the sign in page opens, and the plan is saved when they come back.
+  function saveWithAccount() {
+    setSaveOpen(false);
+    navigate('/login', { state: { from: '/guide', resume: 'save' } });
   }
   function useForm() {
     setAnswers(answersFromCard(guide.card));
@@ -604,6 +618,19 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
         </section>
 
       </div>
+      {saveOpen ? (
+        <SaveDialog
+          items={view.plan?.items || []}
+          label={(guide.card.values.desc || '').slice(0, 80)}
+          answers={view.plan?.answers || answersFromCard(guide.card)}
+          user={user}
+          busy={busy}
+          error={error}
+          onClose={() => setSaveOpen(false)}
+          onDevice={saveNow}
+          onAccount={saveWithAccount}
+        />
+      ) : null}
 
       <div className={`guide-road${tab === 'plan' ? ' is-active' : ''}`} data-tab="plan">
         {!embedded && <SimulatePanel result={sim} onClose={endSimulation} />}

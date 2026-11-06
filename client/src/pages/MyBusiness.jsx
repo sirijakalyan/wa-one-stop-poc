@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import Icon from '../components/Icon.jsx';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api, getBusiness, setBusiness, stopEditing, useLoad } from '../api.js';
 import { useApp } from '../AppContext.jsx';
 import { blankCard } from '../guideCard.js';
@@ -11,7 +11,7 @@ import { ErrorNote, Loading, Simulated } from '../components/Parts.jsx';
 
 // One page for the saved checklist and the progress. It reuses the Checklist and Dashboard pieces and the same
 // API calls, so marking a step done saves exactly as before and the summary above refreshes from the server.
-export default function MyBusiness() {
+function MyBusinessPage() {
   const t = useT();
   const navigate = useNavigate();
   const { setGuide } = useApp();
@@ -130,6 +130,45 @@ export default function MyBusiness() {
           <DashOverall data={data} />
         </aside>
       </div>
+    </>
+  );
+}
+
+// A link from "Email me a link" carries the business answers in ?plan=. Opening it saves that plan on this device, then shows My business.
+function readPlanLink(code) {
+  try {
+    const raw = JSON.parse(decodeURIComponent(escape(atob(String(code).replace(/-/g, '+').replace(/_/g, '/')))));
+    if (!raw || typeof raw.a !== 'object') return null;
+    return { answers: raw.a, label: typeof raw.l === 'string' ? raw.l.slice(0, 80) : '' };
+  } catch { return null; }
+}
+
+export default function MyBusiness() {
+  const t = useT();
+  const [params, setParams] = useSearchParams();
+  const code = params.get('plan');
+  const [state, setState] = useState(code ? 'opening' : 'ready'); // opening | failed | ready
+  useEffect(() => {
+    if (!code) return;
+    let alive = true;
+    (async () => {
+      const link = readPlanLink(code);
+      try {
+        if (!link) throw new Error('bad link');
+        await api.saveBusiness(link.answers, link.label);
+        if (alive) setState('ready');
+      } catch {
+        if (alive) setState('failed');
+      }
+      if (alive) setParams((p) => { p.delete('plan'); return p; }, { replace: true });
+    })();
+    return () => { alive = false; };
+  }, [code]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (state === 'opening') return <div className="mb-wait"><Loading label={t('save.opening')} /></div>;
+  return (
+    <>
+      {state === 'failed' ? <p className="save-note" role="alert">{t('save.linkBad')}</p> : null}
+      <MyBusinessPage />
     </>
   );
 }

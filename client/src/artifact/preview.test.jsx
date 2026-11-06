@@ -473,7 +473,7 @@ describe('the site needs an account (REQUIRE_LOGIN)', () => {
     renderApp();
     // Visitors see Home first; Sign in only appears when they open a page that needs an account.
     expect(await screen.findByRole('heading', { name: /Start your Washington business/ }, { timeout: 8000 })).toBeInTheDocument();
-    await user.click(screen.getAllByRole('link', { name: 'My business' })[0]);
+    await user.click(screen.getAllByRole('link', { name: 'Sign in' })[0]);
     expect(await screen.findByRole('heading', { name: 'Welcome back' }, { timeout: 8000 })).toBeInTheDocument();
     await user.click((await screen.findAllByRole('link', { name: 'Create account' }, { timeout: 5000 }))[0]);
     await user.type(await screen.findByLabelText('Your name'), 'Ana');
@@ -502,7 +502,7 @@ describe('the site needs an account (REQUIRE_LOGIN)', () => {
 
   it('sends a signed-out visitor from a deep link to Sign in, and forgot password stays reachable', async () => {
     const user = userEvent.setup();
-    render(<MemoryRouter initialEntries={['/my-business']}><AppProvider><App /></AppProvider></MemoryRouter>);
+    render(<MemoryRouter initialEntries={['/notifications']}><AppProvider><App /></AppProvider></MemoryRouter>);
     expect(await screen.findByRole('heading', { name: 'Welcome back' })).toBeInTheDocument();
     await user.click(screen.getByRole('link', { name: 'Forgot your password?' }));
     expect(await screen.findByRole('heading', { name: /Forgot your password|Reset/i })).toBeInTheDocument();
