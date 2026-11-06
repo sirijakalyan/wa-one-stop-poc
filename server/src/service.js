@@ -14,6 +14,7 @@ import { createLocalIdp } from './localIdp.js';
 import { DISCLAIMER } from './disclaimer.js';
 import { evaluate, normalizeAnswers, suggestCategories, countyLabel } from './engine.js';
 import { SAMPLES } from './samples.js';
+import { createInsights, hide, median, MIN_GROUP } from './insights.js';
 import { answerQuestion, classifyAnswer } from './chat.js';
 import { cleanLang, ES, ES_RX, esToEn } from './i18n.js';
 import { localizeRules, localizeFound, localizeCountyNote, localizeCountyAgency, localizeTimes } from './localize.js';
@@ -458,6 +459,66 @@ export function createService(store, options = {}) {
       events: await store.listEvents(acctVisitor(a), 200),
     };
   });
+  /* ---------- Insights: counts only ---------- */
+  const insights = createInsights(store);
+  const testEmails = String(process.env.TEST_EMAILS || '').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
+  // Admins, anyone using the admin key and listed test accounts are never counted.
+  const notCounted = (ctx) => accountAdmin(ctx) || Boolean(ctx.adminKey && keyOk(ctx)) || testEmails.includes(String(ctx.account?.email || '').toLowerCase());
+  route('POST', '/api/insights/event', async ({ body, ctx }) => {
+    if (!notCounted(ctx)) await insights.record(body);
+    return { ok: true };
+  });
+  route('GET', '/api/admin/insights', async ({ ctx, query }) => {
+    requireStrictAdmin(ctx);
+    const span = [7, 30, 90].includes(Number(query?.days)) ? Number(query.days) : 30;
+    const { sum, daily, since } = await insights.totals(span);
+    const g = (k) => sum[k] || 0;
+    const started = Object.entries(sum).filter(([k]) => k.startsWith('plan_started|')).reduce((a, [, n]) => a + n, 0);
+    const shown = g('plan_shown');
+    const saved = { device: g('plan_saved|device'), link: g('plan_saved|link'), account: g('plan_saved|account') };
+    const savedTotal = saved.device + saved.link + saved.account;
+    const fb = { yes: g('feedback|yes'), partly: g('feedback|partly'), no: g('feedback|no') };
+    const fbTotal = fb.yes + fb.partly + fb.no;
+    const med = median(sum);
+    // two measures come from plans that are already saved, not from events
+    const rulesDoc = await loadRules();
+    const today = Date.now();
+    const checked = rulesDoc.rules.filter((r) => r.lastVerified && today - Date.parse(`${r.lastVerified}T00:00:00Z`) <= 90 * 86400000).length;
+    const recent = (await store.listChecklists()).filter((c) => today - Date.parse(c.savedAt || 0) <= 30 * 86400000);
+    const withDone = recent.filter((c) => Object.values(c.done || {}).some(Boolean)).length;
+    const ratio = (a, b) => (b >= MIN_GROUP ? Math.round((a / b) * 100) : null);
+    const kpis = [
+      { id: 'time', value: med.seconds === null ? null : Math.round((med.seconds / 60) * 10) / 10, unit: 'min', target: 'under 10', n: hide(med.total) },
+      { id: 'finished', value: ratio(shown, started), unit: '%', target: '60 or more', n: hide(started) },
+      { id: 'clear', value: ratio(fb.yes, fbTotal), unit: '%', target: '80 or more', n: hide(fbTotal) },
+      { id: 'sources', value: rulesDoc.rules.length >= MIN_GROUP ? Math.round((checked / rulesDoc.rules.length) * 100) : null, unit: '%', target: '100', n: rulesDoc.rules.length },
+      { id: 'done', value: ratio(withDone, recent.length), unit: '%', target: '40 or more', n: hide(recent.length) },
+    ];
+    const steps = [];
+    const titles = Object.fromEntries(rulesDoc.rules.map((r) => [r.id, r.title]));
+    for (const [k, n] of Object.entries(sum)) if (k.startsWith('step_done|') && n >= MIN_GROUP) steps.push({ id: k.slice(10), title: titles[k.slice(10)] || k.slice(10), count: n });
+    steps.sort((a, b) => b.count - a.count);
+    const qs = new Map();
+    for (const [k, n] of Object.entries(sum)) {
+      const m = /^question_(answered|left)\|(.+)$/.exec(k);
+      if (m) qs.set(m[2], { ...(qs.get(m[2]) || { id: m[2], answered: 0, left: 0 }), [m[1]]: n });
+    }
+    const dropoff = [...qs.values()].map((q) => ({ id: q.id, answered: hide(q.answered), left: hide(q.left), total: q.answered + q.left })).filter((q) => q.total >= MIN_GROUP).sort((a, b) => b.left - a.left);
+    const modes = Object.fromEntries(['voice', 'typing', 'form', 'sample'].map((m) => [m, hide(['en', 'es'].reduce((a, l) => a + g(`plan_started|${m}|${l}`), 0))]));
+    const langs = Object.fromEntries(['en', 'es'].map((l) => [l, hide(['voice', 'typing', 'form', 'sample'].reduce((a, m) => a + g(`plan_started|${m}|${l}`), 0))]));
+    const reasons = {};
+    for (const v of ['partly', 'no']) for (const r of ['hard_words', 'too_long', 'missing_step', 'unsure_fit', 'other']) reasons[`${v}|${r}`] = hide(g(`feedback_reason|${v}|${r}`));
+    return {
+      ok: true, days: span, since, minGroup: MIN_GROUP,
+      kpis, funnel: { started: hide(started), shown: hide(shown), saved: hide(savedTotal) },
+      saved: Object.fromEntries(Object.entries(saved).map(([k, n]) => [k, hide(n)])),
+      feedback: { yes: hide(fb.yes), partly: hide(fb.partly), no: hide(fb.no), total: hide(fbTotal), reasons },
+      modes, langs, dropoff, steps: steps.slice(0, 15),
+      voiceBlocked: { denied: hide(g('voice_blocked|denied')), unsupported: hide(g('voice_blocked|unsupported')) },
+      daily: daily.map((d) => ({ day: d.day, started: hide(d.started), shown: hide(d.shown), saved: hide(d.saved) })),
+    };
+  });
+
   // Visitors: people who saved a plan without an account. Listed by a short random ID only: there is no name or email to show.
   const anonymousIds = async () => {
     const seen = new Map();
@@ -643,6 +704,7 @@ export function createService(store, options = {}) {
     cl.done[ruleId] = done;
     await store.putChecklist(key, cl);
     await track(ctx, done ? 'step-done' : 'step-undone', await ruleTitle(ruleId));
+    if (done && !notCounted(ctx)) await insights.record({ type: 'step_done', step_id: ruleId });
     return { ok: true, ...(await buildChecklist(cl, await loadRules(), langIn(query, body))) };
   });
 

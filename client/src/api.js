@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 // Where the API lives. Empty in local dev (Vite proxies /api) and in the in-page preview.
 // On Render the UI is a separate static site, so VITE_API_BASE_URL points at the API service.
 const BASE = String(import.meta.env?.VITE_API_BASE_URL || '').replace(/\/$/, '');
+export const BASE_URL = BASE;
 
 // Anonymous browser id. Each browser gets its own saved checklist. No sign-up in v1.
 let memoryId = '';
@@ -85,6 +86,16 @@ async function refreshSession() {
     .catch(() => false)
     .finally(() => { refreshing = null; });
   return refreshing;
+}
+
+// The headers every call carries, so the server knows who is asking (admins are not counted in Insights).
+export function authHeaders() {
+  const headers = { 'content-type': 'application/json', 'x-visitor-id': visitorId() };
+  const key = getAdminKey();
+  if (key) headers['x-admin-key'] = key;
+  const session = getSession();
+  if (session) headers.authorization = `Bearer ${session}`;
+  return headers;
 }
 
 async function request(method, url, body, retried = false) {
@@ -196,6 +207,7 @@ export const api = {
   logout: () => request('POST', '/api/auth/logout'),
   forgot: (email) => request('POST', '/api/auth/forgot', { email }),
   resetPassword: (token, password, email, code) => request('POST', '/api/auth/reset', { token, password, email, code }),
+  adminInsights: (days) => request('GET', `/api/admin/insights?days=${days || 30}`),
   adminVisitors: () => request('GET', '/api/admin/visitors'),
   adminVisitor: (id, lang) => request('GET', `/api/admin/visitors/${encodeURIComponent(id)}${lang === 'es' ? '?lang=es' : ''}`),
   adminUsers: () => request('GET', '/api/admin/users'),

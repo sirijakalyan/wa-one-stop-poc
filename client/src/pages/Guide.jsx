@@ -11,6 +11,7 @@ import ExternalLink from '../components/ExternalLink.jsx';
 import Icon from '../components/Icon.jsx';
 import { ErrorNote } from '../components/Parts.jsx';
 import SaveDialog from '../components/SaveDialog.jsx';
+import { leftEarly, planSaved, planShown, planStarted, questionAnswered, track } from '../insightsClient.js';
 import { canListen, canSpeak, createListener, hasVoice, isMuted, micWasOnAtMute, setMuted, listenErrorText, speak, speakable, stopSpeaking, synthBusy } from '../voice.js';
 import { answersFromCard, confirmedCount, fieldsOf, isComplete } from '../guideCard.js';
 import { speechLang, useT } from '../i18n.js';
@@ -204,6 +205,22 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
   const saveNowRef = useRef(() => {});
   saveNowRef.current = saveNow;
   // Back from sign in with a finished card: save it straight away.
+  // Insights: counts only. The first thing the owner says starts a plan; each confirmed fact counts as an answer; the finished card counts as a plan shown.
+  const startedMode = startProp?.sample ? 'sample' : mode === 'talk' ? 'voice' : 'typing';
+  useEffect(() => {
+    if (guide.messages.some((m) => m.role === 'owner')) planStarted(startedMode, t.lang);
+  }, [guide.messages.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    for (const [f, st] of Object.entries(guide.card.status || {})) if (st === 'confirmed') questionAnswered(f);
+  }, [guide.card]);
+  useEffect(() => {
+    if (guide.complete) planShown(view.plan?.items?.length || 0);
+  }, [guide.complete, view.plan?.items?.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const gone = () => { if (document.visibilityState === 'hidden') leftEarly(guideRef.current.ask?.field); };
+    document.addEventListener('visibilitychange', gone);
+    return () => document.removeEventListener('visibilitychange', gone);
+  }, []);
   const resumed = useRef(false);
   useEffect(() => {
     if (location.state?.resume === 'save' && user && guide.complete && !resumed.current) {
@@ -307,6 +324,8 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
         onError: (code) => {
           const msg = listenErrorText(code, langRef.current);
           if (msg) { setVoiceMsg(msg); setMicOn(false); }
+          if (code === 'not-allowed' || code === 'service-not-allowed') track('voice_blocked', { reason: 'denied' });
+          else if (code === 'unsupported' || code === 'no-support') track('voice_blocked', { reason: 'unsupported' });
         },
       });
     }
@@ -472,6 +491,7 @@ export default function Guide({ embedded = false, mode: modeProp, start: startPr
     try {
       const a = view.plan?.answers || answersFromCard(guide.card);
       await api.saveBusiness(a, (guide.card.values.desc || 'My business').slice(0, 80));
+      planSaved(user ? 'account' : 'device');
       setSaveOpen(false);
       navigate('/my-business');
       clearDraft();

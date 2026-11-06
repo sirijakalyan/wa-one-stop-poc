@@ -1,3 +1,4 @@
+import PlanFeedback from '../components/PlanFeedback.jsx';
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, getBusiness, setBusiness, startEditing, stopEditing, useLoad } from '../api.js';
@@ -142,6 +143,7 @@ export default function Checklist({ embedded = false, onChanged, onData, onRemov
           </ul>
         </details>
       )}
+      <PlanFeedback />
     </>
   );
 }

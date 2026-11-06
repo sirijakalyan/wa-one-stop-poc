@@ -5,6 +5,7 @@ import { api, getBusiness, setBusiness, stopEditing, useLoad } from '../api.js';
 import { useApp } from '../AppContext.jsx';
 import { blankCard } from '../guideCard.js';
 import { useT } from '../i18n.js';
+import { planSaved } from '../insightsClient.js';
 import Checklist from './Checklist.jsx';
 import { DashOverall, DashRenewals } from './Dashboard.jsx';
 import { ErrorNote, Loading, Simulated } from '../components/Parts.jsx';
@@ -156,6 +157,7 @@ export default function MyBusiness() {
       try {
         if (!link) throw new Error('bad link');
         await api.saveBusiness(link.answers, link.label);
+        planSaved('link');
         if (alive) setState('ready');
       } catch {
         if (alive) setState('failed');

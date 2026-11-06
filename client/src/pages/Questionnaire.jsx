@@ -4,6 +4,7 @@ import { api, useLoad } from '../api.js';
 import { useT } from '../i18n.js';
 import { useApp } from '../AppContext.jsx';
 import { Meter } from '../components/Parts.jsx';
+import { planSaved, planShown, planStarted } from '../insightsClient.js';
 import CityCombobox, { countyForTypedCity } from '../components/CityCombobox.jsx';
 import { CATS, STRUCTURES, YN, YN_FIELDS, WA_COUNTIES, stepList } from '../questions.js';
 
@@ -63,6 +64,9 @@ export default function Questionnaire({ embedded = false } = {}) {
       setBusy(true);
       try {
         await api.saveBusiness(answers, label);
+        planStarted('form', t.lang);
+        planShown(0, false);
+        planSaved(user ? 'account' : 'device');
         navigate('/my-business');
         clearDraft();
       } catch (e) {

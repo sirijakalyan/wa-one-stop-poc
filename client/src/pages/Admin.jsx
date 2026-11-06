@@ -8,6 +8,7 @@ import ExternalLink from '../components/ExternalLink.jsx';
 import AdminUsers from './AdminUsers.jsx';
 import AdminQuestions from './AdminQuestions.jsx';
 import AdminReminders from './AdminReminders.jsx';
+import AdminInsights from './AdminInsights.jsx';
 import AddRuleForm from '../components/AddRuleForm.jsx';
 import AppliesPicker, { pickerFrom } from '../components/AppliesPicker.jsx';
 import SpanishRuleFields from '../components/SpanishRuleFields.jsx';
@@ -423,7 +424,7 @@ export default function Admin() {
       </div>
     );
   }
-  const tabs = [['rules', a('Steps', 'Pasos')], ['questions', a('Questions', 'Preguntas')], ['people', a('People', 'Personas')], ['reminders', a('Email reminders', 'Recordatorios por correo')]];
+  const tabs = [['rules', a('Steps', 'Pasos')], ['questions', a('Questions', 'Preguntas')], ['people', a('People', 'Personas')], ['reminders', a('Email reminders', 'Recordatorios por correo')], ['insights', 'Insights']];
   const asked = params.get('tab');
   const wanted = asked === 'users' ? 'people' : asked === 'sources' ? 'rules' : asked;
   const tab = tabs.some(([k]) => k === wanted) ? wanted : (data?.strict ? 'people' : 'rules');
@@ -444,6 +445,7 @@ export default function Admin() {
         ))}
         {tab === 'questions' && <AdminQuestions />}
         {tab === 'reminders' && <AdminReminders />}
+        {tab === 'insights' && (data?.strict ? <AdminInsights /> : <><h1 tabIndex={-1}>Insights</h1><p className="lead">{a('Sign in with an admin account to see Insights.', 'Inicie sesión con una cuenta de administración para ver Insights.')}</p><p><Link className="btn btn-primary btn-sm" to="/login" state={{ from: '/admin' }}>{a('Sign in', 'Iniciar sesión')}</Link></p></>)}
         {tab === 'rules' && <AdminPanel signedIn={Boolean(data?.required && (getAdminKey() || data?.accountAdmin))} />}
       </div>
     </>

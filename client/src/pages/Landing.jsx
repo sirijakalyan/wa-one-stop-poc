@@ -49,9 +49,9 @@ export default function Landing() {
     }
     setMode(next);
   }
-  const send = (text, next = 'type') => {
+  const send = (text, next = 'type', sample = false) => {
     reqId.current += 1;
-    setStartReq({ text, id: `req${reqId.current}` });
+    setStartReq({ text, id: `req${reqId.current}`, sample });
     setMode(next === 'talk' ? 'talk' : 'type');
   };
   function startWithSentence(e) {
@@ -160,7 +160,7 @@ export default function Landing() {
       <ul className="sample-chips">
         {samples.map((s) => (
           <li key={s.id}>
-            <button type="button" className="sample-chip" onClick={() => send((t.lang === 'es' && SAMPLES_ES[s.id]?.story) || s.story, mode === 'talk' ? 'talk' : 'type')}>
+            <button type="button" className="sample-chip" onClick={() => send((t.lang === 'es' && SAMPLES_ES[s.id]?.story) || s.story, mode === 'talk' ? 'talk' : 'type', true)}>
               <span className="icon-tile"><Icon name={SAMPLE_ICON[s.id] || 'building'} size={22} /></span>
               <span>
                 <strong>{(t.lang === 'es' && SAMPLES_ES[s.id]?.title) || s.title}</strong>
