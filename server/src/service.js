@@ -496,8 +496,8 @@ export function createService(store, options = {}) {
       { id: 'done', value: ratio(withDone, recent.length), unit: '%', target: 40, goal: 'atleast', n: hide(recent.length) },
     ];
     const steps = [];
-    const shown = query?.ui === 'es' || cleanLang(query?.lang) === 'es' ? localizeRules(rulesDoc, 'es') : rulesDoc; // step names in the language of the page
-    const titles = Object.fromEntries(shown.rules.map((r) => [r.id, r.title]));
+    const titled = query?.ui === 'es' || cleanLang(query?.lang) === 'es' ? localizeRules(rulesDoc, 'es') : rulesDoc; // step names in the language of the page
+    const titles = Object.fromEntries(titled.rules.map((r) => [r.id, r.title]));
     for (const [k, n] of Object.entries(sum)) if (k.startsWith('step_done|') && n >= MIN_GROUP) steps.push({ id: k.slice(10), title: titles[k.slice(10)] || k.slice(10), count: n });
     steps.sort((a, b) => b.count - a.count);
     const qs = new Map();
