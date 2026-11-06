@@ -90,33 +90,47 @@ export default function SaveDialog({ items, label, answers, user, busy, error, o
           <>
             <p className="save-lead">{user ? t('save.leadIn') : t('save.lead')}</p>
             <ul className="save-opts">
-              <li>
-                <button type="button" className="save-opt is-rec" ref={first} onClick={onDevice} disabled={busy}>
-                  <span className="icon-tile"><Icon name="home" size={22} /></span>
-                  <span>
-                    <strong>{user ? t('save.deviceIn') : t('save.device')} <em className="save-rec">{t('save.recommended')}</em></strong>
-                    <span>{user ? t('save.deviceInText') : t('save.deviceText')}</span>
-                  </span>
-                </button>
-              </li>
-              <li>
-                <button type="button" className="save-opt" onClick={() => setView('email')} disabled={busy}>
-                  <span className="icon-tile"><Icon name="chat" size={22} /></span>
-                  <span><strong>{t('save.email')}</strong><span>{t('save.emailText')}</span></span>
-                </button>
-              </li>
               {!user ? (
                 <li>
-                  <button type="button" className="save-opt" onClick={onAccount} disabled={busy}>
-                    <span className="icon-tile"><Icon name="user" size={22} /></span>
-                    <span><strong>{t('save.account')}</strong><span>{t('save.accountText')}</span></span>
+                  <button type="button" className="save-opt is-rec" ref={first} onClick={onAccount} disabled={busy}>
+                    <span className="icon-tile tone-rec"><Icon name="user" size={22} /></span>
+                    <span className="save-opt-text"><strong>{t('save.account')} <em className="save-rec">{t('save.recommended')}</em></strong><span>{t('save.accountText')}</span></span>
+                    <span className="save-go" aria-hidden="true">›</span>
+                  </button>
+                </li>
+              ) : (
+                <li>
+                  <button type="button" className="save-opt is-rec" ref={first} onClick={onDevice} disabled={busy}>
+                    <span className="icon-tile tone-rec"><Icon name="user" size={22} /></span>
+                    <span className="save-opt-text"><strong>{t('save.deviceIn')} <em className="save-rec">{t('save.recommended')}</em></strong><span>{t('save.deviceInText')}</span></span>
+                    <span className="save-go" aria-hidden="true">›</span>
+                  </button>
+                </li>
+              )}
+              {!user ? (
+                <li>
+                  <button type="button" className="save-opt" onClick={onDevice} disabled={busy}>
+                    <span className="icon-tile tone-device"><Icon name="home" size={22} /></span>
+                    <span className="save-opt-text"><strong>{t('save.device')}</strong><span>{t('save.deviceText')}</span></span>
+                    <span className="save-go" aria-hidden="true">›</span>
                   </button>
                 </li>
               ) : null}
+              <li>
+                <button type="button" className="save-opt" onClick={() => setView('email')} disabled={busy}>
+                  <span className="icon-tile tone-mail"><Icon name="chat" size={22} /></span>
+                  <span className="save-opt-text"><strong>{t('save.email')}</strong><span>{t('save.emailText')}</span></span>
+                  <span className="save-go" aria-hidden="true">›</span>
+                </button>
+              </li>
+              <li>
+                <button type="button" className="save-opt" onClick={pdf} disabled={!items.length}>
+                  <span className="icon-tile tone-pdf"><Icon name="file" size={22} /></span>
+                  <span className="save-opt-text"><strong>{t('save.pdf')}</strong><span>{t('save.pdfText')}</span></span>
+                  <span className="save-go" aria-hidden="true">›</span>
+                </button>
+              </li>
             </ul>
-            <div className="save-extra">
-              <button type="button" className="btn btn-quiet btn-sm" onClick={pdf} disabled={!items.length}><Icon name="file" size={16} />{t('save.pdf')}</button>
-            </div>
             {error || note ? <p className="save-note" role="alert">{error || note}</p> : null}
           </>
         ) : null}
